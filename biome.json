@@ -1,0 +1,61 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"files": {
+		"ignore": ["contracts/lib", "src/generated.ts", "tsconfig.json", "tsconfig.*.json"]
+	},
+	"organizeImports": {
+		"enabled": true
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineWidth": 120
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"complexity": {
+				"noBannedTypes": "off"
+			},
+			"performance": {
+				"noDelete": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "off",
+				"useTemplate": "off"
+			},
+			"suspicious": {
+				"noAssignInExpressions": "off",
+				"noConsoleLog": "error",
+				"noExplicitAny": "off",
+				"noShadowRestrictedNames": "off"
+			}
+		}
+	},
+	"overrides": [
+		{
+			"include": ["./scripts/**/*.ts"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noConsoleLog": "off"
+					}
+				}
+			}
+		}
+	],
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "single",
+			"trailingCommas": "all",
+			"semicolons": "asNeeded"
+		}
+	},
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	}
+}
