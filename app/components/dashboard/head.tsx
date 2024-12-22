@@ -2,7 +2,7 @@ import { TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function Head() {
 	return (
-		<TabsList className="min-w-full">
+		<TabsList className="min-w-full bg-background">
 			<TabsTrigger className="w-full" value="home">
 				Home
 			</TabsTrigger>

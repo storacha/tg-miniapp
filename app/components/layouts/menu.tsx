@@ -10,20 +10,22 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '../ui/button'
 
+import { AlignJustify } from 'lucide-react'
+
 export function Menu() {
 	return (
 		<Drawer>
-			<DrawerTrigger>Open</DrawerTrigger>
+			<DrawerTrigger>
+				<AlignJustify />
+			</DrawerTrigger>
 			<DrawerContent>
 				<DrawerHeader>
-					<DrawerTitle>Are you absolutely sure?</DrawerTitle>
-					<DrawerDescription>This action cannot be undone.</DrawerDescription>
+					<DrawerTitle>Settings</DrawerTitle>
 				</DrawerHeader>
 				<DrawerFooter>
-					<Button>Submit</Button>
-					<DrawerClose>
-						<Button variant="outline">Cancel</Button>
-					</DrawerClose>
+					<Button variant="outline">Profile</Button>
+					<Button variant="outline">Profile</Button>
+					<Button variant="outline">Profile</Button>
 				</DrawerFooter>
 			</DrawerContent>
 		</Drawer>
