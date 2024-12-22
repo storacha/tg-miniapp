@@ -8,13 +8,14 @@ import { ErrorPage } from './error-page'
 import { useTelegramMock } from '../hooks/useTelegramMock'
 import { useClientOnce } from '../hooks/useClientOnce'
 import { init } from '../utils/core'
+import Logo from './svgs/logo'
 
 function RootInner({ children }: PropsWithChildren) {
 	const isDev = process.env.NODE_ENV === 'development'
 
 	if (isDev) {
 		// eslint-disable-next-line react-hooks/rules-of-hooks
-		useTelegramMock()
+		// useTelegramMock()
 	}
 
 	const lp = useLaunchParams()
@@ -35,9 +36,12 @@ export function Root(props: PropsWithChildren) {
 
 	return didMount ? (
 		<ErrorBoundary fallback={ErrorPage}>
-			<RootInner {...props} />
+			<div {...props} />
+			{/* <RootInner {...props} /> */}
 		</ErrorBoundary>
 	) : (
-		<div className="root__loading">Loading</div>
+		<div className="h-screen flex justify-center items-center bg-primary">
+			<Logo />
+		</div>
 	)
 }
