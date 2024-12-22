@@ -16,7 +16,7 @@ export function useTelegramMock(): void {
     let lp: LaunchParams | undefined;
     try {
       lp = retrieveLaunchParams();
-    } catch (e) {
+    } catch (e: unknown) {
       const initDataRaw = new URLSearchParams([
         [
           "user",
@@ -36,6 +36,8 @@ export function useTelegramMock(): void {
         ["chat_type", "sender"],
         ["chat_instance", "8428209589180549439"],
       ]).toString();
+
+      console.log("initDataRaw", initDataRaw);
 
       lp = {
         themeParams: {},
