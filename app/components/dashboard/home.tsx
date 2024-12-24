@@ -25,8 +25,8 @@ function ChatItem() {
 
 export default function Home() {
 	return (
-		<TabsContent value="home" className="flex flex-col gap-2">
-			<h1 className="px-5">Backup Chats</h1>
+		<TabsContent value="home" className="flex flex-col gap-5">
+			<h1 className="px-5">Backed up Chats</h1>
 			<div className="flex flex-col">
 				<ChatItem />
 				<ChatItem />

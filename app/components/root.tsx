@@ -8,7 +8,7 @@ import { ErrorPage } from './error-page'
 import { useTelegramMock } from '../hooks/useTelegramMock'
 import { useClientOnce } from '../hooks/useClientOnce'
 import { init } from '../utils/core'
-import Logo from './svgs/logo'
+import LogoSplash from './svgs/logo-splash'
 
 function RootInner({ children }: PropsWithChildren) {
 	const isDev = process.env.NODE_ENV === 'development'
@@ -41,7 +41,7 @@ export function Root(props: PropsWithChildren) {
 		</ErrorBoundary>
 	) : (
 		<div className="h-screen flex justify-center items-center bg-primary">
-			<Logo />
+			<LogoSplash />
 		</div>
 	)
 }
