@@ -1,20 +1,21 @@
-import { Tabs } from '@/components/ui/tabs'
 import Head from './head'
-import Home from './home'
-import Backup from './backup'
-import Points from './points'
+import BackedChats from './backed-chats'
+import { Button } from '../ui/button'
+// import Backup from './backup'
+// import Points from './points'
 
 export default function Dashboard() {
 	return (
-		<Tabs defaultValue="home" className="w-full flex items-center flex-col h-full gap-10">
-			<div className="w-full pt-5 px-5">
+		<div className="w-full flex items-center flex-col h-full">
+			<div className="w-full px-5">
 				<Head />
 			</div>
-			<div className="rounded-t-xl bg-background flex-grow w-full shadow-xl py-2">
-				<Home />
-				<Backup />
-				<Points />
+			<div className="rounded-t-xl bg-background flex-grow w-full shadow-t-xl mt-5 pt-5">
+				<BackedChats />
 			</div>
-		</Tabs>
+			<div className="sticky bottom-0 bg-white w-full px-5 pb-5">
+				<Button className="w-full">Start New Backup</Button>
+			</div>
+		</div>
 	)
 }
