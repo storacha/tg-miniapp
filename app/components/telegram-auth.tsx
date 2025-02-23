@@ -87,7 +87,7 @@ function SubmitOTP({ handleSendPin }: { handleSendPin: () => void }) {
 }
 
 export default function TelegramAuth() {
-	const [isPinSended, setIsPinSended] = useState(true)
+	const [isPinSended, setIsPinSended] = useState(false)
 	const [loading, setLoading] = useState(false)
 
 	async function handleSendPin() {

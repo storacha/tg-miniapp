@@ -1,39 +1,46 @@
-import Dashboard from '@/components/dashboard'
-import { Layouts } from '@/components/layouts'
+'use client'
 
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
+import { Layouts } from '@/components/layouts'
+import Dates from '@/components/backup/dates'
+import Chats from '@/components/backup/chats'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useRouter } from 'next/navigation'
 import { Connect } from '@/components/backup/connect'
+import { useGlobal } from '@/zustand/global'
 
 export default function Page() {
+	const [step, setStep] = useState(0)
+	const router = useRouter()
+	const { isStrochaAuthorized } = useGlobal()
+
+	function handleBack() {
+		if (step === 0) {
+			router.back()
+		}
+		setStep(step - 1)
+	}
+
 	return (
-		<Layouts>
-			<div className="w-full pt-5 px-5 flex flex-col text-center justify-center gap-2 pb-10">
-				<h1 className="text-xl font-semibold text-foreground text-center">Backup Chats</h1>
-				<p className="text-sm">Choose a time range to back up your chats.</p>
-			</div>
-			<div className="rounded-t-xl bg-background w-full flex-grow shadow-xl py-2">
-				<RadioGroup defaultValue="fifteenDays" className="px-5">
-					<div className="flex space-x-2 items-center gap-2 py-4 border-b border-primary/10">
-						<RadioGroupItem value="fifteenDays" id="fifteenDays" />
-						<Label htmlFor="fifteenDays">Last 15 days</Label>
-					</div>
-					<div className="flex space-x-2 items-center gap-2 py-4 border-b border-primary/10">
-						<RadioGroupItem value="oneMonth" id="oneMonth" />
-						<Label htmlFor="oneMonth">Last 1 month</Label>
-					</div>
-					<div className="flex space-x-2 items-center gap-2 py-4 border-b border-primary/10">
-						<RadioGroupItem value="sixMonth" id="sixMonth" />
-						<Label htmlFor="sixMonth">Last 6 month</Label>
-					</div>
-					<div className="flex space-x-2 items-center gap-2 py-4 border-b border-primary/10">
-						<RadioGroupItem value="allChats" id="allChats" />
-						<Label htmlFor="allChats">All Chats</Label>
-					</div>
-				</RadioGroup>
-			</div>
-			<Connect />
+		<Layouts isSinglePage back={() => handleBack()}>
+			{step === 0 && <Chats />}
+			{step === 1 && <Dates />}
+			{step === 0 && (
+				<div className="absolute bottom-0 w-full p-5">
+					<Button className="w-full" onClick={() => setStep(step + 1)}>
+						Continue
+					</Button>
+				</div>
+			)}
+
+			{step === 1 && !isStrochaAuthorized && <Connect />}
+			{step === 1 && isStrochaAuthorized && (
+				<div className="absolute bottom-0 w-full p-5">
+					<Button className="w-full" onClick={() => setStep(step + 1)}>
+						Continue Backup
+					</Button>
+				</div>
+			)}
 		</Layouts>
 	)
 }
