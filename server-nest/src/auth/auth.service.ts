@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as jwt from 'passport-jwt';
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +12,45 @@ export class AuthService {
    * @param botToken Your Telegram bot token.
    * @returns True if the payload is valid; false otherwise.
    */
+
+  private client: TelegramClient;
+  private stringSession: StringSession;
+  private apiId: number;
+  private apiHash: string;
+
+  constructor() {
+    this.apiId = parseInt(process.env.TELEGRAM_API_ID, 10);
+    this.apiHash = process.env.TELEGRAM_API_HASH;
+    this.stringSession = new StringSession('');
+    this.client = new TelegramClient(
+      this.stringSession,
+      this.apiId,
+      this.apiHash,
+      {
+        connectionRetries: 5,
+      },
+    );
+  }
+
+  async connect() {
+    if (!this.client._isConnected) {
+      await this.client.connect();
+    }
+  }
+
+  async requestOtp(phoneNumber: string) {
+    await this.connect();
+    try {
+      const sendCodeResult = await this.client.sendCodeRequest(phoneNumber);
+    } catch (err) {
+      // TODO: Handle error
+    }
+  }
+
+  getSessionString() {
+    return this.client.session.save();
+  }
+
   validateTelegramAuth(
     authData: {
       id: string;

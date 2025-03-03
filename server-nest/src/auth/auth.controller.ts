@@ -6,6 +6,14 @@ import { TelegramAuthSchema } from './schemas/telegram-auth.schema';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import * as crypto from 'crypto';
 
+import { TelegramClient } from 'telegram';
+import { StringSession } from 'telegram/sessions';
+
+const apiId = '';
+const apiHash = '';
+
+const stringSession = new StringSession('');
+
 @ApiTags('Authentication')
 @Controller('session')
 export class AuthController {
@@ -14,8 +22,35 @@ export class AuthController {
     private readonly usersService: UsersService,
   ) {}
 
+  @Post('request-otp')
+  async requestOtp(@Body() requestOtpDto: any) {
+    try {
+      const { phoneNumber } = requestOtpDto;
+
+      const result = await this.authService.requestOtp(phoneNumber);
+      return {
+        success: true,
+        message: `OTP has been sent to ${phoneNumber}`,
+        phoneCodeHash: result.phoneCodeHash,
+      };
+    } catch (err) {
+      throw new BadRequestException('Failed to request OTP from Telegram');
+    }
+  }
+
   @Post('init')
   async initSession(@Body('sessionId') sessionId: string) {
+    const client = new TelegramClient(stringSession, apiId, apiHash, {
+      connectionRetries: 5,
+    });
+
+    await client.start({
+      phoneNumber: () => '',
+      phoneCode: () => '',
+      password: () => '',
+      onError: (err) => console.log({ err }),
+    });
+
     // Create a new user or update existing one
     const user = await this.usersService.createOrUpdate({
       telegramId: sessionId,
