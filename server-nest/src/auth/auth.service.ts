@@ -3,6 +3,7 @@ import * as crypto from 'crypto';
 import * as jwt from 'passport-jwt';
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
+import 'dotenv/config';
 
 @Injectable()
 export class AuthService {
@@ -32,8 +33,30 @@ export class AuthService {
     );
   }
 
+  async validateTelegramData(query: Record<string, any>): Promise<boolean> {
+    const secretKey = crypto
+      .createHash('sha256')
+      .update(process.env.TELEGRAM_BOT_TOKEN)
+      .digest();
+
+    const receivedHash = query.hash;
+    delete query.hash;
+
+    const dataCheckString = Object.keys(query)
+      .sort()
+      .map((key) => `${key}=${query[key]}`)
+      .join('\n');
+
+    const computedHash = crypto
+      .createHmac('sha256', secretKey)
+      .update(dataCheckString)
+      .digest('hex');
+
+    return computedHash === receivedHash;
+  }
+
   async connect() {
-    if (!this.client._isConnected) {
+    if (this.client.disconnected) {
       await this.client.connect();
     }
   }
@@ -41,12 +64,16 @@ export class AuthService {
   async requestOtp(phoneNumber: string) {
     await this.connect();
     try {
-      const sendCodeResult = await this.client.sendCodeRequest(phoneNumber);
+      const sendCodeResult = await this.client.sendCode(
+        { apiHash: this.apiHash, apiId: this.apiId },
+        phoneNumber,
+      ); // Updated method to sendCode
+      return sendCodeResult; // Return the result of the sendCode operation
     } catch (err) {
-      // TODO: Handle error
+      console.error('Error sending OTP:', err); // Handle error by logging it
+      throw new Error('Failed to send OTP'); // Throw a new error for further handling
     }
   }
-
   getSessionString() {
     return this.client.session.save();
   }
