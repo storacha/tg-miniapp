@@ -21,6 +21,7 @@ import 'dotenv/config';
 
 import { RequestOtpDto } from './dto/requestOtp.dto';
 import { InitSessionQueryDto } from './dto/initSession.dto';
+import { ValidateOtpDto } from './dto/validateOtp.dto';
 
 const apiId: any = process.env.TELEGRAM_API_ID;
 const apiHash = process.env.TELEGRAM_API_HASH;
@@ -99,10 +100,38 @@ export class AuthController {
   @Post('resend-otp')
   async resendOtp(@Body() resendOtpDto: any) {
     const { phoneNumber, phoneCodeHash } = resendOtpDto;
+
+    try {
+      const result: any = await this.authService.requestOtp(phoneNumber);
+      return {
+        success: true,
+        message: `OTP has been sent to ${phoneNumber}`,
+        phoneCodeHash: result.phoneCodeHash,
+      };
+    } catch (err) {
+      throw new BadRequestException('Failed to resend OTP from Telegram');
+    }
   }
 
   @Post('validate-otp')
-  async validateOtp(@Body() validateOtpDto: any) {
+  async validateOtp(@Body() validateOtpDto: ValidateOtpDto) {
     const { phoneNumber, phoneCodeHash, code } = validateOtpDto;
+
+    try {
+      const result: any = await this.authService.validateOtp(
+        phoneNumber,
+        phoneCodeHash,
+        code,
+      );
+
+      return {
+        success: true,
+        message: 'OTP validated successfully',
+        result,
+      };
+    } catch (err) {
+      console.log({ err });
+      throw new BadRequestException('Failed to validate OTP from Telegram');
+    }
   }
 }

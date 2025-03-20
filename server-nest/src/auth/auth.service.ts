@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as jwt from 'passport-jwt';
-import { TelegramClient } from 'telegram';
+import { TelegramClient, Api } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import 'dotenv/config';
 
@@ -65,7 +65,7 @@ export class AuthService {
     await this.connect();
     try {
       const sendCodeResult = await this.client.sendCode(
-        { apiHash: this.apiHash, apiId: this.apiId },
+        { apiHash: 'd7ea7d980690deaa3c470533be4d88d6', apiId: 21888621 },
         phoneNumber,
       ); // Updated method to sendCode
       return sendCodeResult; // Return the result of the sendCode operation
@@ -74,6 +74,19 @@ export class AuthService {
       throw new Error('Failed to send OTP'); // Throw a new error for further handling
     }
   }
+
+  async validateOtp(phoneNumber: string, phoneCodeHash: string, code: string) {
+    await this.connect();
+    const result = await this.client.invoke(
+      new Api.auth.SignIn({
+        phoneNumber,
+        phoneCode: code,
+        phoneCodeHash,
+      }),
+    );
+    return result;
+  }
+
   getSessionString() {
     return this.client.session.save();
   }
