@@ -3,7 +3,7 @@
 	"private": true,
 	"scripts": {
 		"app:dev": "pnpm --filter app dev",
-		"server:dev": "pnpm --filter server dev"
+		"server:dev": "pnpm --filter server start:dev"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
