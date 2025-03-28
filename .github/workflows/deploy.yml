@@ -55,7 +55,7 @@ jobs:
         run: | 
               {
                 echo 'WRANGLER_OUTPUT<<EOF'
-                pnpm wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static >> "$GITHUB_OUTPUT"
+                pnpm wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static
                 echo EOF
               } >> "$GITHUB_OUTPUT"
         env:
@@ -66,7 +66,7 @@ jobs:
         uses: mathiasvr/command-output@v1.1.0
         id: cloudflare_url
         with:
-          run: egrep -o 'https?://[^ ]+' <(echo "${{ steps.cloudflare.outputs.stdout }}")
+          run: egrep -o 'https?://[^ ]+' <(echo "${{ steps.cloudflare.outputs.WRANGLER_OUTPUT }}")
       - name: Find Current Pull Request
         uses: jwalton/gh-find-current-pr@v1.3.0
         id: finder
