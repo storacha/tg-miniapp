@@ -52,6 +52,7 @@ jobs:
       - run: pnpm pages:build
       - name: Deploy preview build to Cloudflare Pages
         uses: mathiasvr/command-output@v1.1.0
+        working-directory: ./app
         id: cloudflare
         with:
           run: npx wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static
