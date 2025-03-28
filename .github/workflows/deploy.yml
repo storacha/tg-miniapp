@@ -51,10 +51,11 @@ jobs:
       # env vars won't get passed through to wrangler, so if wrangler will need them, write them to .env like the previous step
       - run: pnpm pages:build
       - name: Deploy preview build to Cloudflare Pages
-        uses: mathiasvr/command-output@v1.1.0
+        uses: gh640/command-result-action@v1
         id: cloudflare
         with:
-          run: cd app && pnpm wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static
+          command: pnpm wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static
+          cwd: ./app
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
@@ -146,10 +147,11 @@ jobs:
         # env vars won't get passed through to wrangler, so if wrangler will need them, write them to .env like the previous step
         env: {}
       - name: Deploy preview build to Cloudflare Pages
-        uses: mathiasvr/command-output@v1.1.0
+        uses: gh640/command-result-action@v1
         id: cloudflare
         with:
-          run: cd app && pnpm wrangler pages deploy --project-name tg-miniapp-production --branch "main" --commit-hash "$GITHUB_SHA" .vercel/output/static
+          command: pnpm wrangler pages deploy --project-name tg-miniapp-production --branch "main" --commit-hash "$GITHUB_SHA" .vercel/output/static
+          cwd: ./app
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
