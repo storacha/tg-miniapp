@@ -52,7 +52,12 @@ jobs:
       - run: pnpm pages:build
       - name: Deploy preview build to Cloudflare Pages
         id: cloudflare
-        run: pnpm wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static >> "$GITHUB_OUTPUT"
+        run: | 
+              {
+                echo 'WRANGLER_OUTPUT<<EOF'
+                pnpm wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static >> "$GITHUB_OUTPUT"
+                echo EOF
+              } >> "$GITHUB_OUTPUT"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
@@ -143,9 +148,9 @@ jobs:
         # as long as this uses https://github.com/cloudflare/next-on-pages/blob/dc529d7efa8f8568ea8f71b5cdcf78df89be6c12/packages/next-on-pages/bin/index.js,
         # env vars won't get passed through to wrangler, so if wrangler will need them, write them to .env like the previous step
         env: {}
-      - name: Deploy preview build to Cloudflare Pages
+      - name: Deploy production build to Cloudflare Pages
         id: cloudflare
-        run: pnpm wrangler pages deploy --project-name tg-miniapp-production --branch "main" --commit-hash "$GITHUB_SHA" .vercel/output/static >> "$GITHUB_OUTPUT"
+        run: pnpm wrangler pages deploy --project-name tg-miniapp-production --branch "main" --commit-hash "$GITHUB_SHA" .vercel/output/static
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
