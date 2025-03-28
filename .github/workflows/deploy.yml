@@ -51,7 +51,6 @@ jobs:
       # env vars won't get passed through to wrangler, so if wrangler will need them, write them to .env like the previous step
       - run: pnpm pages:build
       - name: Deploy preview build to Cloudflare Pages
-        working-directory: ./app
         uses: mathiasvr/command-output@v1.1.0
         id: cloudflare
         with:
