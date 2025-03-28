@@ -54,7 +54,7 @@ jobs:
         uses: gh640/command-result-action@v1
         id: cloudflare
         with:
-          command: pnpm wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static
+          command: npx wrangler pages deploy --project-name "$CLOUDFLARE_PAGES_PROJECT_NAME" --branch "$GITHUB_REF_NAME" --commit-hash "$GITHUB_SHA" .vercel/output/static
           cwd: ./app
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
@@ -150,7 +150,7 @@ jobs:
         uses: gh640/command-result-action@v1
         id: cloudflare
         with:
-          command: pnpm wrangler pages deploy --project-name tg-miniapp-production --branch "main" --commit-hash "$GITHUB_SHA" .vercel/output/static
+          command: npx wrangler pages deploy --project-name tg-miniapp-production --branch "main" --commit-hash "$GITHUB_SHA" .vercel/output/static
           cwd: ./app
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_TOKEN }}
