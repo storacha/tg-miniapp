@@ -8,9 +8,10 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
+		"test": "pnpm lint",
 		"pages:build": "npx @cloudflare/next-on-pages",
-		"pages:preview": "npm run pages:build && wrangler pages dev",
-		"pages:deploy": "npm run pages:build && wrangler pages deploy"
+		"pages:preview": "pnpm run pages:build && wrangler pages dev",
+		"pages:deploy": "pnpm run pages:build && wrangler pages deploy"
 	},
 	"dependencies": {
 		"@radix-ui/react-avatar": "^1.1.2",
