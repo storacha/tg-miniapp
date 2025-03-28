@@ -3,7 +3,6 @@
 import { TabsContent } from '@/components/ui/tabs'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'

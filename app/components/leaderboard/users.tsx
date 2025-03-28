@@ -1,6 +1,4 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '../ui/button'
-import { Upload } from 'lucide-react'
 
 function User() {
 	return (

@@ -51,7 +51,8 @@ function SubmitOTP({ handleSendPin }: { handleSendPin: () => void }) {
 			setLoading(true)
 			setIsTgAuthorized(true)
 			setLoading(true)
-		} catch (error) {
+		} catch (e) {
+			console.error('error submitting otp: ', e)
 			setLoading(false)
 		}
 	}
@@ -96,7 +97,8 @@ export default function TelegramAuth() {
 			await authTelegram()
 			setIsPinSended(true)
 			setLoading(false)
-		} catch (error) {
+		} catch (e) {
+			console.error('error submitting otp: ', e)
 			setLoading(false)
 		}
 	}

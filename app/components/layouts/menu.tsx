@@ -1,4 +1,4 @@
-import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle, DrawerFooter } from '@/components/ui/drawer'
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AlignJustify, LogOut } from 'lucide-react'
 import { Button } from '../ui/button'
