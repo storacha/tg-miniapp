@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import connectToDatabase from '@/server/lib/mongodb'
-import { validateTelegramData, createOrUpdateUser, generateToken } from '@/server/lib/auth'
+import { validateTelegramData, generateToken } from '@/server/lib/auth'
 import { InitSessionQuerySchema } from '@/server/lib/validation'
 
 export async function POST(request: NextRequest) {

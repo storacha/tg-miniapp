@@ -8,7 +8,7 @@ export const configSchema = z.object({
 	TELEGRAM_API_HASH: z.string().min(1),
 	TELEGRAM_BOT_TOKEN: z.string().min(1),
 	SESSION_SECRET: z.string().min(1),
-	CLIENT_URL: z.string().url().min(1),
+	CLIENT_URL: z.string(),
 	STORACHA_EMAIL: z.string().email().optional(),
 	STORACHA_SPACE_DID: z.string().optional(),
 })

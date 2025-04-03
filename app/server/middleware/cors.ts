@@ -4,10 +4,15 @@ import getConfig from '../lib/config'
 
 export function cors(request: NextRequest) {
 	const config = getConfig()
-
 	const origin = request.headers.get('origin') || ''
+	const allowedOrigin = config.CLIENT_URL 
 
-	const allowedOrigin = config.CLIENT_URL === '*' ? origin : config.CLIENT_URL
+	if (allowedOrigin !== '*' && origin !== allowedOrigin) {
+        return NextResponse.json(
+            { success: false, message: 'CORS policy violation: Origin not allowed' },
+            { status: 403 }
+        )
+    }
 
 	const response = NextResponse.next()
 

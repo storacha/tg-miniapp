@@ -1,10 +1,37 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { useState, useEffect } from 'react'
+import { useLaunchParams } from '@telegram-apps/sdk-react'
+import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
-import { authTelegram } from '@/apis/authTelegram'
 import { useGlobal } from '@/zustand/global'
+
+// TODO: REMOVE THIS
+const TEST_PHONE_NUMBER = '+1234567890'
+
+async function requestOtp(){
+	console.log('Sending pin')
+	const {initDataRaw} = useLaunchParams()
+	
+	const response = await fetch('/api/session/request-otp', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			Authorization: `tma ${initDataRaw}`
+		},
+		body: JSON.stringify({
+			phoneNumber: TEST_PHONE_NUMBER, 
+		}),
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to send OTP');
+	}
+
+	// Handle the response (if needed)
+	const data = await response.json();
+	console.log('OTP sent successfully:', data);
+}
 
 function CountDown({ handleSendPin }: { handleSendPin: () => void }) {
 	const [count, setCount] = useState(59)
@@ -93,7 +120,7 @@ export default function TelegramAuth() {
 	async function handleSendPin() {
 		try {
 			setLoading(true)
-			await authTelegram()
+			await requestOtp()
 			setIsPinSended(true)
 			setLoading(false)
 		} catch (error) {

@@ -30,21 +30,3 @@ export function generateToken(user: IUserDocument) {
 
 	return jwt.sign(payload, config.SESSION_SECRET, { expiresIn: '1h' })
 }
-
-export async function createOrUpdateUser(userData: {
-	telegramId: string
-	firstName: string
-	lastName?: string
-	username?: string
-	photoUrl?: string
-	authDate: Date
-}): Promise<IUserDocument> {
-	const existingUser = await User.findOne({ telegramId: userData.telegramId }).exec()
-
-	if (existingUser) {
-		Object.assign(existingUser, userData)
-		return existingUser.save()
-	}
-	const createdUser = new User(userData)
-	return createdUser.save()
-}

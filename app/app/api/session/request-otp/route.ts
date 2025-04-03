@@ -6,7 +6,9 @@ import { RequestOtpDtoSchema } from '@/server/lib/validation'
 
 export async function POST(request: NextRequest) {
 	try {
-		await connectToDatabase()
+		const userId = request.headers.get('x-user-id')! // validation is done in middleware
+
+		// await connectToDatabase()
 
 		const body = await request.json()
 
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
 
 		const { phoneNumber } = body
 
-		const result = await requestOtp(phoneNumber)
+		const result = await requestOtp(userId, phoneNumber)
 
 		return NextResponse.json({
 			success: true,
