@@ -15,7 +15,7 @@ export async function getTelegramClient(userId: string) {
 	if (sessionToken){
 		sessionString = new StringSession(sessionToken)
 	}else{
-		const sessionToken = '' // get the session from DB
+		const sessionToken = '1AQAOMTQ5LjE1NC4xNzUuNTMBu7yAY1mGvN5mWhiAZeimGHNLkjjvqJhPCY9F6YnO7Xg7igLSyo0ERk/M/xoAgLM8sVkzn4X+E7LFhFv45WeHwH/uGMhvC+HwXNcUlW7zBtN2nv5glSO4dTnAgshR11xHv697zC0TrIpW1qRkPAWwi6Nx4d84SQXbGZEq6jlDybe3cjRRpcCsBvt+/yykqydu5Uhq3RQSj22ODGHZVnkbFDBmprq5x2r5CHohl8U6GPkrvAQ4EOh+gOIODgVd42T5CzpHShR6R3Hnmo5g5w+tqN0SrUoABL/5fEo6nRTwK5dATucMnoSEXj+oW8I75UDUTwLrdum33q1y/+G03NaW53M=' // get the session from DB
 		Cache.setSession(userId, sessionToken)
 		sessionString = new StringSession(sessionToken)
 	}
@@ -97,25 +97,40 @@ export async function validateOtp(phoneNumber: string, phoneCodeHash: string, co
 	}
 }
 
-export async function listUserChats(userId: string, paginationParams: { limit: number, offsetId: number}) {
+export async function listUserChats(userId: string, paginationParams: { limit: number, offsetId: number, offsetDate: number, offsetPeer?: string}) {
 	const client = await getTelegramClient(userId)
 
 	try {
-		// WIP: Implement pagination
-		const result = await client.getDialogs(paginationParams)
-
-		const chats = result.map((chat) => {
-			return {
+		let chats = []
+		let lastChat 
+		for await (const chat of client.iterDialogs(paginationParams)){
+			chats.push({
 				id: chat.id?.toString(),
 				title: chat.title,
 				telegramId: chat.entity?.id.toString(),
-				offsetDate: chat.date,
 				// @ts-ignore
 				photo: chat.entity?.photo?.strippedThumb,
-			}
-		})
+			})
+			lastChat = chat
+		}
+		
+		const lastMessage = lastChat?.message
+		const offsetId = lastMessage ? lastMessage.id : 0
+		const offsetDate = lastMessage ? lastMessage.date : 0
+		// @ts-ignore
+		const offsetPeerUsername = lastChat?.entity.username
+		const peer = String(lastChat?.id)
 
-		return chats
+		const offsetParams = {
+			offsetId,
+			offsetDate,
+			offsetPeer: offsetPeerUsername ?? peer,
+		}
+
+		return {
+			chats,
+			offsetParams
+		}
 	} catch (err) {
 		console.error('Error fetching chats:', err)
 		throw new Error('Failed to fetch chats')
