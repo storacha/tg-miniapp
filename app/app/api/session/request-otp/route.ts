@@ -1,14 +1,11 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import connectToDatabase from '@/server/lib/mongodb'
 import { requestOtp } from '@/server/lib/telegram'
 import { RequestOtpDtoSchema } from '@/server/lib/validation'
 
 export async function POST(request: NextRequest) {
 	try {
 		const userId = request.headers.get('x-user-id')! // validation is done in middleware
-
-		// await connectToDatabase()
 
 		const body = await request.json()
 

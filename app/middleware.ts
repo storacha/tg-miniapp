@@ -4,14 +4,25 @@ import { cors } from '@/server/middleware/cors'
 import { validateAuthorization } from '@/server/middleware/authMiddleware'
 
 export function middleware(request: NextRequest) {
+	const headers = new Headers(request.headers)
+	headers.delete('x-user-id');
+
 	const corsResponse = cors(request)
 
-	const valid = validateAuthorization(request)
-	if(!valid?.ok) {
-		return valid
+	if (!corsResponse.ok){
+		return corsResponse
 	}
 
-	return corsResponse
+	const isAuthorized = validateAuthorization(request)
+	if(!isAuthorized.ok) {
+		return isAuthorized
+	}
+
+	const response = NextResponse.next({request: { headers }});
+    corsResponse.headers.forEach((value, key) => response.headers.set(key, value));
+    isAuthorized.headers.forEach((value, key) => response.headers.set(key, value));
+
+    return response;
 }
 
 export const config = {

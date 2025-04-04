@@ -9,6 +9,7 @@ export interface IUser {
 	photoUrl?: string
 	authDate: Date,
 	isBot?: boolean
+	sessionToken?: string
 }
 
 export interface IUserDocument extends IUser, Document {}
@@ -21,6 +22,7 @@ const UserSchema = new Schema<IUserDocument>({
 	photoUrl: { type: String },
 	authDate: { type: Date, required: true },
 	isBot: { type: Boolean },
+	sessionToken: { type: String },
 })
 
 export const User: Model<IUserDocument> = mongoose.models.User || mongoose.model<IUserDocument>('User', UserSchema)

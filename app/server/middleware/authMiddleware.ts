@@ -43,7 +43,8 @@ export function validateAuthorization(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'User ID not found in authorization data' }, { status: 401 });
     }
 
-    request.headers.set('x-user-id', userId.toString());
+    const response = NextResponse.next()
+    response.headers.set('x-user-id', userId.toString())
 
-    return null
+    return response
 }
