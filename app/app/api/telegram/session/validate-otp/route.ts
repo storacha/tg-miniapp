@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { parse } from '@telegram-apps/init-data-node';
 
-import { validateOtp } from '@/server/lib/telegram'
+import { validateOtp } from '@/server/services/telegramService'
 import { ValidateOtpDtoSchema } from '@/server/lib/validation'
 import { IUser } from '@/server/models/user';
 

@@ -1,7 +1,14 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 
-import { listUserChats } from '@/server/lib/telegram'
+import { listUserChats } from '@/server/services/telegramService'
+
+/**
+ * TODO:
+ * - Add "last backup" date to each chat
+ * - Add "isPublicGroup"
+ * - Add "isPrivateGroup"
+ */
 
 export async function GET(request: NextRequest) {
     try {

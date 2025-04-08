@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import { requestOtp } from '@/server/lib/telegram'
+import { requestOtp } from '@/server/services/telegramService'
 import { RequestOtpDtoSchema } from '@/server/lib/validation'
 
 export async function POST(request: NextRequest) {

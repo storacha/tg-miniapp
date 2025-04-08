@@ -44,12 +44,21 @@ importers:
       '@radix-ui/react-tabs':
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@18.3.0)(@types/react@18.3.1)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+      '@storacha/client':
+        specifier: ^1.2.5
+        version: 1.2.5(encoding@0.1.13)
       '@telegram-apps/init-data-node':
         specifier: ^2.0.3
         version: 2.0.3(typescript@5.5.4)
       '@telegram-apps/sdk-react':
         specifier: ^2.0.20
         version: 2.0.20(@types/react@18.3.1)(react@19.0.0)
+      '@ucanto/interface':
+        specifier: ^10.2.0
+        version: 10.2.0
+      '@ucanto/principal':
+        specifier: ^9.0.2
+        version: 9.0.2
       '@web3-storage/w3up-client':
         specifier: ^17.2.0
         version: 17.2.0(encoding@0.1.13)
@@ -1631,8 +1640,32 @@ packages:
   '@sinonjs/fake-timers@10.3.0':
     resolution: {integrity: sha512-V4BG07kuYSUkTCSBHG8G8TNhM+F19jXFWnQtzj+we8DrkpSBCee9Z3Ms8yiGer/dlmhe35/Xdgyo3/0rQKg7YA==}
 
+  '@storacha/access@1.1.1':
+    resolution: {integrity: sha512-P1uaod5hrERJmy+wKiZVDN0bsLZ8AFoEbE2XT0NouUmbP1Upt4DUSFf/NK5OWbXDt/6qwWVKFS9AG22ylapNIg==}
+
+  '@storacha/blob-index@1.0.5':
+    resolution: {integrity: sha512-+4BGGM47Ypvx71zkdD2Y4xvkoDXQpZGM4Lawx036EEvQukmKvz/lvWmGFf9VknW3qUE2LYG1iTJWqDjl6waEjw==}
+    engines: {node: '>=16.15'}
+
+  '@storacha/capabilities@1.4.0':
+    resolution: {integrity: sha512-bwJAYFUHWZV/2oeuu1JX5NhlRmaY2ClOCnz9do1V2Teaa4hg3folOvzygjX7F9xX+jLcTwtrE5oFXlqjuOhKXA==}
+
+  '@storacha/client@1.2.5':
+    resolution: {integrity: sha512-VJVoVHOl9vzatHxfc96vyF4rzv+NfyeFYnivkinhfQGjoKJ6RREUVJwFBhdiqUKXX3xgw8ycgCMLFAWhzIUt7w==}
+    engines: {node: '>=18'}
+
+  '@storacha/did-mailto@1.0.2':
+    resolution: {integrity: sha512-0ee1t15yG4xdyIYz2iL+wP06VnGQf8zJ/xpszjf4sdP2sTgAVzx92LfEgHcuIbFF4sabcJXzHFAcMi8l8u64Mg==}
+    engines: {node: '>=16.15'}
+
+  '@storacha/filecoin-client@1.0.6':
+    resolution: {integrity: sha512-2ESQNvYqsStjktcn5PDHM97jAUEEUPIgCI9We85NTzMkIUTmSDWWOn3tI15MlwJo9Er+XBoogmQ2znQ/XaW0Dg==}
+
   '@storacha/one-webcrypto@1.0.1':
     resolution: {integrity: sha512-bD+vWmcgsEBqU0Dz04BR43SA03bBoLTAY29vaKasY9Oe8cb6XIP0/vkm0OS2UwKC13c8uRgFW4rjJUgDCNLejQ==}
+
+  '@storacha/upload-client@1.0.9':
+    resolution: {integrity: sha512-hW0LwhVb22FfmttuaJ1JK6Zw0/02OVS0TiBtmQCoPEhY3C1e/muZ2OYkzbeK2i+hGUUCI+s2l/JyzOIiVWKsjw==}
 
   '@swc/cli@0.6.0':
     resolution: {integrity: sha512-Q5FsI3Cw0fGMXhmsg7c08i4EmXCrcl+WnAxb6LYOLHw4JFFC3yzmx9LaXZ7QMbA+JZXbigU2TirI7RAfO0Qlnw==}
@@ -1886,6 +1919,9 @@ packages:
   '@types/react@18.3.1':
     resolution: {integrity: sha512-V0kuGBX3+prX+DQ/7r2qsv1NsdfnCLnTgnRJ1pYnxykBhGMz+qj+box5lq7XsO5mtZsBqpjwwTu/7wszPfMBcw==}
 
+  '@types/retry@0.12.1':
+    resolution: {integrity: sha512-xoDlM2S4ortawSWORYqsdU+2rxdh4LRW9ytc3zmT37RIKQh6IHyKwwtKhKis9ah8ol07DCkZxPt8BBvPjC6v4g==}
+
   '@types/retry@0.12.2':
     resolution: {integrity: sha512-XISRgDJ2Tc5q4TRqvgJtzsRkFYNJzZrhTdtMoGVBttwzzQJkPnS3WWTFc7kuDRoPtPakl+T+OfdEUjYJj7Jbow==}
 
@@ -1977,6 +2013,9 @@ packages:
 
   '@ucanto/transport@9.1.1':
     resolution: {integrity: sha512-3CR17nEemOVaTuMZa6waWgVL4sLxSPcxYvpaNeJ6NZo1rfsqdyRXOtbVV/RcI2BtUL0Cao6JM6P9+gdghfc5ng==}
+
+  '@ucanto/transport@9.2.0':
+    resolution: {integrity: sha512-w/CtD5LYEpGo/CxV78IiWalW99gNRPHKZ/DoOpart5QShozvnU//PwUqyqnGimZCDIrIq4LH6x92z2L/2k5OKQ==}
 
   '@ucanto/validator@9.1.0':
     resolution: {integrity: sha512-2JnEEZYc8kTZz+qbyL7LbI/TSpBRWLOchNhaRB5DTyj38FxMFQUXIB7gQ5lZHv49uYJGx/FXKPw0268WgJdEvg==}
@@ -2781,6 +2820,10 @@ packages:
   env-paths@3.0.0:
     resolution: {integrity: sha512-dtJUTepzMW3Lm/NPxRf3wP4642UWhjL2sQxc+ym2YMj1m/H2zDNQOlezafzkHwn6sMstjHTwG6iQQsctDW/b1A==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+
+  environment@1.1.0:
+    resolution: {integrity: sha512-xUtoPkMggbz0MPyPiIWr1Kp4aeWJjDZ6SMvURhimjdZgsRuDplF5/s9hcgGhyXMhs+6vpnuoiZ2kFiu3FMnS8Q==}
+    engines: {node: '>=18'}
 
   err-code@3.0.1:
     resolution: {integrity: sha512-GiaH0KJUewYok+eeY05IIgjtAe4Yltygk9Wqp1V5yVWLdhf0hYZchRjNIT9bb0mSwRcIusT3cx7PJUf3zEIfUA==}
@@ -4069,6 +4112,10 @@ packages:
   p-locate@5.0.0:
     resolution: {integrity: sha512-LaNjtRWUBY++zB5nE/NwcaoMylSPk+S+ZHNB1TzdbMJMny6dynpAGt7X/tl/QYq3TIeE6nxHppbo2LGymrG5Pw==}
     engines: {node: '>=10'}
+
+  p-retry@5.1.2:
+    resolution: {integrity: sha512-couX95waDu98NfNZV+i/iLt+fdVxmI7CbrrdC2uDWfPdUAApyxT4wmDlyOtR5KtTDmkDO0zDScDjDou9YHhd9g==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   p-retry@6.2.1:
     resolution: {integrity: sha512-hEt02O4hUct5wtwg4H4KcWgDdm+l1bOaEy/hWzd8xtXB9BqxTWBBhb+2ImAtH4Cv4rPjV76xN3Zumqk3k3AhhQ==}
@@ -6561,7 +6608,99 @@ snapshots:
     dependencies:
       '@sinonjs/commons': 3.0.1
 
+  '@storacha/access@1.1.1':
+    dependencies:
+      '@ipld/car': 5.4.0
+      '@ipld/dag-ucan': 3.4.5
+      '@scure/bip39': 1.5.4
+      '@storacha/capabilities': 1.4.0
+      '@storacha/did-mailto': 1.0.2
+      '@storacha/one-webcrypto': 1.0.1
+      '@ucanto/client': 9.0.1
+      '@ucanto/core': 10.3.1
+      '@ucanto/interface': 10.2.0
+      '@ucanto/principal': 9.0.2
+      '@ucanto/transport': 9.2.0
+      '@ucanto/validator': 9.1.0
+      bigint-mod-arith: 3.3.1
+      conf: 11.0.2
+      multiformats: 13.3.2
+      p-defer: 4.0.1
+      type-fest: 4.39.0
+      uint8arrays: 5.1.0
+
+  '@storacha/blob-index@1.0.5':
+    dependencies:
+      '@ipld/dag-cbor': 9.2.2
+      '@storacha/capabilities': 1.4.0
+      '@storacha/one-webcrypto': 1.0.1
+      '@ucanto/core': 10.3.1
+      '@ucanto/interface': 10.2.0
+      carstream: 2.3.0
+      multiformats: 13.3.2
+      uint8arrays: 5.1.0
+
+  '@storacha/capabilities@1.4.0':
+    dependencies:
+      '@ucanto/core': 10.3.1
+      '@ucanto/interface': 10.2.0
+      '@ucanto/principal': 9.0.2
+      '@ucanto/transport': 9.2.0
+      '@ucanto/validator': 9.1.0
+      '@web3-storage/data-segment': 5.3.0
+      uint8arrays: 5.1.0
+
+  '@storacha/client@1.2.5(encoding@0.1.13)':
+    dependencies:
+      '@ipld/dag-ucan': 3.4.5
+      '@storacha/access': 1.1.1
+      '@storacha/blob-index': 1.0.5
+      '@storacha/capabilities': 1.4.0
+      '@storacha/did-mailto': 1.0.2
+      '@storacha/filecoin-client': 1.0.6
+      '@storacha/upload-client': 1.0.9(encoding@0.1.13)
+      '@ucanto/client': 9.0.1
+      '@ucanto/core': 10.3.1
+      '@ucanto/interface': 10.2.0
+      '@ucanto/principal': 9.0.2
+      '@ucanto/transport': 9.2.0
+      environment: 1.1.0
+    transitivePeerDependencies:
+      - encoding
+
+  '@storacha/did-mailto@1.0.2': {}
+
+  '@storacha/filecoin-client@1.0.6':
+    dependencies:
+      '@ipld/dag-ucan': 3.4.5
+      '@storacha/capabilities': 1.4.0
+      '@ucanto/client': 9.0.1
+      '@ucanto/core': 10.3.1
+      '@ucanto/interface': 10.2.0
+      '@ucanto/transport': 9.2.0
+
   '@storacha/one-webcrypto@1.0.1': {}
+
+  '@storacha/upload-client@1.0.9(encoding@0.1.13)':
+    dependencies:
+      '@ipld/car': 5.4.0
+      '@ipld/dag-cbor': 9.2.2
+      '@ipld/dag-ucan': 3.4.5
+      '@ipld/unixfs': 3.0.0
+      '@storacha/blob-index': 1.0.5
+      '@storacha/capabilities': 1.4.0
+      '@storacha/filecoin-client': 1.0.6
+      '@ucanto/client': 9.0.1
+      '@ucanto/core': 10.3.1
+      '@ucanto/interface': 10.2.0
+      '@ucanto/transport': 9.2.0
+      '@web3-storage/data-segment': 5.3.0
+      ipfs-utils: 9.0.14(encoding@0.1.13)
+      multiformats: 13.3.2
+      p-retry: 5.1.2
+      varint: 6.0.0
+    transitivePeerDependencies:
+      - encoding
 
   '@swc/cli@0.6.0(@swc/core@1.10.16(@swc/helpers@0.5.15))(chokidar@4.0.3)':
     dependencies:
@@ -6833,6 +6972,8 @@ snapshots:
       '@types/prop-types': 15.7.14
       csstype: 3.1.3
 
+  '@types/retry@0.12.1': {}
+
   '@types/retry@0.12.2': {}
 
   '@types/send@0.17.4':
@@ -6978,6 +7119,11 @@ snapshots:
       one-webcrypto: 1.0.3
 
   '@ucanto/transport@9.1.1':
+    dependencies:
+      '@ucanto/core': 10.3.1
+      '@ucanto/interface': 10.2.0
+
+  '@ucanto/transport@9.2.0':
     dependencies:
       '@ucanto/core': 10.3.1
       '@ucanto/interface': 10.2.0
@@ -7879,6 +8025,8 @@ snapshots:
   entities@2.2.0: {}
 
   env-paths@3.0.0: {}
+
+  environment@1.1.0: {}
 
   err-code@3.0.1: {}
 
@@ -9371,6 +9519,11 @@ snapshots:
   p-locate@5.0.0:
     dependencies:
       p-limit: 3.1.0
+
+  p-retry@5.1.2:
+    dependencies:
+      '@types/retry': 0.12.1
+      retry: 0.13.1
 
   p-retry@6.2.1:
     dependencies:

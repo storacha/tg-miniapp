@@ -35,3 +35,25 @@ export const ValidateOtpDtoSchema = z.object({
 	phoneCodeHash: z.string(),
 	code: z.string(),
 })
+
+export const BackupChatsDtoSchema = z.object({
+	chatIds: z.array(z.string()).nonempty('At least one chat ID is required'),
+	startDate: z
+		.number()
+		.optional()
+		.refine((timestamp) => !timestamp || (timestamp > 0 && timestamp <= 9999999999), {
+			message: 'startDate must be a positive number in seconds',
+		}),
+	lastDate: z
+		.number()
+		.optional()
+		.refine((timestamp) => !timestamp || (timestamp > 0 && timestamp <= 9999999999), {
+			message: 'lastDate must be a positive number in seconds',
+		}),
+}).refine(
+	(data) => !data.startDate || !data.lastDate || data.startDate < data.lastDate,
+	{
+		message: 'startDate must be smaller than lastDate',
+		path: ['startDate', 'lastDate'],
+	}
+)

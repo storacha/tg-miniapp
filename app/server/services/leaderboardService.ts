@@ -1,7 +1,7 @@
 import { Leaderboard } from '../models/leaderboard'
 import type { ILeaderboardDocument } from '../models/leaderboard'
 import { User } from '../models/user'
-import connectToDatabase from './mongodb'
+import connectToDatabase from '../lib/db'
 
 export async function updateUserPoints(
 	userId: string,

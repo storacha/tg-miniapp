@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import connectToDatabase from '@/server/lib/mongodb'
+import connectToDatabase from '@/server/lib/db'
 import { Backup } from '@/server/models/backup'
-import { uploadToStoracha, calculatePoints } from '@/server/lib/storacha'
-import { updateUserPoints } from '@/server/lib/leaderboard'
+import { uploadToStoracha, calculatePoints } from '@/server/services/storachaService'
+import { updateUserPoints } from '@/server/services/leaderboardService'
 import crypto from 'node:crypto'
 
 export async function GET(request: NextRequest) {

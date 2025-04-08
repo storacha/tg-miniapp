@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
-import connectToDatabase from '@/server/lib/mongodb'
-import { getLeaderboard, getUserRank } from '@/server/lib/leaderboard'
+import connectToDatabase from '@/server/lib/db'
+import { getLeaderboard, getUserRank } from '@/server/services/leaderboardService'
 
 export async function GET(request: NextRequest) {
 	try {
