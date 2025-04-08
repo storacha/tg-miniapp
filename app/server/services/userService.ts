@@ -14,10 +14,10 @@ export async function createOrUpdateUser(userData: IUser): Promise<IUserDocument
 	return createdUser.save()
 }
 
-export async function findUserByTelegramId(telegramId: number) {
+export async function findUserByTelegramId(telegramId: string | number) {
     await connectToDatabase()
     try {
-        const user = await User.findOne({ telegramId });
+        const user = await User.findOne({ telegramId: Number(telegramId) });
         if (!user) {
             console.log(`User with telegramId ${telegramId} not found`);
             return null;

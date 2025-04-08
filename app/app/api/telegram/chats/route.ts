@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     try {
         const userId = request.headers.get('x-user-id')! // validation is done in middleware
         const searchParams = request.nextUrl.searchParams
-        const limit = Number(searchParams.get('limit')) || 3
+        const limit = Number(searchParams.get('limit')) || 15
         const offsetId = searchParams.get('offsetId')
         const offsetDate = searchParams.get('offsetDate')
         const offsetPeer = searchParams.get('offsetPeer')

@@ -45,7 +45,7 @@ export async function uploadToStoracha(userId: string, content: string) {
 		console.log('Uploaded to Storacha:', cid)
 
 		const backup = await BackupService.registerBackup({
-			userTelegramId: Number(userId),
+			userTelegramId: userId,
 			cid: cid.toString(),
 			space,
 			size,
@@ -53,6 +53,8 @@ export async function uploadToStoracha(userId: string, content: string) {
 		})
 
 		console.log('Backup registered:', backup._id)
+
+		// TODO: update leaderboard
 
 		return {cid: cid.toString(), points}
 	} catch (err) {
