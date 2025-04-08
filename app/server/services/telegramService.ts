@@ -16,7 +16,8 @@ export async function getTelegramClient(userId: string) {
 		if (sessionToken){
 			sessionString = new StringSession(sessionToken)
 		}else{
-			const sessionToken = '' // get the session from DB
+			const user = await UserService.findUserByTelegramId(Number(userId))
+			const sessionToken = user ? user.sessionToken : ''
 			Cache.setSession(userId, sessionToken)
 			sessionString = new StringSession(sessionToken)
 		}

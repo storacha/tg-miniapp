@@ -13,7 +13,7 @@ async function requestOtp(){
 	console.log('Sending pin')
 	const {initDataRaw} = useLaunchParams()
 	
-	const response = await fetch('/api/session/request-otp', {
+	const response = await fetch('/api/telegram/session/request-otp', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',

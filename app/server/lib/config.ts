@@ -14,7 +14,6 @@ export const configSchema = z.object({
 	SERVER_PRINCIPAL: z.string(),
 	POINTS_PER_BYTE: z.coerce.number().positive().default(10),
 	ENCRYPT_KEY: z.string().min(10),
-	SALT: z.string().min(10),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -34,7 +33,6 @@ export function getConfig(): Config {
 			STORACHA_SPACE_DID: process.env.STORACHA_SPACE_DID,
 			SERVER_PRINCIPAL: process.env.SERVER_PRINCIPAL,
 			ENCRYPT_KEY: process.env.ENCRYPT_KEY,
-			SALT: process.env.SALT,
 		})
 	} catch (error) {
 		console.error('Invalid environment variables:', error)
