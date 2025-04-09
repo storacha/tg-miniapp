@@ -10,12 +10,12 @@ interface User {
 interface GlobalState {
 	isOnboarded: boolean
 	isTgAuthorized: boolean
-	isStrochaAuthorized: boolean
+	isStorachaAuthorized: boolean
 	user: User | null
 
 	setIsOnboarded: (isOnboarded: boolean) => void
 	setIsTgAuthorized: (isTgAuthorized: boolean) => void
-	setIsStrochaAuthorized: (isStrochaAuthorized: boolean) => void
+	setIsStorachaAuthorized: (isStorachaAuthorized: boolean) => void
 	setUser: (user: User) => void
 }
 
@@ -24,11 +24,11 @@ export const useGlobal = create<GlobalState>()(
 		(set) => ({
 			isOnboarded: false,
 			isTgAuthorized: false,
-			isStrochaAuthorized: false,
+			isStorachaAuthorized: false,
 			user: null,
 			setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
 			setIsTgAuthorized: (isTgAuthorized) => set({ isTgAuthorized }),
-			setIsStrochaAuthorized: (isStrochaAuthorized) => set({ isStrochaAuthorized }),
+			setIsStorachaAuthorized: (isStorachaAuthorized) => set({ isStorachaAuthorized }),
 			setUser: (user) => set({ user }),
 		}),
 		{

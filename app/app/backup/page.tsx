@@ -12,7 +12,7 @@ import { useGlobal } from '@/zustand/global'
 export default function Page() {
 	const [step, setStep] = useState(0)
 	const router = useRouter()
-	const { isStrochaAuthorized } = useGlobal()
+	const { isStorachaAuthorized } = useGlobal()
 
 	function handleBack() {
 		if (step === 0) {
@@ -33,8 +33,8 @@ export default function Page() {
 				</div>
 			)}
 
-			{step === 1 && !isStrochaAuthorized && <Connect />}
-			{step === 1 && isStrochaAuthorized && (
+			{step === 1 && !isStorachaAuthorized && <Connect />}
+			{step === 1 && isStorachaAuthorized && (
 				<div className="absolute bottom-0 w-full p-5">
 					<Button className="w-full" onClick={() => setStep(step + 1)}>
 						Continue Backup
