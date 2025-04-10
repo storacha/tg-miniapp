@@ -30,7 +30,7 @@ export default function BackedChats() {
 		<div className="flex flex-col gap-5">
 			<h1 className="px-5">Backed up Chats</h1>
 			{chats.length === 0 && (
-				<div className="flex flex-col h-[50vh] justify-center items-center px-10 pt-20 gap-2">
+				<div className="flex flex-col justify-center items-center px-10 pt-20 gap-2">
 					<div className="text-foreground/40 p-2">
 						<ShieldCheck size={30} />
 					</div>

@@ -5,7 +5,7 @@ import { Menu } from './menu'
 export function Header({ isSinglePage = false, back }: { isSinglePage?: boolean; back?: () => void }) {
 	const { back: goBack } = useRouter()
 	return (
-		<header className="flex justify-between items-center p-5">
+		<header className="flex justify-between items-center p-5 sticky top-0">
 			{isSinglePage ? (
 				<button type="button" onClick={back || goBack}>
 					<MoveLeft />

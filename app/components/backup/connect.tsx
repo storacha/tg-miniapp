@@ -15,7 +15,7 @@ export function Connect() {
 	return (
 		<Drawer>
 			<DrawerTrigger asChild>
-				<div className=" absolute bottom-0 w-full p-5">
+				<div className="sticky bottom-0 w-full p-5">
 					<Button className="w-full">Continue</Button>
 				</div>
 			</DrawerTrigger>

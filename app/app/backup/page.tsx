@@ -26,7 +26,7 @@ export default function Page() {
 			{step === 0 && <Chats />}
 			{step === 1 && <Dates />}
 			{step === 0 && (
-				<div className="absolute bottom-0 w-full p-5">
+				<div className="sticky bottom-0 w-full p-5">
 					<Button className="w-full" onClick={() => setStep(step + 1)}>
 						Continue
 					</Button>
@@ -35,7 +35,7 @@ export default function Page() {
 
 			{step === 1 && !isStrochaAuthorized && <Connect />}
 			{step === 1 && isStrochaAuthorized && (
-				<div className="absolute bottom-0 w-full p-5">
+				<div className="sticky bottom-0 w-full p-5">
 					<Button className="w-full" onClick={() => setStep(step + 1)}>
 						Continue Backup
 					</Button>
