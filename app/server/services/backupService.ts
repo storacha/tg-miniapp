@@ -49,3 +49,9 @@ export async function listUserBackups(userTelegramId: string) {
     const backups = await Backup.find({ userId: user._id })
     return backups
 }
+
+
+export async function retrieveBackup(userId: string, cid: string) {
+    // fetch storacha gateway
+    // decrypt
+}

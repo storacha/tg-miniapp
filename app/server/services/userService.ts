@@ -15,8 +15,8 @@ export async function createOrUpdateUser(userData: IUser): Promise<IUserDocument
 }
 
 export async function findUserByTelegramId(telegramId: string | number) {
-    await connectToDatabase()
     try {
+        await connectToDatabase()
         const user = await User.findOne({ telegramId: Number(telegramId) });
         if (!user) {
             console.log(`User with telegramId ${telegramId} not found`);
