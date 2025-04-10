@@ -5,11 +5,26 @@ import { Button } from '../ui/button'
 import { Progress } from '@/components/ui/progress'
 import { useTelegram } from '@/providers/telegram'
 import { useGlobal } from '@/zustand/global'
+import { MouseEventHandler } from 'react'
 
 export function Menu() {
-	const [{ user }] = useTelegram()
-	const { phoneNumber } = useGlobal()
+	const [{ client, user }] = useTelegram()
+	const { phoneNumber, setIsTgAuthorized, setIsStrochaAuthorized, setPhoneNumber } = useGlobal()
 	const initials = user?.firstName ? user.firstName[0] + (user?.lastName?.[0] ?? '') : ''
+
+	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = e => {
+		e.preventDefault()
+		if (!confirm('Are you sure you want to log out?')) return
+		// TODO: I don't think this actually does anything 😱
+		// There's no client logout method (there is in Python)
+		client.session.delete()
+		// TODO: remove other stuff in global?
+		setPhoneNumber('')
+		// TODO: remove Storacha auth data
+		setIsTgAuthorized(false)
+		setIsStrochaAuthorized(false)
+	}
+
 	return (
 		<Drawer>
 			<DrawerTrigger>
@@ -28,7 +43,7 @@ export function Menu() {
 								<p className="text-sm text-blue-600">{phoneNumber}</p>
 							</div>
 						</div>
-						<button type="button">
+						<button type="button" onClick={handleLogOutClick}>
 							<LogOut />
 						</button>
 					</div>
