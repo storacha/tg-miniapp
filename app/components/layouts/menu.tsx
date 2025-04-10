@@ -10,7 +10,7 @@ import { MouseEventHandler } from 'react'
 export function Menu() {
 	const [{ client, user }] = useTelegram()
 	const { phoneNumber, setIsTgAuthorized, setIsStrochaAuthorized, setPhoneNumber } = useGlobal()
-	const initials = user?.firstName ? user.firstName[0] + (user?.lastName?.[0] ?? '') : ''
+	const initials = user?.firstName ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase() : ''
 
 	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = e => {
 		e.preventDefault()
