@@ -4,18 +4,9 @@ import { useState, useEffect, FormEventHandler } from 'react'
 import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { useGlobal } from '@/zustand/global'
-import { TelegramClient, Api } from '@/vendor/telegram'
-import { StoreSession } from '@/vendor/telegram/sessions'
+import { Api } from '@/vendor/telegram'
 import { Input } from './ui/input'
-
-const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
-const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
-
-if (isNaN(apiId)) {
-	throw new Error('missing environment variable NEXT_PUBLIC_TELEGRAM_API_ID')
-} else if (!apiHash) {
-	throw new Error('missing environment variable NEXT_PUBLIC_TELEGRAM_API_HASH')
-}
+import { useTelegram } from '@/providers/telegram'
 
 function CountDown({ onResend }: { onResend: () => unknown }) {
 	const [count, setCount] = useState(59)
@@ -51,12 +42,10 @@ function CountDown({ onResend }: { onResend: () => unknown }) {
 	return <p className="text-xl font-semibold">00:{count}</p>
 }
 
-function OTPForm({ onCode, onResend, loading, error }: { onCode: (c: string) => unknown, onResend: () => unknown, loading: boolean, error?: Error }) {
-	const [code, setCode] = useState('')
-
+function OTPForm({ onSubmit, onCodeChange, onResend, code, loading, error }: { onSubmit: () => unknown, onCodeChange: (code: string) => unknown, onResend: () => unknown, code: string, loading: boolean, error?: Error }) {
 	const handleSubmit: FormEventHandler<HTMLFormElement> = e => {
 		e.preventDefault()
-		onCode(code)
+		onSubmit()
 	}
 
 	const disabled = code === null || code.length < 5 || loading
@@ -66,7 +55,7 @@ function OTPForm({ onCode, onResend, loading, error }: { onCode: (c: string) => 
 			<div className="flex flex-col items-center gap-2">
 				<h1 className="text-primary font-semibold text-2xl text-center">Storacha</h1>
 				<div className="py-10 flex flex-col items-center gap-5">
-					<InputOTP maxLength={5} onChange={(value) => setCode(value)}>
+					<InputOTP maxLength={5} onChange={(value) => onCodeChange(value)}>
 						<InputOTPGroup>
 							<InputOTPSlot index={0} />
 							<InputOTPSlot index={1} />
@@ -75,6 +64,7 @@ function OTPForm({ onCode, onResend, loading, error }: { onCode: (c: string) => 
 							<InputOTPSlot index={4} />
 						</InputOTPGroup>
 					</InputOTP>
+					{error && <p className="text-red-600 text-center text-xs my-2">{error.message}</p>}
 				</div>
 			</div>
 			<div className="flex flex-col items-center gap-5">
@@ -91,42 +81,42 @@ function OTPForm({ onCode, onResend, loading, error }: { onCode: (c: string) => 
 }
 
 export default function TelegramAuth() {
-	const [phone, setPhone] = useState('')
-	const [isOTPSent, setOTPSent] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<Error>()
-	const [client, setClient] = useState<TelegramClient>()
-	const [codeHash, setCodeHash] = useState<string>()
-	const { setIsTgAuthorized } = useGlobal()
+	const [codeHash, setCodeHash] = useState('')
+	const [code, setCode] = useState('')
+	const { setIsTgAuthorized, phoneNumber, setPhoneNumber } = useGlobal()
+	const [{ client }] = useTelegram()
 
 	const handlePhoneSubmit: FormEventHandler<HTMLFormElement> = async e => {
 		e.preventDefault()
 		try {
 			setLoading(true)
-			const session = new StoreSession('tg-session')
-			const client = new TelegramClient(session, apiId, apiHash, { connectionRetries: 5 })
-			await client.connect()
-			setClient(client)
+			setError(undefined)
 
-			const { phoneCodeHash } = await client.sendCode({ apiHash, apiId }, phone)
+			if (!client.connected) {
+				await client.connect()
+			}
+			const { phoneCodeHash } = await client.sendCode(client, phoneNumber)
 			setCodeHash(phoneCodeHash)
-			setOTPSent(true)
-		} catch (err) {
+		} catch (err: any) {
 			console.error('requesting OTP:', err)
+			setError(err)
 		} finally {
 			setLoading(false)
 		}
 	}
-	const handleCode = async (code: string) => {
+	const handleCodeSubmit = async () => {
 		try {
-			if (!client) throw new Error('missing client')
+			setLoading(true)
+			setError(undefined)
 
-				console.log('Signing in', phone, code, codeHash)
-
-			await client.connect()
+			if (!client.connected) {
+				await client.connect()
+			}
 			const result = await client.invoke(
 				new Api.auth.SignIn({
-					phoneNumber: phone,
+					phoneNumber,
 					phoneCode: code,
 					phoneCodeHash: codeHash,
 				}),
@@ -145,13 +135,12 @@ export default function TelegramAuth() {
 	}
 
 	const handleResend = async () => {
-		if (!client) return
-		const { phoneCodeHash } = await client.sendCode({ apiHash, apiId }, phone)
+		const { phoneCodeHash } = await client.sendCode(client, phoneNumber)
 		setCodeHash(phoneCodeHash)
 	}
 
-	if (isOTPSent) {
-		return <OTPForm onCode={handleCode} onResend={handleResend} loading={loading} error={error} />
+	if (codeHash) {
+		return <OTPForm code={code} onCodeChange={c => { setError(undefined); setCode(c) }} onSubmit={handleCodeSubmit} onResend={handleResend} loading={loading} error={error} />
 	}
 
 	return (
@@ -167,8 +156,12 @@ export default function TelegramAuth() {
 						<p className="text-blue-600/80 text-center my-2">
 							Your phone number:
 						</p>
-						<Input className="bg-white" type="tel" placeholder="e.g. +12223334455" value={phone} onChange={e => setPhone(e.target.value)} required />
-						<p className="text-blue-600/80 text-center text-xs my-2">Please enter your number in <a href="https://telegram.org/faq#login-and-sms" target="_blank" className='underline'>international format</a>.</p>
+						<Input className="bg-white" type="tel" placeholder="e.g. +12223334455" value={phoneNumber} onChange={e => { setError(undefined); setPhoneNumber(e.target.value) }} required />
+						{error ? (
+							<p className="text-red-600 text-center text-xs my-2">{error.message}</p> 
+						) : (
+							<p className="text-blue-600/80 text-center text-xs my-2">Please enter your number in <a href="https://telegram.org/faq#login-and-sms" target="_blank" className='underline'>international format</a>.</p>
+						)}
 					</div>
 				</div>
 			</div>
@@ -176,7 +169,7 @@ export default function TelegramAuth() {
 				<p className="text-center text-blue-600/80 mb-3">
 					You will receive a code in Telegram. Please enter it in the next step to continue.
 				</p>
-				<Button type="submit" className="w-full" disabled={loading || !phone}>
+				<Button type="submit" className="w-full" disabled={loading || !phoneNumber}>
 					{loading ? 'Sending...' : 'Send Pin'}
 				</Button>
 			</div>
