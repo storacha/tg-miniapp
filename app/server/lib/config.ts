@@ -8,9 +8,12 @@ export const configSchema = z.object({
 	TELEGRAM_API_HASH: z.string().min(1),
 	TELEGRAM_BOT_TOKEN: z.string().min(1),
 	SESSION_SECRET: z.string().min(1),
-	CLIENT_URL: z.string().url().min(1),
+	CLIENT_URL: z.string(),
 	STORACHA_EMAIL: z.string().email().optional(),
 	STORACHA_SPACE_DID: z.string().optional(),
+	SERVER_PRINCIPAL: z.string(),
+	POINTS_PER_BYTE: z.coerce.number().positive().default(10),
+	ENCRYPT_KEY: z.string().min(10),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -28,6 +31,8 @@ export function getConfig(): Config {
 			CLIENT_URL: process.env.CLIENT_URL,
 			STORACHA_EMAIL: process.env.STORACHA_EMAIL,
 			STORACHA_SPACE_DID: process.env.STORACHA_SPACE_DID,
+			SERVER_PRINCIPAL: process.env.SERVER_PRINCIPAL,
+			ENCRYPT_KEY: process.env.ENCRYPT_KEY,
 		})
 	} catch (error) {
 		console.error('Invalid environment variables:', error)

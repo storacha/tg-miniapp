@@ -12,11 +12,13 @@ interface GlobalState {
 	isTgAuthorized: boolean
 	isStrochaAuthorized: boolean
 	user: User | null
+	phoneNumber: string
 
 	setIsOnboarded: (isOnboarded: boolean) => void
 	setIsTgAuthorized: (isTgAuthorized: boolean) => void
 	setIsStrochaAuthorized: (isStrochaAuthorized: boolean) => void
 	setUser: (user: User) => void
+	setPhoneNumber: (phone: string) => void
 }
 
 export const useGlobal = create<GlobalState>()(
@@ -26,10 +28,12 @@ export const useGlobal = create<GlobalState>()(
 			isTgAuthorized: false,
 			isStrochaAuthorized: false,
 			user: null,
+			phoneNumber: '',
 			setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
 			setIsTgAuthorized: (isTgAuthorized) => set({ isTgAuthorized }),
 			setIsStrochaAuthorized: (isStrochaAuthorized) => set({ isStrochaAuthorized }),
 			setUser: (user) => set({ user }),
+			setPhoneNumber: (phoneNumber) => set({ phoneNumber })
 		}),
 		{
 			name: 'global-storage',

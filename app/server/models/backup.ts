@@ -1,29 +1,27 @@
-import mongoose, { Schema } from 'mongoose'
-import type { Document, Model } from 'mongoose'
+import mongoose, { Schema, Types, Document, Model } from 'mongoose';
 
 export interface IBackup {
-	backupId: string
-	userId: string
-	data: string
-	createdAt: Date
-	restoredAt?: Date
-	size: number // Size in bytes
-	storachaCid?: string // Content ID from Storacha
-	points: number // Points awarded for this backup
+    userId: Types.ObjectId
+    space: string
+    cid: string
+    size: number
+    points: number
 }
 
 export interface IBackupDocument extends IBackup, Document {}
 
-const BackupSchema = new Schema<IBackupDocument>({
-	backupId: { type: String, required: true, unique: true },
-	userId: { type: String, required: true },
-	data: { type: String, required: true },
-	createdAt: { type: Date, required: true },
-	restoredAt: { type: Date },
-	size: { type: Number, required: true, default: 0 },
-	storachaCid: { type: String },
-	points: { type: Number, default: 0 },
-})
+const BackupSchema = new Schema<IBackupDocument>(
+    {
+        userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        space: { type: String, required: true },
+        cid: { type: String, required: true },
+        size: { type: Number, required: true },
+        points: { type: Number, default: 0 },
+    },
+    {
+        timestamps: { createdAt: true, updatedAt: false }, // createdAt will be automatically managed by Mongoose
+    }
+)
 
 export const Backup: Model<IBackupDocument> =
-	(mongoose.models.Backup as Model<IBackupDocument>) || mongoose.model<IBackupDocument>('Backup', BackupSchema)
+    (mongoose.models.Backup as Model<IBackupDocument>) || mongoose.model<IBackupDocument>('Backup', BackupSchema)
