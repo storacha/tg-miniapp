@@ -1,34 +1,20 @@
 'use client'
 
 import type { PropsWithChildren } from 'react'
-import { initData, useLaunchParams, useSignal } from '@telegram-apps/sdk-react'
 import { useDidMount } from '../hooks/useDidMount'
 import { ErrorBoundary } from './error-boundary'
 import { ErrorPage } from './error-page'
-import { useTelegramMock } from '../hooks/useTelegramMock'
-import { useClientOnce } from '../hooks/useClientOnce'
-import { init } from '../utils/core'
 import LogoSplash from './svgs/logo-splash'
+import { Provider as TelegramProvider } from '@/providers/telegram'
+import { init, restoreInitData } from '@telegram-apps/sdk-react'
 
-function RootInner({ children }: PropsWithChildren) {
-	const isDev = process.env.NODE_ENV === 'development'
+const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
+const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
 
-	if (isDev) {
-		// eslint-disable-next-line react-hooks/rules-of-hooks
-		// useTelegramMock()
-	}
-
-	const lp = useLaunchParams()
-	const debug = isDev || lp.startParam === 'debug'
-
-	useClientOnce(() => {
-		init(debug)
-	})
-
-	const initDataUser = useSignal(initData.user)
-	// console.log('initDataUser', initDataUser)
-	//TODO: Add Global Context Provider
-	return <div>{children}</div>
+// Initialize telegram react SDK
+if (typeof window !== 'undefined') {
+	init()
+	restoreInitData()
 }
 
 export function Root(props: PropsWithChildren) {
@@ -36,8 +22,9 @@ export function Root(props: PropsWithChildren) {
 
 	return didMount ? (
 		<ErrorBoundary fallback={ErrorPage}>
-			<div {...props} />
-			{/* <RootInner {...props} /> */}
+			<TelegramProvider apiId={apiId} apiHash={apiHash}>
+				<div {...props} />
+			</TelegramProvider>
 		</ErrorBoundary>
 	) : (
 		<div className="h-screen flex justify-center items-center bg-primary">
