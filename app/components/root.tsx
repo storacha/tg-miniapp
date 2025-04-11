@@ -7,9 +7,17 @@ import { ErrorPage } from './error-page'
 import LogoSplash from './svgs/logo-splash'
 import { Provider as TelegramProvider } from '@/providers/telegram'
 import { init, restoreInitData } from '@telegram-apps/sdk-react'
+import { Provider as StorachaProvider } from '@storacha/ui-react'
+import { uploadServiceConnection } from '@storacha/client/service'
+import { parse as parseDID } from '@ipld/dag-ucan/did'
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
+
+// TODO: Temporary, until service respects `did:web:up.storacha.network`
+const serviceID = parseDID('did:web:web3.storage')
+// TODO: Temporary, until service respects `did:web:up.storacha.network`
+const connection = uploadServiceConnection({ id: serviceID })
 
 // Initialize telegram react SDK
 if (typeof window !== 'undefined') {
@@ -23,7 +31,9 @@ export function Root(props: PropsWithChildren) {
 	return didMount ? (
 		<ErrorBoundary fallback={ErrorPage}>
 			<TelegramProvider apiId={apiId} apiHash={apiHash}>
-				<div {...props} />
+				<StorachaProvider servicePrincipal={serviceID} connection={connection}>
+					<div {...props} />
+				</StorachaProvider>
 			</TelegramProvider>
 		</ErrorBoundary>
 	) : (

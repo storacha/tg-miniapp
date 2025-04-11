@@ -1,39 +1,49 @@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
-import { Connect } from '@/components/backup/connect'
+import { Button } from '../ui/button'
+import { FormEventHandler } from 'react'
 
-export type Period = [from: number, to: number]
+/**
+ * A period is either a specific to and from time or just a from time with
+ * implicit to - now. Values are expressed as seconds since unix epoch.
+ */
+export type Period = [from: number, to: number] | [from: number]
 
 export interface DatesProps {
 	period: Period
 	onPeriodChange: (period: Period) => unknown
+	onSubmit: () => unknown
 }
 
-const day = 1000 * 60 * 60 * 24
-const month = 30 * day
+const day = 60 * 60 * 24 // in seconds
+const month = 30 * day // in seconds
 
 const durationNames: Record<string, number> = {
 	twoWeeks: 2 * 7 * day,
 	month,
-	sixMonths: 6 * month,
-	allTime: Infinity
+	sixMonths: 6 * month
 }
 
 const durationValues =
 	Object.fromEntries(Object.entries(durationNames).map(([k, v]) => [v, k]))
 
-const toDurationName = ([from, to]: [number, number]) => 
-	durationValues[to - from] ?? 'allTime'
+const toDurationName = ([from, to]: Period) => 
+	durationValues[(to ?? Infinity) - from] ?? 'allTime'
 
-export default function Dates({ period, onPeriodChange }: DatesProps) {
+export default function Dates({ period, onPeriodChange, onSubmit }: DatesProps) {
 	const handleValueChange = (value: string) => {
-		const d = durationNames[value] ?? Infinity
-		const now = Date.now()
-		onPeriodChange(d === Infinity ? [0, Infinity] : [now - d, now])
+		const d = durationNames[value]
+		const now = Math.floor(Date.now() / 1000)
+		onPeriodChange(d ? [now - d, now] : [0])
+	}
+
+	const handleSubmit: FormEventHandler = e => {
+		e.preventDefault()
+		onSubmit()
 	}
 
 	return (
-		<div>
+		<form onSubmit={handleSubmit}>
 			<div className="w-full pt-5 px-5 flex flex-col text-center justify-center gap-2 pb-10 border-b border-primary/10">
 				<h1 className="text-xl font-semibold text-foreground text-center">Backup Chats</h1>
 				<p className="text-sm">Choose a time range to back up your chats.</p>
@@ -58,6 +68,9 @@ export default function Dates({ period, onPeriodChange }: DatesProps) {
 					</div>
 				</RadioGroup>
 			</div>
-		</div>
+			<div className="sticky bottom-0 w-full p-5">
+				<Button type="submit" className="w-full">Continue</Button>
+			</div>
+		</form>
 	)
 }
