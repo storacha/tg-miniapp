@@ -1,7 +1,7 @@
 'use client'
 
 import { Layouts } from '@/components/layouts'
-import Dates from '@/components/backup/dates'
+import Dates, { Period } from '@/components/backup/dates'
 import Chats from '@/components/backup/chats'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -14,6 +14,7 @@ export default function Page() {
 	const router = useRouter()
 	const { isStrochaAuthorized } = useGlobal()
 	const [chats, setChats] = useState<Set<bigint>>(new Set())
+	const [period, setPeriod] = useState<Period>([0, Infinity])
 
 	function handleBack() {
 		if (step === 0) {
@@ -32,7 +33,7 @@ export default function Page() {
 					</Button>
 				</div>
 			)}
-			{step === 1 && <Dates />}
+			{step === 1 && <Dates period={period} onPeriodChange={setPeriod} />}
 			{step === 1 && !isStrochaAuthorized && <Connect />}
 			{step === 1 && isStrochaAuthorized && (
 				<div className="sticky bottom-0 w-full p-5">

@@ -55,7 +55,7 @@ function DialogItem({ dialog, selected, onClick }: { dialog: Dialog, selected: b
 	)
 }
 
-interface ChatsProps {
+export interface ChatsProps {
 	selections: Set<bigint>
 	onSelectionsChange: (selections: Set<bigint>) => unknown
 }
