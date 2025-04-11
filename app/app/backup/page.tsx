@@ -13,6 +13,7 @@ export default function Page() {
 	const [step, setStep] = useState(0)
 	const router = useRouter()
 	const { isStrochaAuthorized } = useGlobal()
+	const [chats, setChats] = useState<Set<bigint>>(new Set())
 
 	function handleBack() {
 		if (step === 0) {
@@ -23,16 +24,15 @@ export default function Page() {
 
 	return (
 		<Layouts isSinglePage back={() => handleBack()}>
-			{step === 0 && <Chats />}
-			{step === 1 && <Dates />}
+			{step === 0 && <Chats selections={chats} onSelectionsChange={s => setChats(s)} />}
 			{step === 0 && (
 				<div className="sticky bottom-0 w-full p-5">
-					<Button className="w-full" onClick={() => setStep(step + 1)}>
+					<Button className="w-full" onClick={() => setStep(step + 1)} disabled={!chats.size}>
 						Continue
 					</Button>
 				</div>
 			)}
-
+			{step === 1 && <Dates />}
 			{step === 1 && !isStrochaAuthorized && <Connect />}
 			{step === 1 && isStrochaAuthorized && (
 				<div className="sticky bottom-0 w-full p-5">
