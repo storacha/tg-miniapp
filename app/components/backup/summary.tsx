@@ -26,12 +26,12 @@ export const Summary = ({ chats, space, period, onSubmit }: SummaryProps) => {
           <p>{chats.size.toLocaleString()} Chat{chats.size === 1 ? '' : 's'}</p>
         </div>
         <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
-          {period[0] === 0 && period[1] === Infinity ? (
+          {period[0] === 0 && period[1] == null ? (
             <p>Period: All time</p>
           ) : (
             <>
-              <p>From: {new Date(period[0]).toLocaleDateString()}</p>
-              <p>To: {new Date(period[1]).toLocaleDateString()}</p>
+              <p>From: {new Date(period[0] * 1000).toLocaleDateString()}</p>
+              <p>To: {new Date(period[1] ? period[1] * 1000 : Date.now()).toLocaleDateString()}</p>
             </>
           )}
         </div>
