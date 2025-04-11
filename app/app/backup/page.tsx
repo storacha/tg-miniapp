@@ -16,6 +16,8 @@ const spaceNamePrefix = 'Telegram Backups'
 
 export default function Page() {
 	const [step, setStep] = useState(0)
+	const [selectedChats, setSelectedChats] = useState<Set<bigint>>(new Set())
+	const [dateRange, setDateRange] = useState<{ startDate: Date; endDate: Date } | null>(null)
 	const router = useRouter()
 	const { isStrochaAuthorized, setIsStrochaAuthorized, space, setSpace } = useGlobal()
 	const [chats, setChats] = useState<Set<bigint>>(new Set())
