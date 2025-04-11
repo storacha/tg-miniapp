@@ -52,7 +52,11 @@ function DialogItem({ dialog, selected, onToggle }: { dialog: Dialog, selected: 
 	)
 }
 
-export default function Chats() {
+interface ChatsProps {
+	onSelectionChange: (selectedChats: Set<bigint>) => void
+}
+
+export default function Chats({ onSelectionChange }: ChatsProps) {
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const [{ client }] = useTelegram()
@@ -81,6 +85,10 @@ export default function Chats() {
 		const filter = searchTerm ? toSearchFilter(searchTerm) : filterAll
 		setSearchFilter(() => filter)
 	}, [searchParams, searchTerm])
+
+	useEffect(() => {
+		onSelectionChange(selections)
+	}, [selections, onSelectionChange])
 
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		e.preventDefault()
