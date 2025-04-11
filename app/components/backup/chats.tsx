@@ -58,14 +58,16 @@ function DialogItem({ dialog, selected, onClick }: { dialog: Dialog, selected: b
 export interface ChatsProps {
 	selections: Set<bigint>
 	onSelectionsChange: (selections: Set<bigint>) => unknown
+	onSubmit: () => unknown
 }
 
-export default function Chats({ selections, onSelectionsChange }: ChatsProps) {
+export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const [{ client }] = useTelegram()
 	const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '')
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
+	const [loading, setLoading] = useState(true)
 
 	const typeFilter = toTypeFilter(searchParams.get('t') ?? 'all')
 	const searchFilter = toSearchFilter(searchParams.get('q') ?? '')
@@ -78,6 +80,7 @@ export default function Chats({ selections, onSelectionsChange }: ChatsProps) {
 			if (!client.connected) await client.connect()
 			for await (const dialog of client.iterDialogs()) {
 				if (cancel) return
+				if (loading) setLoading(false)
 				dialogs.push(dialog)
 				setDialogs([...dialogs])
 			}
@@ -118,6 +121,11 @@ export default function Chats({ selections, onSelectionsChange }: ChatsProps) {
 		onSelectionsChange(nextSelections)
 	}
 
+	const handleSubmit: FormEventHandler = e => {
+		e.preventDefault()
+		onSubmit()
+	}
+
 	return (
 		<div>
 			<div className="w-full pt-0 px-5 flex flex-col text-center justify-center gap-2 pb-5">
@@ -144,9 +152,15 @@ export default function Chats({ selections, onSelectionsChange }: ChatsProps) {
 					{items.map(d => (
 						<DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id))} onClick={handleDialogItemClick} />
 					))}
-					{!items.length && <p className='text-center'>No chats found!</p>}
+					{loading && <p className='text-center'>Loading chats...</p>}
+					{!loading && !items.length && <p className='text-center'>No chats found!</p>}
 				</div>
 			</div>
+			<form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">
+				<Button type="submit" className="w-full" disabled={!selections.size}>
+					Continue
+				</Button>
+			</form>
 		</div>
 	)
 }
