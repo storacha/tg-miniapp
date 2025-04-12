@@ -1,9 +1,10 @@
-import { useState, FormEventHandler } from 'react';
+import { useState, FormEventHandler } from 'react'
 import { cloudStorage } from "@telegram-apps/sdk-react"
-import { useTelegram } from '@/providers/telegram';
+import { TelegramClient, Api } from '@/vendor/telegram'
+import { useTelegram } from '@/providers/telegram'
 import { useW3 as useStoracha, SpaceDID } from '@storacha/ui-react'
-import { Period } from './dates';
-import { Button } from '../ui/button';
+import { Period } from './dates'
+import { Button } from '../ui/button'
 import * as Crypto from '../../lib/crypto'
 interface BackupHandlerProps {
     chats: Set<bigint>
@@ -32,32 +33,45 @@ export function calculatePoints(sizeInBytes: number): number {
 }
 
 function getMediaType(media: object) {
-    if (!media) return null;
+    if (!media) return null
     switch (media._) {
         case 'messageMediaPhoto':
-            return 'photo';
+            return 'photo'
         case 'messageMediaDocument':
-            return 'document';
+            return 'document'
         case 'messageMediaWebPage':
-            return 'webpage';
+            return 'webpage'
         case 'messageMediaGeo':
-            return 'location';
+            return 'location'
         default:
-            return 'file';
+            return 'file'
     }
 }
 
-async function formatMessage(client, message, mediaCid) {
-    const userId = message.fromId?.userId?.toString() ?? null
+async function formatMessage(client: TelegramClient, message: Api.Message, mediaCid?: string) {
+    let fromId = null
     let senderName = 'Unknown'
 
-    if (userId) {
-        try {
-            const sender = await client.getEntity(message.fromId)
-            senderName = `${sender.firstName ?? ''} ${sender.lastName ?? ''}`.trim()
-        } catch (err) {
-            console.warn(`Failed to fetch sender info for userId ${userId}`)
+    try {
+        const fromType = message.fromId?.className
+        if (fromType) {
+            const entity = await client.getEntity(fromId)
+            if (fromType === "PeerUser") {
+                fromId = message.fromId?.userId.toString()
+                // @ts-ignore this is a entity of type User
+                senderName = `${entity.firstName ?? ''} ${entity.lastName ?? ''}`.trim()
+            } else if (fromType === "PeerChat") {
+                fromId = message.fromId?.chatId.toString()
+                // @ts-ignore this is a entity of type Chat
+                senderName = entity.title ?? 'Group'
+            } else if (fromType === "PeerChannel") {
+                fromId = message.fromId?.channelId.toString()
+                // @ts-ignore this is a entity of type Channel
+                senderName = entity.title ?? 'Channel'
+            }
         }
+    } catch (err) {
+        console.warn(`Failed to fetch entity info for fromId ${message.fromId}`)
     }
 
     const media = message.media ? 
@@ -71,13 +85,14 @@ async function formatMessage(client, message, mediaCid) {
         id: message.id.toString(),
         date: message.date,
         from: {
-            id: userId,
+            id: fromId,
             name: senderName,
         },
         text: message.message,
         media,
         reactions: [], // Optional: would be nice to include it in the future
-        replies: []   // Optional: would be nice to include it in the future
+        replies: [],  // Optional: would be nice to include it in the future.
+        raw: JSON.stringify(message)
     }
 }
 
@@ -146,15 +161,15 @@ export function BackupHandler({ chats, space, period, onSubmit }: BackupHandlerP
 
                             // const mediaCid = await uploadToStoracha(mediaBuffer)
 
-                            // formatted.media.mediaUrl = `${STORACHA_GATEWAY}/${mediaCid}`;
+                            // formatted.media.mediaUrl = `${STORACHA_GATEWAY}/${mediaCid}`
                         } catch (err) {
-                            console.error(`Error downloading media for message ${message.id}:`, err);
+                            console.error(`Error downloading media for message ${message.id}:`, err)
                         }
                     }
 
                     const parsedMessage = await formatMessage(telegramClient, message, mediaCid)
 
-                    messages.push(parsedMessage);
+                    messages.push(parsedMessage)
                 }
 
                 console.log(`Backup for chat ${chatId}:`, messages)
@@ -177,7 +192,7 @@ export function BackupHandler({ chats, space, period, onSubmit }: BackupHandlerP
                 chatCids.push(cid.toString())
 
                 count++
-                setProgress(Math.round((count / selectedChats.length) * 100));
+                setProgress(Math.round((count / selectedChats.length) * 100))
             }
 
             const points = calculatePoints(totalSize)
