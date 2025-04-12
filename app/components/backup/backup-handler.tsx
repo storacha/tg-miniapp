@@ -1,18 +1,16 @@
-import { useEffect, useState, FormEventHandler } from 'react';
+import { useState, FormEventHandler } from 'react';
 import { cloudStorage } from "@telegram-apps/sdk-react"
-import { useW3 as useStoracha, SpaceDID } from '@storacha/ui-react'
-import { Button } from '../ui/button';
 import { useTelegram } from '@/providers/telegram';
-import * as Crypto from '../../lib/crypto'
+import { useW3 as useStoracha, SpaceDID } from '@storacha/ui-react'
 import { Period } from './dates';
-
+import { Button } from '../ui/button';
+import * as Crypto from '../../lib/crypto'
 interface BackupHandlerProps {
     chats: Set<bigint>
     space: SpaceDID
     period: Period
     onSubmit: () => unknown
 }
-
 interface BackupMetadata {
     userTelegramId: number
     storachaAccount: string
@@ -89,8 +87,8 @@ export function BackupHandler({ chats, space, period, onSubmit }: BackupHandlerP
     const [isBackingUp, setIsBackingUp] = useState(false)
     const [progress, setProgress] = useState(0)
     const storachaAccount = accounts[0].did()
-    const startDate = Math.floor(period[0] / 1000)
-    const endDate = Math.floor(period[1] / 1000)
+    const startDate = period[0]
+    const endDate = period[1] === Infinity || !period[1] ? Math.floor(Date.now() / 1000) : period[1]
 
     const handleBackup: FormEventHandler = async (e) => {
         e.preventDefault()
@@ -217,47 +215,47 @@ export function BackupHandler({ chats, space, period, onSubmit }: BackupHandlerP
     return (
         <>
         {!isBackingUp && (
-                <form onSubmit={handleBackup}>
+            <form onSubmit={handleBackup}>
                 <div className="w-full pt-0 px-5 flex flex-col text-center justify-center gap-2 pb-5">
-                          <h1 className="text-lg font-semibold text-foreground text-center">Ready?</h1>
-                  <p className="text-sm">Check the details before we start.</p>
-                      </div>
-                      <div className="flex flex-col gap-5 rounded-t-xl bg-background w-full flex-grow py-2">
-                  <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
+                    <h1 className="text-lg font-semibold text-foreground text-center">Ready?</h1>
+                    <p className="text-sm">Check the details before we start.</p>
+                </div>
+                <div className="flex flex-col gap-5 rounded-t-xl bg-background w-full flex-grow py-2">
+                    <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
                     <p>{chats.size.toLocaleString()} Chat{chats.size === 1 ? '' : 's'}</p>
-                  </div>
-                  <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
-                    {period[0] === 0 && period[1] === Infinity ? (
-                      <p>Period: All time</p>
+                    </div>
+                    <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
+                    {period[0] === 0 && period[1] == null ? (
+                        <p>Period: All time</p>
                     ) : (
-                      <>
-                        <p>From: {new Date(period[0]).toLocaleDateString()}</p>
-                        <p>To: {new Date(period[1]).toLocaleDateString()}</p>
-                      </>
+                        <>
+                        <p>From: {new Date(startDate * 1000).toLocaleDateString()}</p>
+                        <p>To: {new Date(endDate * 1000).toLocaleDateString()}</p>
+                        </>
                     )}
-                  </div>
-                  <div className="sticky bottom-0 w-full p-5">
+                    </div>
+                    <div className="sticky bottom-0 w-full p-5">
                     <Button type="submit" className="w-full">Start Backup</Button>
-                  </div>
+                    </div>
                 </div>
-                  </form>
-            )}
-            {isBackingUp && (
-                <div className="flex flex-col items-center py-5">
-                    <div className="bg-background rounded-sm p-4 w-full">
-                        <h2 className="text-left text-lg font-semibold">Backup in Progress</h2>
-                        <div className="w-full bg-gray-200 rounded-full h-4 my-2">
-                            <div
-                                className="bg-blue-500 h-4 rounded-full"
-                                style={{ width: `${progress}%` }}
-                            ></div>
-                        </div>
-                        <p className="text-gray-500 text-sm">
-                            {progress}% &nbsp; {chats.size} chat{chats.size === 1 ? '' : 's'} being backed up
-                        </p>
-                    </div> 
-                </div>
-            )}
+            </form>
+        )}
+        {isBackingUp && (
+            <div className="flex flex-col items-center py-5">
+                <div className="bg-background rounded-sm p-4 w-full">
+                    <h2 className="text-left text-lg font-semibold">Backup in Progress</h2>
+                    <div className="w-full bg-gray-200 rounded-full h-4 my-2">
+                        <div
+                            className="bg-blue-500 h-4 rounded-full"
+                            style={{ width: `${progress}%` }}
+                        ></div>
+                    </div>
+                    <p className="text-gray-500 text-sm">
+                        {progress}% &nbsp; {chats.size} chat{chats.size === 1 ? '' : 's'} being backed up
+                    </p>
+                </div> 
+            </div>
+        )}
         </>
     )
 }
