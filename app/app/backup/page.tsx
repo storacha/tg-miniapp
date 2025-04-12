@@ -6,11 +6,11 @@ import Chats from '@/components/backup/chats'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Connect, Verify, ConnectError } from '@/components/backup/connect'
-import { Summary } from '@/components/backup/summary'
 import { useGlobal } from '@/zustand/global'
 import { useW3 as useStoracha } from '@storacha/ui-react'
 import { email as parseEmail } from '@storacha/did-mailto'
 import { useTelegram } from '@/providers/telegram'
+import { BackupHandler } from '@/components/backup/backup-handler'
 
 const spaceNamePrefix = 'Telegram Backups'
 
@@ -58,10 +58,6 @@ export default function Page() {
 		setStep(step === 5 ? 1 : step - 1)
 	}
 
-	const handleSummarySubmit = () => {
-		console.log('TODO: DO A BACKUP')
-	}
-
 	return (
 		<Layouts isSinglePage back={() => handleBack()}>
 			{step === 0 && <Chats selections={chats} onSelectionsChange={s => setChats(s)} onSubmit={() => setStep(1)}/>}
@@ -69,7 +65,7 @@ export default function Page() {
 			<Connect open={step === 2 && !connErr} email={email} onEmailChange={setEmail} onSubmit={handleConnectSubmit} onDismiss={() => setStep(1)} />
 			<Verify open={step === 3 && !connErr} email={email} onDismiss={() => setStep(1)} />
 			<ConnectError open={step === 4} error={connErr} onDismiss={() => { setConnErr(undefined); setStep(1) }} />
-			{step === 5 && space && <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit} />}
+			{step === 5 && space && <BackupHandler space={space} chats={chats} period={period} onSubmit={() => setStep(0)}/>}
 		</Layouts>
 	)
 }

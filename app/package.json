@@ -34,6 +34,7 @@
 		"jsonwebtoken": "^9.0.2",
 		"lucide-react": "^0.469.0",
 		"mongoose": "^8.10.1",
+		"multiformats": "^13.3.2",
 		"next": "15.3.0-canary.33",
 		"node-cache": "^5.1.2",
 		"react": "^19.0.0",

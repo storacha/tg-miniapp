@@ -92,6 +92,9 @@ importers:
       mongoose:
         specifier: ^8.10.1
         version: 8.10.1(socks@2.8.4)
+      multiformats:
+        specifier: ^13.3.2
+        version: 13.3.2
       next:
         specifier: 15.3.0-canary.33
         version: 15.3.0-canary.33(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
