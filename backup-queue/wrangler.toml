@@ -1,0 +1,18 @@
+name = "backup-queue"
+main = "src/index.ts"
+compatibility_date = "2023-12-01"
+
+[[queues.producers]]
+queue = "backup-queue"
+binding = "BACKUP_QUEUE"
+
+[[queues.consumers]]
+queue = "backup-queue"
+max_batch_size = 10
+max_batch_timeout = 30
+max_retries = 3
+
+[vars]
+STORAGE_PATH = "./storage"
+MONGODB_URI = "mongodb://localhost:27017"
+MONGODB_DB = "telegram_backups"
