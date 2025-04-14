@@ -103,7 +103,7 @@ export async function validateOtp(phoneNumber: string, phoneCodeHash: string, co
 	}
 }
 
-export async function listUserChats(userId: string, paginationParams: { limit: number, offsetId: number, offsetDate: number, offsetPeer?: string}) {
+export async function listUserChats(userId: string, paginationParams: { limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}) {
 	const client = await getTelegramClient(userId)
 
 	try {

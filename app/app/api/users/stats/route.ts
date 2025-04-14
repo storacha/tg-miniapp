@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '../../../../lib/mongodb';
-import { Leaderboard } from '../../../../models/leaderboard';
-import { Backup } from '../../../../models/backup';
+import connectToDatabase from '@/server/lib/db';
+import { Leaderboard } from '@/server/models/leaderboard';
+import { Backup } from '@/server/models/backup';
 
 export async function GET(request: NextRequest) {
   try {

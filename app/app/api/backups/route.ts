@@ -30,7 +30,8 @@ export async function POST(request: NextRequest) {
 		try {
 			BackupChatsDtoSchema.parse(body)
 		} catch (error) {
-			return NextResponse.json({ success: false, message: 'Invalid request data' }, { status: 400 })
+			console.error(error)
+			return NextResponse.json({ success: false, message: 'Invalid request data'}, { status: 400 })
 		}
 
 		const result = await TelegramService.backupUserChats(userId, body)

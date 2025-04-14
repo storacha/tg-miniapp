@@ -9,7 +9,7 @@ import { MouseEventHandler } from 'react'
 
 export function Menu() {
 	const [{ client, user }] = useTelegram()
-	const { phoneNumber, setIsTgAuthorized, setIsStrochaAuthorized, setPhoneNumber } = useGlobal()
+	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber } = useGlobal()
 	const initials = user?.firstName ? user.firstName[0] + (user?.lastName?.[0] ?? '') : ''
 
 	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = e => {
@@ -22,7 +22,7 @@ export function Menu() {
 		setPhoneNumber('')
 		// TODO: remove Storacha auth data
 		setIsTgAuthorized(false)
-		setIsStrochaAuthorized(false)
+		setIsStorachaAuthorized(false)
 	}
 
 	return (

@@ -99,6 +99,7 @@ export default function TelegramAuth() {
 			}
 			const { phoneCodeHash } = await client.sendCode(client, phoneNumber)
 			setCodeHash(phoneCodeHash)
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
 			console.error('requesting OTP:', err)
 			setError(err)
@@ -126,6 +127,7 @@ export default function TelegramAuth() {
 			}
 
 			setIsTgAuthorized(true)
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
 			console.error('signing in:', err)
 			setError(err)

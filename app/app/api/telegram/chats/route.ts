@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
         const offsetDate = searchParams.get('offsetDate')
         const offsetPeer = searchParams.get('offsetPeer')
 
-        const offsetParams: any = {
+        const offsetParams = {
             limit,
            ...(offsetId && { offsetId: Number(offsetId) }),
            ...(offsetDate && { offsetDate: Number(offsetDate) }),
