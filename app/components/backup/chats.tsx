@@ -8,8 +8,11 @@ import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, use
 import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
 import { cloudStorage } from "@telegram-apps/sdk-react";
+import { BackupMetadata } from './backup-handler'
+import * as Crypto from '../../lib/crypto'
 
 async function getLastBackups() {
+  let lastBackupKey: string | null = null
   const lastBackups = new Map<bigint, Date>()
 
   if (cloudStorage.getKeys.isAvailable() && cloudStorage.getItem.isAvailable()) {
@@ -28,17 +31,18 @@ async function getLastBackups() {
             const chatId = BigInt(chatIdStr)
 
             if (!lastBackups.has(chatId) || lastBackups.get(chatId)! < backupDate) {
-              lastBackups.set(chatId, backupDate);
+              lastBackups.set(chatId, backupDate)
+			  lastBackupKey = key
             }
           }
         }
       }
     }
   } else {
-    console.error("Cloud storage is not available.");
+   throw new Error("Cloud storage is not available.")
   }
 
-  return lastBackups;
+  return { lastBackups, lastBackupKey}
 }
 
 interface Filter {
@@ -59,10 +63,19 @@ const toSearchFilter = (t: string) => (dialog: Dialog) => {
 	return title.toLowerCase().includes(t.toLowerCase())
 }
 
-function DialogItem({ dialog, selected, onClick, lastBackupDate }: { dialog: Dialog, selected: boolean, onClick: MouseEventHandler, lastBackupDate?: Date }) {
+export interface DialogItemProps { 
+	dialog: Dialog, 
+	selected: boolean, 
+	onClick: MouseEventHandler, 
+	lastBackupDate?: Date, 
+	onViewBackup?: (chatId: string) => void 
+}
+
+function DialogItem({ dialog, selected, onClick, lastBackupDate, onViewBackup }: DialogItemProps) {
 	const title = (dialog.name ?? dialog.title ?? '').trim() || 'Unknown'
 	const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
 	const initials = parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+	const id = String(dialog.id)
 
 	let thumbSrc = ''
 	// @ts-expect-error Telegram types are messed up
@@ -82,9 +95,76 @@ function DialogItem({ dialog, selected, onClick, lastBackupDate }: { dialog: Dia
 				<div>
 					<h1 className="font-semibold text-foreground/80">{title}</h1>
 					<p className="text-sm text-foreground/60">Last Backup: {lastBackupDate ? lastBackupDate.toLocaleString() : 'Never'}</p>
+					{ lastBackupDate && (
+						<button 
+						className="text-blue-500 underline text-sm" 
+						onClick={(e) => { 
+							e.stopPropagation()
+							if(onViewBackup) onViewBackup(id) 
+						}}
+						>
+						View Backup
+						</button>
+					)}
 				</div>
 			</div>
 		</div>
+	)
+}
+
+export function BackupViewer({ chatId, lastBackupKey, onClose }: { chatId: string, lastBackupKey: string, onClose: () => void }) {
+	const [backupContent, setBackupContent] = useState<any>(null)
+	const [loading, setLoading] = useState(true);
+  
+	useEffect(() => {
+	  async function fetchBackup() {
+		setLoading(true)
+		let userKey 
+		try {
+			if (cloudStorage.setItem.isAvailable()) {
+				userKey = await cloudStorage.getItem('user-key')
+				const backup = await cloudStorage.getItem(lastBackupKey)
+				if(backup){
+					// get from cloud storage
+					const content: BackupMetadata = JSON.parse(backup)
+					const index = content.chats.findIndex(id => id === chatId)
+					const cid = content.chatCids[index]
+
+					console.log(`Fetching content under ${cid} from Storacha...`)
+					const response = await fetch(`${process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL}/${cid}`)
+					console.log(response)
+					if (!response.ok) {
+						throw new Error(`Failed to fetch content from gateway: ${response.statusText}`)
+					}
+					const encryptContent = await response.text()
+					
+					// decrypt
+					const decryptedContent = await Crypto.decryptContent(encryptContent, userKey)
+					console.log('decryptedContent: ', decryptedContent)
+					setBackupContent(decryptedContent)
+				}
+			} else {
+				throw new Error('unable to access cloud storage')
+			}
+		
+		} catch (error) {
+		  console.error("Failed to fetch backup:", error)
+		} finally {
+		  setLoading(false)
+		}
+	  }
+	  fetchBackup()
+	}, [chatId])
+  
+	if (loading) return <p>Loading backup...</p>
+	if (!backupContent) return <p>No backup found for this chat.</p>
+  
+	return (
+	  <div className="p-5">
+		<h1 className="text-lg font-semibold">Backup for Chat {chatId.toString()}</h1>
+		<pre className="bg-gray-100 p-3 rounded">{backupContent}</pre>
+		<button className="mt-3 text-blue-500 underline" onClick={onClose}>Close</button>
+	  </div>
 	)
 }
 
@@ -101,11 +181,13 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '')
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
 	const [loading, setLoading] = useState(true)
-	const [lastBackups, setLastBackups] = useState<Map<bigint, Date>>(new Map())
+	const [lastBackups, setLastBackups] = useState<Map<bigint, Date>>(new Map()) // chatId -> Date
+	const [lastBackupKey, setLastBackupKey] = useState<string | null>(null)
+	const [viewingChatId, setViewingChatId] = useState<string | null>(null)
 
 	const typeFilter = toTypeFilter(searchParams.get('t') ?? 'all')
 	const searchFilter = toSearchFilter(searchParams.get('q') ?? '')
-	const items = dialogs.filter(and(typeFilter, searchFilter))
+	const items = dialogs.filter(and(typeFilter, searchFilter)) 
 
 	useEffect(() => {
 		let cancel = false
@@ -124,11 +206,12 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 
 	useEffect(() => {
 		async function fetchBackups() {
-			const backups = await getLastBackups()
-			setLastBackups(backups)
+			const {lastBackups, lastBackupKey} = await getLastBackups()
+			setLastBackups(lastBackups)
+			setLastBackupKey(lastBackupKey)
 		}
 		fetchBackups()
-	}, [])
+	}, [lastBackupKey])
 
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		setSearchTerm(e.target.value)
@@ -168,8 +251,20 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 		onSubmit()
 	}
 
+	const handleViewBackup = (chatId: string) => {
+		setViewingChatId(chatId)
+	  }
+	
+	  const handleCloseViewer = () => {
+		setViewingChatId(null)
+	  }
+
 	return (
 		<div>
+			{viewingChatId && lastBackupKey ? (
+				<BackupViewer chatId={viewingChatId} onClose={handleCloseViewer} lastBackupKey={lastBackupKey} />
+			) : (
+			<>
 			<div className="w-full pt-0 px-5 flex flex-col text-center justify-center gap-2 pb-5">
 				<h1 className="text-lg font-semibold text-foreground text-center">Select to Backup</h1>
 			</div>
@@ -192,7 +287,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 				</div>
 				<div className="flex flex-col min-h-screen">
 					{items.map(d => (
-						<DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id))} onClick={handleDialogItemClick} lastBackupDate={lastBackups.get(BigInt(d.id))} />
+						<DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id))} onClick={handleDialogItemClick} lastBackupDate={lastBackups.get(BigInt(d.id))} onViewBackup={handleViewBackup}/>
 					))}
 					{loading && <p className='text-center'>Loading chats...</p>}
 					{!loading && !items.length && <p className='text-center'>No chats found!</p>}
@@ -203,6 +298,8 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 					Continue
 				</Button>
 			</form>
+			</>
+			)}
 		</div>
 	)
 }
