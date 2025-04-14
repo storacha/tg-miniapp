@@ -3,12 +3,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Button } from '../ui/button'
 import { FormEventHandler } from 'react'
-
-/**
- * A period is either a specific to and from time or just a from time with
- * implicit to - now. Values are expressed as seconds since unix epoch.
- */
-export type Period = [from: number, to: number] | [from: number]
+import { Period } from '@/api'
 
 export interface DatesProps {
 	period: Period
