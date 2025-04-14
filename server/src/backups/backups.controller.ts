@@ -14,8 +14,8 @@ export class BackupsController {
 
   @Get()
   async getBackups() {
-    // TODO: before backup check strocha is logged in or not
-    // TODO: Get all backups from strocha  and decode with secrets and return}
+    // TODO: before backup check Storacha is logged in or not
+    // TODO: Get all backups from Storacha  and decode with secrets and return}
 
     try {
       const backup = await this.backupsService.createBackup();
@@ -29,7 +29,7 @@ export class BackupsController {
 
   @Post()
   async createBackup() {
-    // TODO: upload backup from strocha and  encrypt backup from  app secrets maintain in db
+    // TODO: upload backup from Storacha and  encrypt backup from  app secrets maintain in db
     // TODO: also update points in leaderboards
   }
 

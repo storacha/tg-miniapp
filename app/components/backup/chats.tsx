@@ -1,4 +1,3 @@
-import { Connect } from '@/components/backup/connect'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
