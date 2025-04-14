@@ -6,13 +6,13 @@ import { useW3 as useStoracha, SpaceDID } from '@storacha/ui-react'
 import { Period } from './dates'
 import { Button } from '../ui/button'
 import * as Crypto from '../../lib/crypto'
-interface BackupHandlerProps {
+export interface BackupHandlerProps {
     chats: Set<bigint>
     space: SpaceDID
     period: Period
     onSubmit: () => unknown
 }
-interface BackupMetadata {
+export interface BackupMetadata {
     userTelegramId: number
     storachaAccount: string
     space: string
@@ -151,7 +151,7 @@ export function BackupHandler({ chats, space, period, onSubmit }: BackupHandlerP
                 }
     
                 for await (const message of telegramClient.iterMessages(chatId, options)) {
-                    console.log('Message ID: ', message.id)
+                    console.log(`Message ID ${message.id}, with message: ${message.message}, text: ${message.text}, hasMedia: ${message.media != undefined}`)
                     
                     let mediaCid
                     if (message.media) {
