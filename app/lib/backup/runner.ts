@@ -2,12 +2,14 @@ import { AbsolutePeriod, BackupData, BackupModel, DialogData, EncryptedByteView,
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
-import * as Block from 'multiformats/block'
+import { Block } from 'multiformats'
+import { encode as encodeBlock } from 'multiformats/block'
 import { sha256 } from 'multiformats/hashes/sha2'
-import * as CAR from '@storacha/upload-client/car'
-import * as Crypto from '../crypto'
-import { IterMessagesParams } from '@/vendor/telegram/client/messages'
+import { CARWriterStream } from 'carstream'
+import { createFileEncoderStream } from '@storacha/upload-client/unixfs'
 import { Entity } from '@/vendor/telegram/define'
+import * as Crypto from '@/lib/crypto'
+import { toAsyncIterable } from '@/lib/utils'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
@@ -24,119 +26,159 @@ export interface Options {
    * not yet stored.
    */
   onDialogRetrieved?: (id: bigint) => unknown
-  /**
-   * Called when an entire dialog has been stored with Storacha.
-   */
-  onDialogStored?: (id: bigint) => unknown
 }
 
 export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
-  const { onDialogStored, onDialogRetrieved } = options ?? {}
-  const dialogMessages: BackupData['dialogs'] = {}
+  const dialogDatas: BackupData['dialogs'] = {}
+  const pendingDialogIDs = Array.from(dialogs)
 
-  console.log('chats:', dialogs)
-  const selectedChats = Array.from(dialogs)
+  // null value signals that the current dialog has completed
+  let dialogEntity: Entity | null = null
 
-  if (!ctx.telegram.connected) {
-    await ctx.telegram.connect()
-  }
+  let entities: EntityRecordData = {}
+  let messages: MessageData[] = []
+  let messageLinks: Array<Link<EncryptedByteView<MessageData[]>>> = []
 
-  for (const chatId of selectedChats) {
-    console.log('backing up dialog:', chatId)
-    const dialogEntity = await ctx.telegram.getEntity(chatId)
-    const entities: EntityRecordData = {}
+  // null value signals that no more messages will come and the current dialog
+  // can now be finalized
+  let messageIterator: AsyncIterator<Api.Message> | null = null
 
-    let messages: MessageData[] = []
-    const messageLinks: Array<Link<EncryptedByteView<MessageData[]>>> = []
+  const blockStream = new ReadableStream<Block>({
+    async pull (controller) {
+      if (!dialogEntity) {
+        // get the next dialog to back up
+        const dialogID = pendingDialogIDs.shift()
+        if (!dialogID) {
+          // we finished!
+          console.log(`creating root with ${Object.entries(dialogDatas).length} dialogs`)
+          const rootData: BackupModel = {
+            [versionTag]: { dialogs: dialogDatas, period }
+          }
+          const rootBlock = await encodeBlock({ value: rootData, codec: dagCBOR, hasher: sha256 })
+          controller.enqueue(rootBlock)
+          controller.close()
+          return
+        }
 
-    const [firstMessage] = await ctx.telegram.getMessages(chatId, {
-      limit: 1,
-      // FML, there is a falsey check on this value so we cannot pass 0 because
-      // the library thinks we passed no value.
-      offsetDate: period[0] === 0 ? 1 : period[0],
-    })
-    console.log('first message:', firstMessage)
-    const options: Partial<IterMessagesParams> = { offsetDate: period[1] }
-    if (firstMessage) {
-      options.minId = firstMessage.id
-    }
-
-    for await (const message of ctx.telegram.iterMessages(chatId, options)) {
-      let fromID
-      if (message.fromId?.className === 'PeerUser') {
-        fromID = message.fromId.userId
-      } else if (message.fromId?.className === 'PeerChat') {
-        fromID = message.fromId.chatId
-      } else if (message.fromId?.className === 'PeerChannel') {
-        fromID = message.fromId.channelId
+        dialogEntity = await ctx.telegram.getEntity(dialogID)
+        const [firstMessage] = await ctx.telegram.getMessages(dialogID, {
+          limit: 1,
+          // FML, there is a falsey check on this value so we cannot pass 0
+          // because the library thinks we passed no value.
+          offsetDate: period[0] === 0 ? 1 : period[0],
+        })
+        messageIterator = ctx.telegram.iterMessages(dialogID, {
+          offsetDate: period[1],
+          minId: firstMessage?.id
+        })[Symbol.asyncIterator]()
       }
-      if (!fromID) {
-        // TODO: IDK what do we do here?
-        continue
+
+      if (!messageIterator) {
+        // we ran out of messages, create entries and a dialog object
+        console.log(`creating ${Object.entries(entities).length} entities`)
+        let entitiesRoot
+        for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, entities))) {
+          entitiesRoot = b.cid
+          controller.enqueue(b)
+        }
+        if (!entitiesRoot) throw new Error('missing entities root')
+        entities = {}
+
+        const dialogData: DialogData = {
+          ...toEntityData(dialogEntity),
+          entities: entitiesRoot,
+          messages: messageLinks,
+        }
+
+        console.log(`creating dialog: ${dialogEntity.id}`)
+        let dialogRoot
+        for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, dialogData))) {
+          dialogRoot = b.cid
+          controller.enqueue(b)
+        }
+        if (!dialogRoot) throw new Error('missing dialog root')
+        messageLinks = []
+
+        dialogDatas[dialogEntity.id] = dialogRoot
+        dialogEntity = null // move onto the next dialog
+        return
       }
 
-      entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
-      
-      // let mediaCid
-      // if (message.media) {
-      //   try {
-      //     TODO: download the media in the next app iteration
-      //     const mediaBuffer = await message.downloadMedia()
+      while (true) {
+        const { value: message, done } = await messageIterator.next()
+        if (done) {
+          messageIterator = null
+          await options?.onDialogRetrieved?.(dialogEntity.id.value)
+          break
+        }
 
-      //     const mediaCid = await uploadToStoracha(mediaBuffer)
+        let fromID
+        if (message.fromId?.className === 'PeerUser') {
+          fromID = message.fromId.userId
+        } else if (message.fromId?.className === 'PeerChat') {
+          fromID = message.fromId.chatId
+        } else if (message.fromId?.className === 'PeerChannel') {
+          fromID = message.fromId.channelId
+        }
+        if (!fromID) {
+          // TODO: IDK what do we do here?
+          continue
+        }
 
-      //     formatted.media.mediaUrl = `${STORACHA_GATEWAY}/${mediaCid}`
-      //   } catch (err) {
-      //     console.error(`Error downloading media for message ${message.id}:`, err)
-      //   }
-      // }
+        entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
 
-      messages.push(toMessageData(message))
-      if (messages.length === maxMessages) {
-        console.log(`storing ${maxMessages} messages`)
-        messageLinks.push(await encodeEncryptAndUpload(ctx, space, messages))
-        messages = []
+        // let mediaCid
+        // if (message.media) {
+        //   try {
+        //     TODO: download the media in the next app iteration
+        //     const mediaBuffer = await message.downloadMedia()
+
+        //     const mediaCid = await uploadToStoracha(mediaBuffer)
+
+        //     formatted.media.mediaUrl = `${STORACHA_GATEWAY}/${mediaCid}`
+        //   } catch (err) {
+        //     console.error(`Error downloading media for message ${message.id}:`, err)
+        //   }
+        // }
+
+        messages.push(toMessageData(message))
+        if (messages.length === maxMessages) {
+          break
+        }
       }
+
+      console.log(`creating ${messages.length} messages`)
+      let messagesRoot
+      for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, messages))) {
+        messagesRoot = b.cid
+        controller.enqueue(b)
+      }
+
+      if (!messagesRoot) throw new Error('missing message root')
+      messageLinks.push(messagesRoot)
+      messages = []
     }
-    await onDialogRetrieved?.(chatId)
+  })
 
-    if (messages.length) {
-      console.log(`storing ${messages.length} messages`)
-      messageLinks.push(await encodeEncryptAndUpload(ctx, space, messages))
-    }
-
-    console.log(`storing ${Object.entries(entities).length} entities`)
-    const dialogData: DialogData = {
-      ...toEntityData(dialogEntity),
-      entities: await encodeEncryptAndUpload(ctx, space, entities),
-      messages: messageLinks,
-    }
-
-    console.log(`storing dialog: ${chatId}`)
-    dialogMessages[chatId.toString()] = await encodeEncryptAndUpload(ctx, space, dialogData)
-    await onDialogStored?.(chatId)
-  }
-
-  console.log(`storing root with ${Object.entries(dialogMessages).length} dialogs`)
-  const rootData: BackupModel = {
-    [versionTag]: {
-      dialogs: dialogMessages,
-      period,
-    }
-  }
-  const rootBlock = await Block.encode({ value: rootData, codec: dagCBOR, hasher: sha256 })
-  await ctx.storacha.uploadCAR(await CAR.encode([rootBlock], rootBlock.cid))
-  console.log(`backup job complete: ${rootBlock.cid}`)
-  return rootBlock.cid
-}
-
-const encodeEncryptAndUpload = async <T>(ctx: Context, space: SpaceDID, data: T): Promise<Link<EncryptedByteView<T>>> => {
-  const bytes = dagCBOR.encode(data)
-  const encryptedBytes = await Crypto.encryptContent(bytes, ctx.encryptionPassword)
-  const blob = new Blob([encryptedBytes])
   await ctx.storacha.setCurrentSpace(space)
-  return (await ctx.storacha.uploadFile(blob)) as Link<EncryptedByteView<T>>
+  const root = await ctx.storacha.uploadCAR({
+    stream: () => blockStream.pipeThrough(new CARWriterStream())
+  })
+  console.log(`backup job complete: ${root}`)
+  return root
 }
+
+const encodeAndEncrypt = <T>(ctx: Context, data: T) =>
+  createFileEncoderStream({
+    stream: () => new ReadableStream({
+      async pull (controller) {
+        const bytes = dagCBOR.encode(data)
+        const encryptedBytes = await Crypto.encryptContent(bytes, ctx.encryptionPassword)
+        controller.enqueue(encryptedBytes)
+        controller.close()
+      }
+    })
+  }) as ReadableStream<Block<EncryptedByteView<T>>>
 
 // TODO: reinstate when we add media to backups
 // function getMediaType(media?: Api.TypeMessageMedia) {

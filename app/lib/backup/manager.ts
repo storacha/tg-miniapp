@@ -70,27 +70,23 @@ class JobManager {
 
         await this.#jobs.update(id, { state: 'running', error: '' })
 
-        let dialogsCompleted = 0
+        let dialogsRetrieved = 0
         const data = await Runner.run(this, space, dialogs, absPeriod, {
           onDialogRetrieved: async () => {
+            dialogsRetrieved++
             try {
-              await this.#jobs.update(id, { progress: ((dialogsCompleted * 2) + 1) / (dialogs.size * 2) })
-            } catch (err) {
-              console.error(err)
-            }
-          },
-          onDialogStored: async () => {
-            dialogsCompleted++
-            try {
-              await this.#jobs.update(id, { progress: dialogsCompleted / dialogs.size })
+              await this.#jobs.update(id, { progress: (dialogsRetrieved / dialogs.size) / 2.1 })
             } catch (err) {
               console.error(err)
             }
           }
         })
 
-        await this.#jobs.update(id, { progress: 1 })
+        await this.#jobs.update(id, { progress: 0.70 + (Math.random() / 10) })
         await this.#backups.add({ data, dialogs, period: absPeriod, created: Date.now() })
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        await this.#jobs.update(id, { progress: 1 })
+        await new Promise(resolve => setTimeout(resolve, 1000))
         await this.#jobs.remove(id)
       } catch (err) {
         console.error('backup failed', err)

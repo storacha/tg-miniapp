@@ -69,8 +69,6 @@ export const remove = (target: EventTarget, id: JobID) => {
   if (!job) throw new Error(`job not found: ${id}`)
   localStorage.removeItem(`job:${id}`)
   const jobIDs: string[] = dagJSON.parse(localStorage.getItem('jobs') ?? '[]')
-  console.log(jobIDs)
   localStorage.setItem('jobs', dagJSON.stringify(jobIDs.filter(jid => jid !== id)))
-  console.log(dagJSON.stringify(jobIDs.filter(jid => jid !== id)))
   target.dispatchEvent(new CustomEvent('remove', { detail: job }))
 }

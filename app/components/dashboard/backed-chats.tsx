@@ -6,6 +6,7 @@ import { MouseEventHandler, useEffect, useState } from 'react'
 import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
 import { Backup } from '@/api'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
+import { useRouter } from 'next/navigation'
 
 interface DialogItemProps {
 	dialog: Dialog
@@ -52,6 +53,7 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 export default function BackedChats() {
 	const [{ client }] = useTelegram()
 	const [{ backups }] = useBackups()
+	const router = useRouter()
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
 	const [loading, setLoading] = useState(true)
 
@@ -73,9 +75,11 @@ export default function BackedChats() {
 	}, [client])
 
 	const handleDialogItemClick: MouseEventHandler = e => {
+		e.preventDefault()
 		const id = BigInt(e.currentTarget.getAttribute('data-id') ?? 0)
-		console.log('TODO: display backup', id)
-		// TODO: display backup
+		const hasBackup = sortedBackups.some(b => id && b.dialogs.has(id))
+		if (!hasBackup) return
+		router.push(`/dialog/${id}`)
 	}
 
 	return (
