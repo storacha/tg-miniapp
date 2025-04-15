@@ -10,7 +10,16 @@ export interface Context extends RunnerContext {
   backups: BackupStorage
 }
 
-export const create = (ctx: Context) => new JobManager(ctx)
+export const create = async (ctx: Context) => {
+  // error any jobs that are queued or meant to be running
+  const { items: currentJobs } = await ctx.jobs.list()
+  for (const job of currentJobs) {
+    if (job.state !== 'failed') {
+      await ctx.jobs.update(job.id, { state: 'failed', error: 'backup failed, please try again.' })
+    }
+  }
+  return new JobManager(ctx)
+}
 
 class JobManager {
   storacha
@@ -21,6 +30,8 @@ class JobManager {
   #backups
   #queue
   #queuedJobs
+  #cancelledJobs
+  #runningJobs
 
   constructor ({ storacha, telegram, encryptionPassword, jobs, backups }: Context) {
     this.storacha = storacha
@@ -30,6 +41,8 @@ class JobManager {
     this.#backups = backups
     this.#queue = new Queue({ concurrency: 1 })
     this.#queuedJobs = new Set()
+    this.#runningJobs = new Set()
+    this.#cancelledJobs = new Set()
   }
 
   async add (space: SpaceDID, dialogs: Set<bigint>, period: Period) {
@@ -47,6 +60,14 @@ class JobManager {
 
     this.#queue.add(async () => {
       try {
+        this.#runningJobs.add(id)
+        this.#queuedJobs.delete(id)
+
+        if (this.#cancelledJobs.has(id)) {
+          this.#cancelledJobs.delete(id)
+          return
+        }
+
         await this.#jobs.update(id, { state: 'running', error: '' })
 
         let dialogsCompleted = 0
@@ -59,7 +80,6 @@ class JobManager {
             }
           },
           onDialogStored: async () => {
-            console.log('dialog was stored!')
             dialogsCompleted++
             try {
               await this.#jobs.update(id, { progress: dialogsCompleted / dialogs.size })
@@ -68,17 +88,15 @@ class JobManager {
             }
           }
         })
-        console.log('manager saw job complete')
 
         await this.#jobs.update(id, { progress: 1 })
         await this.#backups.add({ data, dialogs, period: absPeriod, created: Date.now() })
-        console.log('manager added backup')
         await this.#jobs.remove(id)
       } catch (err) {
         console.error('backup failed', err)
         await this.#jobs.update(id, { state: 'failed', error: (err as Error).message })
       } finally {
-        this.#queuedJobs.delete(id)
+        this.#runningJobs.delete(id)
       }
     })
     this.#queuedJobs.add(id)
@@ -86,48 +104,18 @@ class JobManager {
     return id
   }
 
-  async restart (id: JobID) {
-    if (this.#queuedJobs.has(id)) return
-
+  async remove (id: JobID) {
     const job = await this.#jobs.find(id)
     if (!job) throw new Error(`job not found: ${id}`)
-    await this.#jobs.update(id, { state: 'queued', progress: 0, error: '' })
-    
-    this.#queue.add(async () => {
-      try {
-        await this.#jobs.update(id, { state: 'running', error: '' })
 
-        let dialogsCompleted = 0
-        const data = await Runner.run(this, job.space, job.dialogs, job.period, {
-          onDialogRetrieved: async () => {
-            try {
-              await this.#jobs.update(id, { progress: ((dialogsCompleted * 2) + 1) / (job.dialogs.size * 2) })
-            } catch (err) {
-              console.error(err)
-            }
-          },
-          onDialogStored: async () => {
-            console.log('dialog was stored!')
-            dialogsCompleted++
-            try {
-              console.log({ progress: dialogsCompleted / job.dialogs.size })
-              await this.#jobs.update(id, { progress: dialogsCompleted / job.dialogs.size })
-            } catch (err) {
-              console.error(err)
-            }
-          }
-        })
-        console.log('manager saw job complete')
+    if (this.#runningJobs.has(id)) {
+      throw new Error('cannot remove job as it is currently running')
+    }
 
-        await this.#jobs.update(id, { progress: 1 })
-        await this.#backups.add({ data, dialogs: job.dialogs, period: job.period, created: Date.now() })
-        console.log('manager added backup')
-        await this.#jobs.remove(id)
-        console.log('manager removed job with ID', id)
-      } catch (err) {
-        console.error('backup failed', err)
-        await this.#jobs.update(id, { state: 'failed', error: (err as Error).message })
-      }
-    })
+    if (this.#queuedJobs.has(id)) {
+      this.#cancelledJobs.add(id)
+    }
+
+    await this.#jobs.remove(id)
   }
 }

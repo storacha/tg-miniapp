@@ -32,6 +32,7 @@ export interface ContextState {
 
 export interface ContextActions {
   addBackupJob: (space: SpaceDID, chats: Set<bigint>, period: Period) => Promise<JobID>
+  removeBackupJob: (job: JobID) => Promise<void>
   // setBackup: (id: Link|null) => void
   // setDialog: (id: bigint|null) => void
 }
@@ -47,6 +48,7 @@ export const ContextDefaultValue: ContextValue = [
   },
   {
     addBackupJob: () => Promise.reject(new Error('provider not setup')),
+    removeBackupJob: () => Promise.reject(new Error('provider not setup')),
     // setBackup: () => {},
     // setDialog: () => {}
   },
@@ -84,6 +86,8 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
 
   const addBackupJob = (space: SpaceDID, dialogs: Set<bigint>, period: Period) =>
     jobManager.add(space, dialogs, period)
+
+  const removeBackupJob = (id: JobID) => jobManager.remove(id)
 
   useEffect(() => {
     const handleJobChange = async () => {
@@ -146,7 +150,7 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
   }, [backupStore])
 
   return (
-    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult }, { addBackupJob }]}>
+    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult }, { addBackupJob, removeBackupJob }]}>
       {children}
     </Context.Provider>
   )

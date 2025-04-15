@@ -91,15 +91,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			const jobs = createJobStorage()
 			const backups = createBackupStorage()
-			const jobManager = createJobManager({ storacha, telegram, jobs, backups, encryptionPassword })
-
-			// error any jobs that are meant to be running
-			const { items: currentJobs } = await jobs.list()
-			for (const job of currentJobs) {
-				if (job.state !== 'failed') {
-					await jobs.update(job.id, { state: 'failed', error: 'backup failed, please try again.' })
-				}
-			}
+			const jobManager = await createJobManager({ storacha, telegram, jobs, backups, encryptionPassword })
 
 			setJobs(jobs)
 			setBackups(backups)

@@ -59,8 +59,11 @@ export interface BackupStorage extends EventTarget {
 export interface JobManager {
   /** Add a backup job to the queue. */
   add: (space: SpaceDID, dialogs: Set<bigint>, period: Period) => Promise<JobID>
-  /** Restart an existing job. */
-  restart: (id: JobID) => Promise<void>
+  /** 
+   * Remove an existing job. If the job is queued it will be cancelled. Jobs
+   * that are running cannot be removed and will throw an error.
+   */
+  remove: (id: JobID) => Promise<void>
 }
 
 export type BackupModel = Variant<{

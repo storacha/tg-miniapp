@@ -33,7 +33,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   const { onDialogStored, onDialogRetrieved } = options ?? {}
   const dialogMessages: BackupData['dialogs'] = {}
 
-  console.log('chats: ', dialogs)
+  console.log('chats:', dialogs)
   const selectedChats = Array.from(dialogs)
 
   if (!ctx.telegram.connected) {
@@ -103,7 +103,6 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
     dialogMessages[chatId.toString()] = await encodeEncryptAndUpload(ctx, space, dialogData)
     await onDialogStored?.(chatId)
   }
-  throw new Error('a bad boom')
 
   const rootData: BackupModel = {
     [versionTag]: {
