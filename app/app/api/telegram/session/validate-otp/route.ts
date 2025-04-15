@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
 		try {
 			ValidateOtpDtoSchema.parse(body)
 		} catch (error) {
+			console.log(error)
 			return NextResponse.json({ success: false, message: 'Invalid request data' }, { status: 400 })
 		}
 
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
 			message: 'OTP validated successfully',
 			result,
 		})
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	} catch (error: any) {
 		console.error('Error in validate OTP:', error)
 		return NextResponse.json({ success: false, message: 'Failed to validate OTP from Telegram', reason: error?.errorMessage }, { status: 400 })

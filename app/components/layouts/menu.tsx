@@ -1,4 +1,4 @@
-import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle, DrawerFooter } from '@/components/ui/drawer'
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AlignJustify, LogOut } from 'lucide-react'
 import { Button } from '../ui/button'
@@ -9,7 +9,7 @@ import { MouseEventHandler } from 'react'
 
 export function Menu() {
 	const [{ client, user }] = useTelegram()
-	const { phoneNumber, setIsTgAuthorized, setIsStrochaAuthorized, setPhoneNumber } = useGlobal()
+	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber } = useGlobal()
 	const initials = user?.firstName ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase() : ''
 
 	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = e => {
@@ -22,7 +22,7 @@ export function Menu() {
 		setPhoneNumber('')
 		// TODO: remove Storacha auth data
 		setIsTgAuthorized(false)
-		setIsStrochaAuthorized(false)
+		setIsStorachaAuthorized(false)
 	}
 
 	return (

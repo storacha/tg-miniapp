@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
             success: true,
             message: 'Add Authorization successfully',
         })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         console.error('Error in validate OTP:', error)
         return NextResponse.json({ success: false, message: 'Failed to validate OTP from Telegram', reason: error?.errorMessage }, { status: 400 })

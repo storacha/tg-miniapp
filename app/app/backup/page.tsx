@@ -19,7 +19,7 @@ const spaceNamePrefix = 'Telegram Backups'
 export default function Page() {
 	const [step, setStep] = useState(0)
 	const router = useRouter()
-	const { isStrochaAuthorized, setIsStrochaAuthorized, space, setSpace } = useGlobal()
+	const { isStorachaAuthorized, setIsStorachaAuthorized, space, setSpace } = useGlobal()
 	const [chats, setChats] = useState<Set<bigint>>(new Set())
 	const [period, setPeriod] = useState<Period>([0])
 	const [email, setEmail] = useState('')
@@ -43,7 +43,7 @@ export default function Page() {
 				const space = await client.createSpace(spaceName, { account })
 				setSpace(space.did())
 			}
-			setIsStrochaAuthorized(true)
+			setIsStorachaAuthorized(true)
 			setStep(5)
 		} catch (err: any) {
 			console.error(err)
@@ -69,7 +69,7 @@ export default function Page() {
 	return (
 		<Layouts isSinglePage back={() => handleBack()}>
 			{step === 0 && <Chats selections={chats} onSelectionsChange={s => setChats(s)} onSubmit={() => setStep(1)}/>}
-			{step >= 1 && step <= 3 && <Dates period={period} onPeriodChange={setPeriod} onSubmit={() => setStep(isStrochaAuthorized ? 5 : 2)} />}
+			{step >= 1 && step <= 3 && <Dates period={period} onPeriodChange={setPeriod} onSubmit={() => setStep(isStorachaAuthorized ? 5 : 2)} />}
 			<Connect open={step === 2 && !connErr} email={email} onEmailChange={setEmail} onSubmit={handleConnectSubmit} onDismiss={() => setStep(1)} />
 			<Verify open={step === 3 && !connErr} email={email} onDismiss={() => setStep(1)} />
 			<ConnectError open={step === 4} error={connErr} onDismiss={() => { setConnErr(undefined); setStep(1) }} />

@@ -1,0 +1,15 @@
+name: Test
+on:
+  workflow_call:
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/pnpm
+      - run: pnpm lint
+      - run: pnpm test
