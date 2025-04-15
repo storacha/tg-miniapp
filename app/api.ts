@@ -87,8 +87,15 @@ export interface BackupData {
 export interface DialogData extends EntityData {
   /** A link to the entities that participated in this dialog. */
   entities: Link<EncryptedByteView<EntityRecordData>>
-  /** A link to ordered messages sent by entities participating in this dialog. */
-  messages: Link<EncryptedByteView<MessageData[]>>
+  /**
+   * An array of links to lists of ordered messages sent by entities
+   * participating in this dialog.
+   *
+   * Messages are ordered newest to oldest.
+   *
+   * Each list has a maximum of 1,000 messages.
+   */
+  messages: Array<Link<EncryptedByteView<MessageData[]>>>
 }
 
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>

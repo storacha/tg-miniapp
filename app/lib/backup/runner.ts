@@ -10,6 +10,7 @@ import { IterMessagesParams } from '@/vendor/telegram/client/messages'
 import { Entity } from '@/vendor/telegram/define'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
+const maxMessages = 1_000
 
 export interface Context {
   storacha: StorachaClient
@@ -44,10 +45,15 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
     console.log('backing up dialog:', chatId)
     const dialogEntity = await ctx.telegram.getEntity(chatId)
     const entities: EntityRecordData = {}
-    const messages: MessageData[] = []
+
+    let messages: MessageData[] = []
+    const messageLinks: Array<Link<EncryptedByteView<MessageData[]>>> = []
+
     const [firstMessage] = await ctx.telegram.getMessages(chatId, {
       limit: 1,
-      offsetDate: period[0],
+      // FML, there is a falsey check on this value so we cannot pass 0 because
+      // the library thinks we passed no value.
+      offsetDate: period[0] === 0 ? 1 : period[0],
     })
     console.log('first message:', firstMessage)
     const options: Partial<IterMessagesParams> = { offsetDate: period[1] }
@@ -86,24 +92,32 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
       // }
 
       messages.push(toMessageData(message))
+      if (messages.length === maxMessages) {
+        console.log(`storing ${maxMessages} messages`)
+        messageLinks.push(await encodeEncryptAndUpload(ctx, space, messages))
+        messages = []
+      }
     }
     await onDialogRetrieved?.(chatId)
 
-    const [messagesLink, entitiesLink] = await Promise.all([
-      encodeEncryptAndUpload(ctx, space, messages),
-      encodeEncryptAndUpload(ctx, space, entities)
-    ])
-
-    const dialogData: DialogData = {
-      ...toEntityData(dialogEntity),
-      entities: entitiesLink,
-      messages: messagesLink,
+    if (messages.length) {
+      console.log(`storing ${messages.length} messages`)
+      messageLinks.push(await encodeEncryptAndUpload(ctx, space, messages))
     }
 
+    console.log(`storing ${Object.entries(entities).length} entities`)
+    const dialogData: DialogData = {
+      ...toEntityData(dialogEntity),
+      entities: await encodeEncryptAndUpload(ctx, space, entities),
+      messages: messageLinks,
+    }
+
+    console.log(`storing dialog: ${chatId}`)
     dialogMessages[chatId.toString()] = await encodeEncryptAndUpload(ctx, space, dialogData)
     await onDialogStored?.(chatId)
   }
 
+  console.log(`storing root with ${Object.entries(dialogMessages).length} dialogs`)
   const rootData: BackupModel = {
     [versionTag]: {
       dialogs: dialogMessages,
@@ -117,16 +131,11 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 }
 
 const encodeEncryptAndUpload = async <T>(ctx: Context, space: SpaceDID, data: T): Promise<Link<EncryptedByteView<T>>> => {
-  try {
-    const bytes = dagCBOR.encode(data)
-    const encryptedBytes = await Crypto.encryptContent(bytes, ctx.encryptionPassword)
-    const blob = new Blob([encryptedBytes])
-    await ctx.storacha.setCurrentSpace(space)
-    return (await ctx.storacha.uploadFile(blob)) as Link<EncryptedByteView<T>>
-  } catch (err) {
-    console.error(data)
-    throw err
-  }
+  const bytes = dagCBOR.encode(data)
+  const encryptedBytes = await Crypto.encryptContent(bytes, ctx.encryptionPassword)
+  const blob = new Blob([encryptedBytes])
+  await ctx.storacha.setCurrentSpace(space)
+  return (await ctx.storacha.uploadFile(blob)) as Link<EncryptedByteView<T>>
 }
 
 // TODO: reinstate when we add media to backups

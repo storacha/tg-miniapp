@@ -75,7 +75,6 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 	const [backups, setBackups] = useState<BackupStorage>()
 
 	useEffect(() => {
-		console.log({ storacha, telegram })
 		if (!storacha || !telegram) {
 			return
 		}
