@@ -13,26 +13,22 @@ const ENCRYPTION_CONFIG = {
  * Encrypts the given content using AES-CBC.
  * @param content - The content to encrypt.
  * @param password - The password to derive the encryption key.
- * @returns A base64-encoded string containing the salt and encrypted data.
+ * @returns A buffer containing the salt and encrypted data.
  */
-export async function encryptContent(content: string, password: string): Promise<string> {
+export async function encryptContent(content: Uint8Array, password: string): Promise<Uint8Array> {
     const salt = crypto.getRandomValues(new Uint8Array(ENCRYPTION_CONFIG.saltLength))
     const { key, iv } = await deriveKeyAndIV(password, salt)
-
-    const encoder = new TextEncoder()
-    const data = encoder.encode(content)
 
     const encryptedData = await crypto.subtle.encrypt(
         { name: 'AES-CBC', iv },
         key,
-        data
+        content
     )
 
     const result = new Uint8Array(salt.length + encryptedData.byteLength)
     result.set(salt)
     result.set(new Uint8Array(encryptedData), salt.length)
-
-    return base64.encode(result)
+    return result
 }
 
 /**
@@ -41,11 +37,9 @@ export async function encryptContent(content: string, password: string): Promise
  * @param password - The password to derive the decryption key.
  * @returns The decrypted content as a string.
  */
-export async function decryptContent(encryptedContent: string, password: string): Promise<string> {
-    const encryptedKeyData = base64.decode(encryptedContent)
-
-    const salt = encryptedKeyData.subarray(0, ENCRYPTION_CONFIG.saltLength)
-    const encryptedData = encryptedKeyData.subarray(ENCRYPTION_CONFIG.saltLength)
+export async function decryptContent(encryptedContent: Uint8Array, password: string): Promise<Uint8Array> {
+    const salt = encryptedContent.subarray(0, ENCRYPTION_CONFIG.saltLength)
+    const encryptedData = encryptedContent.subarray(ENCRYPTION_CONFIG.saltLength)
     const { key, iv } = await deriveKeyAndIV(password, salt)
 
     const decryptedData = await crypto.subtle.decrypt(
@@ -54,8 +48,7 @@ export async function decryptContent(encryptedContent: string, password: string)
         encryptedData
     )
 
-    const decoder = new TextDecoder()
-    return decoder.decode(decryptedData)
+    return new Uint8Array(decryptedData)
 }
 
 /**
@@ -92,6 +85,7 @@ async function deriveKeyAndIV(password: string, salt: Uint8Array) {
 
     return { key: derivedKey, iv }
 }
+
 /**
  * Generates a random password with the specified length.
  * @param length - The length of the password to generate.

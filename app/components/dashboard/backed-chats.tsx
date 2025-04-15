@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '../ui/button'
 import { Upload, ShieldCheck } from 'lucide-react'
 import { useBackedChats } from '@/zustand/backup-chats'
+import { useBackups } from '@/providers/backup'
 
 function ChatItem() {
 	return (
@@ -25,11 +26,11 @@ function ChatItem() {
 }
 
 export default function BackedChats() {
-	const { chats } = useBackedChats()
+	const [{ backups }] = useBackups()
 	return (
 		<div className="flex flex-col gap-5">
 			<h1 className="px-5">Backed up Chats</h1>
-			{chats.length === 0 && (
+			{backups.items.length === 0 && (
 				<div className="flex flex-col justify-center items-center px-10 pt-20 gap-2">
 					<div className="text-foreground/40 p-2">
 						<ShieldCheck size={30} />
@@ -39,8 +40,12 @@ export default function BackedChats() {
 				</div>
 			)}
 			<div className="flex flex-col">
-				{chats.map((chat) => (
-					<ChatItem key={chat.id} />
+				{backups.items.sort((a, b) => b.created - a.created).map((b) => (
+					<div className="text-xs">
+						ID: <span>{b.data.toString()}</span><br/>
+						{new Date(b.created).toISOString()}
+					</div>
+					// <ChatItem key={chat.id} />
 				))}
 			</div>
 		</div>

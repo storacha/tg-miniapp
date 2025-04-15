@@ -1,5 +1,5 @@
 import { SpaceDID } from '@storacha/ui-react'
-import { Period } from './dates'
+import { Period } from '@/api'
 import { Button } from '../ui/button'
 import { FormEventHandler } from 'react'
 

@@ -1,31 +1,32 @@
 'use client'
 
 import { Layouts } from '@/components/layouts'
-import Dates, { Period } from '@/components/backup/dates'
+import Dates from '@/components/backup/dates'
 import Chats from '@/components/backup/chats'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Connect, Verify, ConnectError } from '@/components/backup/connect'
+import { Summary } from '@/components/backup/summary'
 import { useGlobal } from '@/zustand/global'
 import { useW3 as useStoracha } from '@storacha/ui-react'
 import { email as parseEmail } from '@storacha/did-mailto'
 import { useTelegram } from '@/providers/telegram'
-import { BackupHandler } from '@/components/backup/backup-handler'
+import { Period } from '@/api'
+import { useBackups } from '@/providers/backup'
 
 const spaceNamePrefix = 'Telegram Backups'
 
 export default function Page() {
 	const [step, setStep] = useState(0)
-	const [selectedChats, setSelectedChats] = useState<Set<bigint>>(new Set())
-	const [dateRange, setDateRange] = useState<{ startDate: Date; endDate: Date } | null>(null)
 	const router = useRouter()
 	const { isStrochaAuthorized, setIsStrochaAuthorized, space, setSpace } = useGlobal()
 	const [chats, setChats] = useState<Set<bigint>>(new Set())
-	const [period, setPeriod] = useState<Period>([0, Infinity])
+	const [period, setPeriod] = useState<Period>([0])
 	const [email, setEmail] = useState('')
 	const [connErr, setConnErr] = useState<Error>()
 	const [{ user }] = useTelegram()
 	const [{ client }] = useStoracha()
+	const [, { addBackupJob }] = useBackups()
 
 	const handleConnectSubmit = async () => {
 		try {
@@ -58,6 +59,13 @@ export default function Page() {
 		setStep(step === 5 ? 1 : step - 1)
 	}
 
+	const handleSummarySubmit = async () => {
+		if (!space) return
+		const id = await addBackupJob(space, chats, period)
+		console.log('backup job added with ID', id)
+		router.push('/')
+	}
+
 	return (
 		<Layouts isSinglePage back={() => handleBack()}>
 			{step === 0 && <Chats selections={chats} onSelectionsChange={s => setChats(s)} onSubmit={() => setStep(1)}/>}
@@ -65,7 +73,7 @@ export default function Page() {
 			<Connect open={step === 2 && !connErr} email={email} onEmailChange={setEmail} onSubmit={handleConnectSubmit} onDismiss={() => setStep(1)} />
 			<Verify open={step === 3 && !connErr} email={email} onDismiss={() => setStep(1)} />
 			<ConnectError open={step === 4} error={connErr} onDismiss={() => { setConnErr(undefined); setStep(1) }} />
-			{step === 5 && space && <BackupHandler space={space} chats={chats} period={period} onSubmit={() => setStep(0)}/>}
+			{step === 5 && space && <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit}/>}
 		</Layouts>
 	)
 }
