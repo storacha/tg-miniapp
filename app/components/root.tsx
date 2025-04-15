@@ -50,22 +50,18 @@ export function Root(props: PropsWithChildren) {
 		return <Onboarding />
 	}
 
-	if (!isTgAuthorized) {
-		return (
-			<ErrorBoundary fallback={ErrorPage}>
-				<TelegramAuth />
-			</ErrorBoundary>
-		)
-	}
-
 	return (
 		<ErrorBoundary fallback={ErrorPage}>
 			<TelegramProvider apiId={apiId} apiHash={apiHash}>
-				<StorachaProvider servicePrincipal={serviceID} connection={connection}>
-					<BackupProviderContainer>
-						<div {...props} />
-					</BackupProviderContainer>
-				</StorachaProvider>
+				{isTgAuthorized ? (
+					<StorachaProvider servicePrincipal={serviceID} connection={connection}>
+						<BackupProviderContainer>
+							<div {...props} />
+						</BackupProviderContainer>
+					</StorachaProvider>
+				) : (
+					<TelegramAuth />
+				)}
 			</TelegramProvider>
 		</ErrorBoundary>
 	)
