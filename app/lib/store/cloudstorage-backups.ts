@@ -44,7 +44,7 @@ export const add = async (target: EventTarget, backup: Backup) => {
   }))
   const str = await cloudStorage.getItem('backups') || '[]'
   const ids: Link[] = dagJSON.parse(str)
-  await cloudStorage.setItem('backups', dagJSON.stringify([...ids, backup.data]))
+  await cloudStorage.setItem('backups', dagJSON.stringify([backup.data, ...ids]))
   target.dispatchEvent(new CustomEvent('add', { detail: backup }))
 }
 

@@ -48,7 +48,7 @@ export const add = (target: EventTarget, job: Job) => {
     dialogs: [...job.dialogs].map(id => id.toString())
   }))
   const jobIDs: string[] = dagJSON.parse(localStorage.getItem('jobs') ?? '[]')
-  localStorage.setItem('jobs', dagJSON.stringify([...jobIDs, job.id]))
+  localStorage.setItem('jobs', dagJSON.stringify([job.id, ...jobIDs]))
   target.dispatchEvent(new CustomEvent('add', { detail: job }))
 }
 
