@@ -17,11 +17,19 @@ export interface Context {
 }
 
 export interface Options {
-  onDialogStored?: () => unknown
+  /**
+   * Called when messages for a dialog have been downloaded from Telegram, but
+   * not yet stored.
+   */
+  onDialogRetrieved?: (id: bigint) => unknown
+  /**
+   * Called when an entire dialog has been stored with Storacha.
+   */
+  onDialogStored?: (id: bigint) => unknown
 }
 
 export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
-  const onDialogStored = options?.onDialogStored
+  const { onDialogStored, onDialogRetrieved } = options ?? {}
   const dialogMessages: Record<string, UnknownLink> = {}
 
   console.log('chats: ', dialogs)
@@ -64,6 +72,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
       const parsedMessage = await formatMessage(ctx.telegram, message, mediaCid)
       messages.push(parsedMessage)
     }
+    await onDialogRetrieved?.(chatId)
 
     console.log(`Backup for chat ${chatId}:`, messages)
 
@@ -80,7 +89,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
     console.log('Upload CID: ', root.toString())
 
     dialogMessages[chatId.toString()] = root
-    await onDialogStored?.()
+    await onDialogStored?.(chatId)
   }
 
   const rootData = {

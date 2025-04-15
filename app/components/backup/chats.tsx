@@ -7,39 +7,8 @@ import { Button } from '../ui/button'
 import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useState } from 'react'
 import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
-import { cloudStorage } from "@telegram-apps/sdk-react";
-
-async function getLastBackups() {
-  const lastBackups = new Map<bigint, Date>()
-
-  if (cloudStorage.getKeys.isAvailable() && cloudStorage.getItem.isAvailable()) {
-    const keys = await cloudStorage.getKeys()
-
-    for (const key of keys) {
-		
-      if (key.startsWith("bckp")) {
-        const value = await cloudStorage.getItem(key)
-
-        if (value) {
-          const backup = JSON.parse(value)
-          const backupDate = new Date(backup.date)
-
-          for (const chatIdStr of backup.chats) {
-            const chatId = BigInt(chatIdStr)
-
-            if (!lastBackups.has(chatId) || lastBackups.get(chatId)! < backupDate) {
-              lastBackups.set(chatId, backupDate);
-            }
-          }
-        }
-      }
-    }
-  } else {
-    console.error("Cloud storage is not available.");
-  }
-
-  return lastBackups;
-}
+import { Backup } from '@/api'
+import { useBackups } from '@/providers/backup'
 
 interface Filter {
 	(dialog: Dialog): boolean
@@ -59,7 +28,7 @@ const toSearchFilter = (t: string) => (dialog: Dialog) => {
 	return title.toLowerCase().includes(t.toLowerCase())
 }
 
-function DialogItem({ dialog, selected, onClick, lastBackupDate }: { dialog: Dialog, selected: boolean, onClick: MouseEventHandler, lastBackupDate?: Date }) {
+function DialogItem({ dialog, selected, onClick, latestBackup }: { dialog: Dialog, selected: boolean, onClick: MouseEventHandler, latestBackup?: Backup }) {
 	const title = (dialog.name ?? dialog.title ?? '').trim() || 'Unknown'
 	const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
 	const initials = parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -69,6 +38,11 @@ function DialogItem({ dialog, selected, onClick, lastBackupDate }: { dialog: Dia
 	const strippedThumbBytes = dialog.entity?.photo?.strippedThumb
 	if (strippedThumbBytes) {
 		thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
+	}
+
+	let latestBackupDate
+	if (latestBackup) {
+		latestBackupDate = new Date(latestBackup.period[1] * 1000)
 	}
 
 	return (
@@ -81,7 +55,7 @@ function DialogItem({ dialog, selected, onClick, lastBackupDate }: { dialog: Dia
 				</Avatar>
 				<div>
 					<h1 className="font-semibold text-foreground/80">{title}</h1>
-					<p className="text-sm text-foreground/60">Last Backup: {lastBackupDate ? lastBackupDate.toLocaleString() : 'Never'}</p>
+					<p className="text-sm text-foreground/60">Last Backup: {latestBackupDate ? latestBackupDate.toLocaleString() : <span className="text-red-900">Never</span>}</p>
 				</div>
 			</div>
 		</div>
@@ -98,14 +72,16 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const [{ client }] = useTelegram()
+	const [{ backups }] = useBackups()
 	const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '')
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
 	const [loading, setLoading] = useState(true)
-	const [lastBackups, setLastBackups] = useState<Map<bigint, Date>>(new Map())
 
 	const typeFilter = toTypeFilter(searchParams.get('t') ?? 'all')
 	const searchFilter = toSearchFilter(searchParams.get('q') ?? '')
 	const items = dialogs.filter(and(typeFilter, searchFilter))
+
+	const sortedBackups = backups.items.sort((a, b) => b.period[1] - a.period[1])
 
 	useEffect(() => {
 		let cancel = false
@@ -121,14 +97,6 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 		})()
 		return () => { cancel = true }
 	}, [client])
-
-	useEffect(() => {
-		async function fetchBackups() {
-			const backups = await getLastBackups()
-			setLastBackups(backups)
-		}
-		fetchBackups()
-	}, [])
 
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		setSearchTerm(e.target.value)
@@ -191,9 +159,10 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 					</Button>
 				</div>
 				<div className="flex flex-col min-h-screen">
-					{items.map(d => (
-						<DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id))} onClick={handleDialogItemClick} lastBackupDate={lastBackups.get(BigInt(d.id))} />
-					))}
+					{items.map(d => {
+						const latestBackup = sortedBackups.find(b => d.id && b.dialogs.has(d.id.value))
+						return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
+					})}
 					{loading && <p className='text-center'>Loading chats...</p>}
 					{!loading && !items.length && <p className='text-center'>No chats found!</p>}
 				</div>

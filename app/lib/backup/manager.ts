@@ -49,6 +49,13 @@ class JobManager {
 
         let dialogsCompleted = 0
         const data = await Runner.run(this, space, dialogs, absPeriod, {
+          onDialogRetrieved: async () => {
+            try {
+              await this.#jobs.update(id, { progress: ((dialogsCompleted * 2) + 1) / (dialogs.size * 2) })
+            } catch (err) {
+              console.error(err)
+            }
+          },
           onDialogStored: async () => {
             console.log('dialog was stored!')
             dialogsCompleted++
@@ -85,6 +92,13 @@ class JobManager {
 
         let dialogsCompleted = 0
         const data = await Runner.run(this, job.space, job.dialogs, job.period, {
+          onDialogRetrieved: async () => {
+            try {
+              await this.#jobs.update(id, { progress: ((dialogsCompleted * 2) + 1) / (job.dialogs.size * 2) })
+            } catch (err) {
+              console.error(err)
+            }
+          },
           onDialogStored: async () => {
             console.log('dialog was stored!')
             dialogsCompleted++
