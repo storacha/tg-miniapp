@@ -20,6 +20,7 @@ class JobManager {
   #jobs
   #backups
   #queue
+  #queuedJobs
 
   constructor ({ storacha, telegram, encryptionPassword, jobs, backups }: Context) {
     this.storacha = storacha
@@ -28,6 +29,7 @@ class JobManager {
     this.#jobs = jobs
     this.#backups = backups
     this.#queue = new Queue({ concurrency: 1 })
+    this.#queuedJobs = new Set()
   }
 
   async add (space: SpaceDID, dialogs: Set<bigint>, period: Period) {
@@ -75,13 +77,18 @@ class JobManager {
       } catch (err) {
         console.error('backup failed', err)
         await this.#jobs.update(id, { state: 'failed', error: (err as Error).message })
+      } finally {
+        this.#queuedJobs.delete(id)
       }
     })
+    this.#queuedJobs.add(id)
 
     return id
   }
 
   async restart (id: JobID) {
+    if (this.#queuedJobs.has(id)) return
+
     const job = await this.#jobs.find(id)
     if (!job) throw new Error(`job not found: ${id}`)
     await this.#jobs.update(id, { state: 'queued', progress: 0, error: '' })

@@ -1,4 +1,4 @@
-import { AbsolutePeriod, BackupData, BackupModel, DialogData, EncryptedByteView, EntityData, EntityType, MessageData } from '@/api'
+import { AbsolutePeriod, BackupData, BackupModel, DialogData, EncryptedByteView, EntityData, EntityRecordData, EntityType, MessageData } from '@/api'
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
@@ -42,12 +42,8 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 
   for (const chatId of selectedChats) {
     console.log('backing up dialog:', chatId)
-    const entity = await ctx.telegram.getEntity(chatId)
-
-    const entities: DialogData['entities'] = {
-      [entity.id.value]: toEntityData(entity)
-    }
-
+    const dialogEntity = await ctx.telegram.getEntity(chatId)
+    const entities: EntityRecordData = {}
     const messages: MessageData[] = []
     const [firstMessage] = await ctx.telegram.getMessages(chatId, {
       limit: 1,
@@ -93,23 +89,21 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
     }
     await onDialogRetrieved?.(chatId)
 
-    console.log(`Backup for chat ${chatId}:`, messages)
+    const [messagesLink, entitiesLink] = await Promise.all([
+      encodeEncryptAndUpload(ctx, space, messages),
+      encodeEncryptAndUpload(ctx, space, entities)
+    ])
 
-    const backupChatData = dagCBOR.encode({ entities, messages } as DialogData)
+    const dialogData: DialogData = {
+      ...toEntityData(dialogEntity),
+      entities: entitiesLink,
+      messages: messagesLink,
+    }
 
-    console.log('encrypting backup...')
-    const encryptedContent = await Crypto.encryptContent(backupChatData, ctx.encryptionPassword)
-    console.log('encryptedContent: ', encryptedContent)
-    const blob = new Blob([encryptedContent])
-
-    console.log('uploading chat data to storacha...')
-    await ctx.storacha.setCurrentSpace(space)
-    const root = (await ctx.storacha.uploadFile(blob)) as Link<EncryptedByteView<DialogData>>
-    console.log('Upload CID: ', root.toString())
-
-    dialogMessages[chatId.toString()] = root
+    dialogMessages[chatId.toString()] = await encodeEncryptAndUpload(ctx, space, dialogData)
     await onDialogStored?.(chatId)
   }
+  throw new Error('a bad boom')
 
   const rootData: BackupModel = {
     [versionTag]: {
@@ -121,6 +115,19 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   await ctx.storacha.uploadCAR(await CAR.encode([rootBlock], rootBlock.cid))
   console.log(`backup job complete: ${rootBlock.cid}`)
   return rootBlock.cid
+}
+
+const encodeEncryptAndUpload = async <T>(ctx: Context, space: SpaceDID, data: T): Promise<Link<EncryptedByteView<T>>> => {
+  try {
+    const bytes = dagCBOR.encode(data)
+    const encryptedBytes = await Crypto.encryptContent(bytes, ctx.encryptionPassword)
+    const blob = new Blob([encryptedBytes])
+    await ctx.storacha.setCurrentSpace(space)
+    return (await ctx.storacha.uploadFile(blob)) as Link<EncryptedByteView<T>>
+  } catch (err) {
+    console.error(data)
+    throw err
+  }
 }
 
 // TODO: reinstate when we add media to backups
@@ -179,5 +186,5 @@ const toEntityData = (entity: Entity): EntityData => {
       }
     }
   }
-  return { id, type, name, photo }
+  return { id, type, name, ...(photo && { photo }) }
 }

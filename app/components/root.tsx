@@ -75,8 +75,11 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 	const [backups, setBackups] = useState<BackupStorage>()
 
 	useEffect(() => {
-		if (!storacha || !telegram) return
-		(async () => {
+		console.log({ storacha, telegram })
+		if (!storacha || !telegram) {
+			return
+		}
+		;(async () => {
 			let encryptionPassword = await cloudStorage.getItem('encryption-password')
 			if (encryptionPassword === '') {
 				console.log('creating new encryption password')
@@ -89,6 +92,14 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 			const jobs = createJobStorage()
 			const backups = createBackupStorage()
 			const jobManager = createJobManager({ storacha, telegram, jobs, backups, encryptionPassword })
+
+			// error any jobs that are meant to be running
+			const { items: currentJobs } = await jobs.list()
+			for (const job of currentJobs) {
+				if (job.state !== 'failed') {
+					await jobs.update(job.id, { state: 'failed', error: 'backup failed, please try again.' })
+				}
+			}
 
 			setJobs(jobs)
 			setBackups(backups)

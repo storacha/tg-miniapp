@@ -31,7 +31,10 @@ const JobItem = ({ job }: { job: Job }) => {
 	return (
 		<div className="w-full px-5 mb-5">
 			<div className="w-full bg-background rounded-sm border">
-				<p className="px-5 pt-3">Backup <span className="capitalize">{job.state}</span></p>
+				<div className="flex justify-between items-center px-5 pt-3">
+					<p>Backup <span className="capitalize">{job.state}</span></p>
+				</div>
+				{job.error && <p className='px-5 pt-1 text-red-900 text-xs'>Error: {job.error}</p>}
 				<div className="flex justify-between items-center px-3 py-3">
 					<div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
 						<div className="bg-blue-900 h-2.5 rounded-full transition-all" style={{ width: `${job.progress * 100}%` }}></div>
@@ -39,7 +42,7 @@ const JobItem = ({ job }: { job: Job }) => {
 				</div>
 				<div className="flex justify-between items-center px-3 pb-4">
 					<span className="text-muted-foreground text-xs">{Math.floor(job.progress * 100)}% Completed</span>
-					<span className="text-muted-foreground text-xs">{job.dialogs.size} Chats Backing Up</span>
+					<span className="text-muted-foreground text-xs">{job.dialogs.size} Chat{job.dialogs.size > 1 ? 's' : ''} Backing Up</span>
 				</div>
 			</div>
 		</div>

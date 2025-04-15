@@ -81,12 +81,14 @@ export interface BackupData {
   period: AbsolutePeriod
 }
 
-export interface DialogData {
-  /** The entities that participated in this dialog. */
-  entities: Record<ToString<EntityID>, EntityData>
-  /** Ordered messages sent by entities participating in this dialog. */
-  messages: MessageData[]
+export interface DialogData extends EntityData {
+  /** A link to the entities that participated in this dialog. */
+  entities: Link<EncryptedByteView<EntityRecordData>>
+  /** A link to ordered messages sent by entities participating in this dialog. */
+  messages: Link<EncryptedByteView<MessageData[]>>
 }
+
+export type EntityRecordData = Record<ToString<EntityID>, EntityData>
 
 export type EntityType = 'user' | 'chat' | 'channel' | 'unknown'
 
