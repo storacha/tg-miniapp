@@ -1,6 +1,5 @@
 import { AbsolutePeriod, BackupStorage, JobID, JobStorage, Period } from '@/api'
-import { SpaceDID, Client as StorachaClient } from '@storacha/ui-react'
-import { TelegramClient } from '@/vendor/telegram'
+import { SpaceDID } from '@storacha/ui-react'
 import Queue from 'p-queue'
 import * as Runner from './runner'
 import { Context as RunnerContext } from './runner'
@@ -66,9 +65,9 @@ class JobManager {
         await this.#backups.add({ data, dialogs, period: absPeriod, created: Date.now() })
         console.log('manager added backup')
         await this.#jobs.remove(id)
-      } catch (err: any) {
+      } catch (err) {
         console.error('backup failed', err)
-        await this.#jobs.update(id, { state: 'failed', error: err.message })
+        await this.#jobs.update(id, { state: 'failed', error: (err as Error).message })
       }
     })
 
@@ -104,9 +103,9 @@ class JobManager {
         console.log('manager added backup')
         await this.#jobs.remove(id)
         console.log('manager removed job with ID', id)
-      } catch (err: any) {
+      } catch (err) {
         console.error('backup failed', err)
-        await this.#jobs.update(id, { state: 'failed', error: err.message })
+        await this.#jobs.update(id, { state: 'failed', error: (err as Error).message })
       }
     })
   }

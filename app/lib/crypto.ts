@@ -1,5 +1,3 @@
-import { base64 } from 'multiformats/bases/base64'
-
 // Centralized encryption parameters
 const ENCRYPTION_CONFIG = {
     algorithm: 'AES-CBC',

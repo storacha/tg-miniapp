@@ -4,8 +4,7 @@ import {
 	DrawerDescription,
 	DrawerFooter,
 	DrawerHeader,
-	DrawerTitle,
-	DrawerTrigger,
+	DrawerTitle
 } from '@/components/ui/drawer'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'

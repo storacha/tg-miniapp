@@ -1,11 +1,12 @@
 import { AbsolutePeriod } from '@/api'
-import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
+import { SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
 import * as Block from 'multiformats/block'
 import { sha256 } from 'multiformats/hashes/sha2'
 import * as CAR from '@storacha/upload-client/car'
 import * as Crypto from '../crypto'
+import { IterMessagesParams } from '@/vendor/telegram/client/messages'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 
@@ -22,7 +23,7 @@ export interface Options {
 export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
   const onDialogStored = options?.onDialogStored
   const dialogMessages: Record<string, UnknownLink> = {}
-  let totalSize = 0
+
   console.log('chats: ', dialogs)
   const selectedChats = Array.from(dialogs)
 
@@ -38,9 +39,9 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
       offsetDate: period[0],
     })
     console.log('firstMessage: ', firstMessage)
-    let options: any = {offsetDate: period[1] }
+    const options: Partial<IterMessagesParams> = { offsetDate: period[1] }
     if(firstMessage) {
-      options['minId'] = firstMessage.id
+      options.minId = firstMessage.id
     }
 
     for await (const message of ctx.telegram.iterMessages(chatId, options)) {
@@ -72,7 +73,6 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
     const encryptedContent = await Crypto.encryptContent(backupChatData, ctx.encryptionPassword)
     console.log('encryptedContent: ', encryptedContent)
     const blob = new Blob([encryptedContent])
-    totalSize += blob.size
 
     console.log('uploading chat data to storacha...')
     await ctx.storacha.setCurrentSpace(space)
@@ -100,8 +100,9 @@ export function calculatePoints(sizeInBytes: number): number {
     return sizeInBytes * POINTS_PER_BYTE
 }
 
-function getMediaType(media: any) {
+function getMediaType(media?: Api.TypeMessageMedia) {
     if (!media) return null
+    if (!('_' in media)) return 'file'
     switch (media._) {
         case 'messageMediaPhoto':
             return 'photo'
@@ -126,20 +127,20 @@ async function formatMessage(client: TelegramClient, message: Api.Message, media
         const entity = await client.getEntity(fromId)
         if (fromType === "PeerUser") {
           fromId = message.fromId?.userId.toString()
-          // @ts-ignore this is a entity of type User
+          // @ts-expect-error this is a entity of type User
           senderName = `${entity.firstName ?? ''} ${entity.lastName ?? ''}`.trim()
         } else if (fromType === "PeerChat") {
           fromId = message.fromId?.chatId.toString()
-          // @ts-ignore this is a entity of type Chat
+          // @ts-expect-error this is a entity of type Chat
           senderName = entity.title ?? 'Group'
         } else if (fromType === "PeerChannel") {
           fromId = message.fromId?.channelId.toString()
-          // @ts-ignore this is a entity of type Channel
+          // @ts-expect-error this is a entity of type Channel
           senderName = entity.title ?? 'Channel'
         }
       }
     } catch (err) {
-      console.warn(`Failed to fetch entity info for fromId ${message.fromId}`)
+      console.warn(`Failed to fetch entity info for fromId ${message.fromId}`, err)
     }
 
     const media = message.media ? 

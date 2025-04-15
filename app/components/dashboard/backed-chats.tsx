@@ -1,9 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '../ui/button'
 import { Upload, ShieldCheck } from 'lucide-react'
-import { useBackedChats } from '@/zustand/backup-chats'
 import { useBackups } from '@/providers/backup'
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function ChatItem() {
 	return (
 		<div className="flex justify-between active:bg-accent px-5 py-3">
@@ -40,7 +40,7 @@ export default function BackedChats() {
 			)}
 			<div className="flex flex-col">
 				{backups.items.sort((a, b) => b.created - a.created).map((b) => (
-					<div className="text-xs">
+					<div key={b.data.toString()} className="text-xs">
 						ID: <span>{b.data.toString()}</span><br/>
 						{new Date(b.created).toISOString()}
 					</div>

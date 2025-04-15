@@ -10,7 +10,7 @@ export interface SummaryProps {
 	onSubmit: () => unknown
 }
 
-export const Summary = ({ chats, space, period, onSubmit }: SummaryProps) => {
+export const Summary = ({ chats, period, onSubmit }: SummaryProps) => {
   const handleSubmit: FormEventHandler = e => {
     e.preventDefault()
     onSubmit()

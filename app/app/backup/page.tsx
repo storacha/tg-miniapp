@@ -45,9 +45,9 @@ export default function Page() {
 			}
 			setIsStorachaAuthorized(true)
 			setStep(5)
-		} catch (err: any) {
+		} catch (err) {
 			console.error(err)
-			setConnErr(err)
+			setConnErr(err as Error)
 			setStep(4)
 		}
 	}

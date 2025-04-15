@@ -59,5 +59,5 @@ export const decodeStrippedThumb = (bytes: Uint8Array) => {
 }
 
 export const toJPGDataURL = (bytes: Uint8Array) =>
-	// @ts-expect-error
+	// @ts-expect-error Uint8Array is effectively number[]
 	'data:image/jpeg;base64,' + btoa(String.fromCharCode.apply(null, bytes))
