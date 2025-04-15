@@ -20,6 +20,9 @@ importers:
 
   app:
     dependencies:
+      '@ipld/car':
+        specifier: ^5.4.0
+        version: 5.4.0
       '@ipld/dag-cbor':
         specifier: ^9.2.2
         version: 9.2.2
@@ -177,9 +180,6 @@ importers:
 
   server:
     dependencies:
-      '@ipld/car':
-        specifier: ^5.4.0
-        version: 5.4.0
       '@nestjs/common':
         specifier: ^11.0.1
         version: 11.0.9(reflect-metadata@0.2.2)(rxjs@7.8.1)
