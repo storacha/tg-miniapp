@@ -90,7 +90,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 			if (!client.connected) await client.connect()
 			for await (const dialog of client.iterDialogs()) {
 				if (cancel) return
-				if (loading) setLoading(false)
+				setLoading(false)
 				dialogs.push(dialog)
 				setDialogs([...dialogs])
 			}

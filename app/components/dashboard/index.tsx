@@ -1,4 +1,4 @@
-import Head from './head'
+// import Head from './head'
 import BackedChats from './backed-chats'
 import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'
