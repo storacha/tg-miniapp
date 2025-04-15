@@ -20,9 +20,6 @@ importers:
 
   app:
     dependencies:
-      '@ipld/car':
-        specifier: ^5.4.0
-        version: 5.4.0
       '@ipld/dag-cbor':
         specifier: ^9.2.2
         version: 9.2.2
@@ -68,24 +65,9 @@ importers:
       '@storacha/upload-client':
         specifier: ^1.0.9
         version: 1.0.9(encoding@0.1.13)
-      '@telegram-apps/init-data-node':
-        specifier: ^2.0.3
-        version: 2.0.3(typescript@5.5.4)
       '@telegram-apps/sdk-react':
         specifier: ^2.0.20
         version: 2.0.20(@types/react@18.3.1)(react@19.0.0)
-      '@ucanto/core':
-        specifier: ^10.3.1
-        version: 10.3.1
-      '@ucanto/interface':
-        specifier: ^10.2.0
-        version: 10.2.0
-      '@ucanto/principal':
-        specifier: ^9.0.2
-        version: 9.0.2
-      '@web3-storage/w3up-client':
-        specifier: ^17.2.0
-        version: 17.2.0(encoding@0.1.13)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -2154,9 +2136,6 @@ packages:
   '@telegram-apps/bridge@1.9.2':
     resolution: {integrity: sha512-SJLcNWLXhbbZr9MiqFH/g2ceuitSJKMxUIZysK4zUNyTUNuonrQG80Q/yrO+XiNbKUj8WdDNM86NBARhuyyinQ==}
 
-  '@telegram-apps/init-data-node@2.0.3':
-    resolution: {integrity: sha512-0eYiRTiKzOTYBktKdQ1vdqWz8WAauYRtfeZhgfiHqjPuyNroQ20yzW/+i/6ENgSediXDaXdS1MNejkrQY4WBSQ==}
-
   '@telegram-apps/navigation@1.0.13':
     resolution: {integrity: sha512-TsUueB5LQp77GQHoMa93nq26Uw7GJjrFCPbyseMVU7aBBxAc+8CV2IYytRwcVp5sv/q7ThK5X4JaKn2V1yBHDQ==}
 
@@ -2178,20 +2157,11 @@ packages:
   '@telegram-apps/toolkit@1.1.1':
     resolution: {integrity: sha512-+vhKx6ngfvjyTE6Xagl3z1TPVbfx5s7xAkcYzCdHYUo6T60jLIqLgyZMcI1UPoIAMuMu1pHoO+p8QNCj/+tFmw==}
 
-  '@telegram-apps/toolkit@2.0.0':
-    resolution: {integrity: sha512-1GKTLBNme1Phu/gFvgS9NWPq+LhPfzSIfnwhcF9I/6tCdufrLRcVaSMRiK9R4VDYD6iZUyj+a2l250qWAxxjQQ==}
-
   '@telegram-apps/transformers@1.2.2':
     resolution: {integrity: sha512-vvMwXckd1D7Ozc0h66PSUwF5QLrRV9HlGJFFeBuUex8QEk5mSPtsJkLiqB8aBbwuFDa91+TUSM/CxqPZO/e9YQ==}
 
-  '@telegram-apps/transformers@2.2.0':
-    resolution: {integrity: sha512-wqXXOukhEjZKhzdq5vG1LkxWL11DApbmUKzk+3nA/ki3TLyD3awVTOXbpoNdOwFl2xliIooYcsUOEl4WCyyLGw==}
-
   '@telegram-apps/types@1.2.1':
     resolution: {integrity: sha512-so4HLh7clur0YyMthi9KVIgWoGpZdXlFOuQjk3+Q5NAvJZ11nAheBSwPlGw/Ko92+zwvrSBE/lQyN2+p17RP+w==}
-
-  '@telegram-apps/types@2.0.0':
-    resolution: {integrity: sha512-yF499FJK82a2IDNDAQdrmVH3sgFZl/QFNdVZKgWpgtunIVJ1fres5wi9+4aUBRVIdQwZOZZqB/AOvYYuYXsq3Q==}
 
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
@@ -2329,9 +2299,6 @@ packages:
   '@types/retry@0.12.1':
     resolution: {integrity: sha512-xoDlM2S4ortawSWORYqsdU+2rxdh4LRW9ytc3zmT37RIKQh6IHyKwwtKhKis9ah8ol07DCkZxPt8BBvPjC6v4g==}
 
-  '@types/retry@0.12.2':
-    resolution: {integrity: sha512-XISRgDJ2Tc5q4TRqvgJtzsRkFYNJzZrhTdtMoGVBttwzzQJkPnS3WWTFc7kuDRoPtPakl+T+OfdEUjYJj7Jbow==}
-
   '@types/send@0.17.4':
     resolution: {integrity: sha512-x2EM6TJOybec7c52BX0ZspPodMsQUd5L6PRwOunVyVUhXiBSKf3AezDL8Dgvgt5o0UfKNfuA0eMLr2wLT4AiBA==}
 
@@ -2417,9 +2384,6 @@ packages:
 
   '@ucanto/principal@9.0.2':
     resolution: {integrity: sha512-RE3Rj0oz4wh4C9p2JJZB9+QLd7Fi3lCixrbHgAvEoSyTNpvz6ky8DGNtttmD5j3O94z13qdVdIoSRY6DQZXfAg==}
-
-  '@ucanto/transport@9.1.1':
-    resolution: {integrity: sha512-3CR17nEemOVaTuMZa6waWgVL4sLxSPcxYvpaNeJ6NZo1rfsqdyRXOtbVV/RcI2BtUL0Cao6JM6P9+gdghfc5ng==}
 
   '@ucanto/transport@9.2.0':
     resolution: {integrity: sha512-w/CtD5LYEpGo/CxV78IiWalW99gNRPHKZ/DoOpart5QShozvnU//PwUqyqnGimZCDIrIq4LH6x92z2L/2k5OKQ==}
@@ -2558,32 +2522,8 @@ packages:
   '@vercel/static-config@3.0.0':
     resolution: {integrity: sha512-2qtvcBJ1bGY0dYGYh3iM7yGKkk971FujLEDXzuW5wcZsPr1GSEjO/w2iSr3qve6nDDtBImsGoDEnus5FI4+fIw==}
 
-  '@web3-storage/access@20.2.0':
-    resolution: {integrity: sha512-9neJwHf2AYia2e1KoyIdMn+UiKGJJBqMgmdB4enhnAlGDZcYBMtyqFba4vet4s3rBTm4hzdaIZsL85vpYiHC/g==}
-
-  '@web3-storage/blob-index@1.0.5':
-    resolution: {integrity: sha512-mhzupWeRfxLljoULcagU++mOmQOriCBMKniUhsmrCXrtRV8voF7op/ymqix1f9uX1M5iB93YXcfxAVBwGWWKoA==}
-    engines: {node: '>=16.15'}
-
-  '@web3-storage/capabilities@18.1.0':
-    resolution: {integrity: sha512-jgZtymt2jJtER3SPsE0yoRSf1BzNo1hQIir6hfY3QlooxTwdETzPbF1rBs5El7BCCMHhQfB9hiLRniTIhnX4wA==}
-
   '@web3-storage/data-segment@5.3.0':
     resolution: {integrity: sha512-zFJ4m+pEKqtKatJNsFrk/2lHeFSbkXZ6KKXjBe7/2ayA9wAar7T/unewnOcZrrZTnCWmaxKsXWqdMFy9bXK9dw==}
-
-  '@web3-storage/did-mailto@2.1.0':
-    resolution: {integrity: sha512-TRmfSXj1IhtX3ESurSNOylZSBKi0z/VJNoMLpof+AVRdovgZjjocpiePQTs2pfHKqHTHfJXc9AboWyK4IKTWMw==}
-    engines: {node: '>=16.15'}
-
-  '@web3-storage/filecoin-client@3.3.5':
-    resolution: {integrity: sha512-3JFKnHFizlljRSJyyCdNN3Np4MN5riBvjAXweqNmu4s2sChMB8kopnCkAFoMeEom9r7ZAnBAkMO3Wacjs6Nlcw==}
-
-  '@web3-storage/upload-client@17.1.4':
-    resolution: {integrity: sha512-jfVEcF7bVouxPy7kd1K5m6BaKeFzcH9zyyWC0CArByWLnKhuPhZ7+ykry3lwn82JIFXbEtmI563ewNuAAibieg==}
-
-  '@web3-storage/w3up-client@17.2.0':
-    resolution: {integrity: sha512-EZdlJKGJtqAq+2BScekOeXkPtpcqiQKUAe94Ww4IHvlP6nm7L932+zTynYkQE0kKnspKH6qiqrv7SUP3oIUxnQ==}
-    engines: {node: '>=18'}
 
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
@@ -3594,9 +3534,6 @@ packages:
 
   error-ex@1.3.2:
     resolution: {integrity: sha512-7dFHNmqeFSEt2ZBsCriorKnn3Z2pj+fd9kmI6QoWw4//DL+icEBfc0U7qJCisqrTsKTjw4fNFy2pW9OqStD84g==}
-
-  error-kid@0.0.4:
-    resolution: {integrity: sha512-x+yQhY56SorLMnX6kOf+z3JCv2QBurcWEDcIjgxYtVr4fGeCfAtOdZOCyWttkHHDFPtL2PqnaRUmphbmALJd9w==}
 
   eruda@3.4.1:
     resolution: {integrity: sha512-RmaO5yD97URY/9Q0lye3cmmNPoXNKreeePIw7c/zllbscR92CjGFZFuQ70+0fLIvLcKW3Xha8DS8NFhmeNbEBQ==}
@@ -4623,10 +4560,6 @@ packages:
     resolution: {integrity: sha512-1Qed0/Hr2m+YqxnM09CjA2d/i6YZNfF6R2oRAOj36eUdS6qIV/huPJNSEpKbupewFs+ZsJlxsjjPbc0/afW6Lw==}
     engines: {node: '>= 0.4'}
 
-  is-network-error@1.1.0:
-    resolution: {integrity: sha512-tUdRRAnhT+OtCZR/LxZelH/C7QtjtFrTu5tXCA8pl55eTUElUHT+GPYV8MBMBvea/j+NxQqVt3LbWMRir7Gx9g==}
-    engines: {node: '>=16'}
-
   is-number-object@1.1.1:
     resolution: {integrity: sha512-lZhclumE1G6VYD8VHe35wFaIif+CTy5SJIi5+3y4psDgWu4wPDoBhF8NxUOinEc7pHgiTsT6MaBb92rKhhD+Xw==}
     engines: {node: '>= 0.4'}
@@ -5572,10 +5505,6 @@ packages:
   p-retry@5.1.2:
     resolution: {integrity: sha512-couX95waDu98NfNZV+i/iLt+fdVxmI7CbrrdC2uDWfPdUAApyxT4wmDlyOtR5KtTDmkDO0zDScDjDou9YHhd9g==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
-
-  p-retry@6.2.1:
-    resolution: {integrity: sha512-hEt02O4hUct5wtwg4H4KcWgDdm+l1bOaEy/hWzd8xtXB9BqxTWBBhb+2ImAtH4Cv4rPjV76xN3Zumqk3k3AhhQ==}
-    engines: {node: '>=16.17'}
 
   p-timeout@6.1.4:
     resolution: {integrity: sha512-MyIV3ZA/PmyBN/ud8vV9XzwTrNtR4jFrObymZYnZqMmW0zA8Z17vnT0rBgFE/TlohB+YCHqXMgZzb3Csp49vqg==}
@@ -6761,14 +6690,6 @@ packages:
   v8-to-istanbul@9.3.0:
     resolution: {integrity: sha512-kiGUalWN+rgBJ/1OHZsBtU4rXZOfj/7rKQxULKlIzwzQSvMJUUNgPwJEEh7gU6xEVxC0ahoOBvN2YI8GH6FNgA==}
     engines: {node: '>=10.12.0'}
-
-  valibot@1.0.0-beta.14:
-    resolution: {integrity: sha512-tLyV2rE5QL6U29MFy3xt4AqMrn+/HErcp2ZThASnQvPMwfSozjV1uBGKIGiegtZIGjinJqn0SlBdannf18wENA==}
-    peerDependencies:
-      typescript: '>=5'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   varint@6.0.0:
     resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
@@ -8872,14 +8793,6 @@ snapshots:
       '@telegram-apps/transformers': 1.2.2
       '@telegram-apps/types': 1.2.1
 
-  '@telegram-apps/init-data-node@2.0.3(typescript@5.5.4)':
-    dependencies:
-      '@telegram-apps/transformers': 2.2.0(typescript@5.5.4)
-      '@telegram-apps/types': 2.0.0
-      error-kid: 0.0.4
-    transitivePeerDependencies:
-      - typescript
-
   '@telegram-apps/navigation@1.0.13':
     dependencies:
       '@telegram-apps/bridge': 1.9.2
@@ -8905,24 +8818,12 @@ snapshots:
 
   '@telegram-apps/toolkit@1.1.1': {}
 
-  '@telegram-apps/toolkit@2.0.0': {}
-
   '@telegram-apps/transformers@1.2.2':
     dependencies:
       '@telegram-apps/toolkit': 1.1.1
       '@telegram-apps/types': 1.2.1
 
-  '@telegram-apps/transformers@2.2.0(typescript@5.5.4)':
-    dependencies:
-      '@telegram-apps/toolkit': 2.0.0
-      '@telegram-apps/types': 2.0.0
-      valibot: 1.0.0-beta.14(typescript@5.5.4)
-    transitivePeerDependencies:
-      - typescript
-
   '@telegram-apps/types@1.2.1': {}
-
-  '@telegram-apps/types@2.0.0': {}
 
   '@tokenizer/token@0.3.0': {}
 
@@ -9078,8 +8979,6 @@ snapshots:
       csstype: 3.1.3
 
   '@types/retry@0.12.1': {}
-
-  '@types/retry@0.12.2': {}
 
   '@types/send@0.17.4':
     dependencies:
@@ -9287,11 +9186,6 @@ snapshots:
       '@ucanto/interface': 10.2.0
       multiformats: 13.3.2
       one-webcrypto: 1.0.3
-
-  '@ucanto/transport@9.1.1':
-    dependencies:
-      '@ucanto/core': 10.3.1
-      '@ucanto/interface': 10.2.0
 
   '@ucanto/transport@9.2.0':
     dependencies:
@@ -9502,102 +9396,11 @@ snapshots:
       json-schema-to-ts: 1.6.4
       ts-morph: 12.0.0
 
-  '@web3-storage/access@20.2.0':
-    dependencies:
-      '@ipld/car': 5.4.0
-      '@ipld/dag-ucan': 3.4.5
-      '@scure/bip39': 1.5.4
-      '@storacha/one-webcrypto': 1.0.1
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.3.1
-      '@ucanto/interface': 10.2.0
-      '@ucanto/principal': 9.0.2
-      '@ucanto/transport': 9.1.1
-      '@ucanto/validator': 9.1.0
-      '@web3-storage/capabilities': 18.1.0
-      '@web3-storage/did-mailto': 2.1.0
-      bigint-mod-arith: 3.3.1
-      conf: 11.0.2
-      multiformats: 13.3.2
-      p-defer: 4.0.1
-      type-fest: 4.39.0
-      uint8arrays: 5.1.0
-
-  '@web3-storage/blob-index@1.0.5':
-    dependencies:
-      '@ipld/dag-cbor': 9.2.2
-      '@storacha/one-webcrypto': 1.0.1
-      '@ucanto/core': 10.3.1
-      '@ucanto/interface': 10.2.0
-      '@web3-storage/capabilities': 18.1.0
-      carstream: 2.3.0
-      multiformats: 13.3.2
-      uint8arrays: 5.1.0
-
-  '@web3-storage/capabilities@18.1.0':
-    dependencies:
-      '@ucanto/core': 10.3.1
-      '@ucanto/interface': 10.2.0
-      '@ucanto/principal': 9.0.2
-      '@ucanto/transport': 9.1.1
-      '@ucanto/validator': 9.1.0
-      '@web3-storage/data-segment': 5.3.0
-      uint8arrays: 5.1.0
-
   '@web3-storage/data-segment@5.3.0':
     dependencies:
       '@ipld/dag-cbor': 9.2.2
       multiformats: 13.3.2
       sync-multihash-sha2: 1.0.0
-
-  '@web3-storage/did-mailto@2.1.0': {}
-
-  '@web3-storage/filecoin-client@3.3.5':
-    dependencies:
-      '@ipld/dag-ucan': 3.4.5
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.3.1
-      '@ucanto/interface': 10.2.0
-      '@ucanto/transport': 9.1.1
-      '@web3-storage/capabilities': 18.1.0
-
-  '@web3-storage/upload-client@17.1.4(encoding@0.1.13)':
-    dependencies:
-      '@ipld/car': 5.4.0
-      '@ipld/dag-cbor': 9.2.2
-      '@ipld/dag-ucan': 3.4.5
-      '@ipld/unixfs': 3.0.0
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.3.1
-      '@ucanto/interface': 10.2.0
-      '@ucanto/transport': 9.1.1
-      '@web3-storage/blob-index': 1.0.5
-      '@web3-storage/capabilities': 18.1.0
-      '@web3-storage/data-segment': 5.3.0
-      '@web3-storage/filecoin-client': 3.3.5
-      ipfs-utils: 9.0.14(encoding@0.1.13)
-      multiformats: 13.3.2
-      p-retry: 6.2.1
-      varint: 6.0.0
-    transitivePeerDependencies:
-      - encoding
-
-  '@web3-storage/w3up-client@17.2.0(encoding@0.1.13)':
-    dependencies:
-      '@ipld/dag-ucan': 3.4.5
-      '@ucanto/client': 9.0.1
-      '@ucanto/core': 10.3.1
-      '@ucanto/interface': 10.2.0
-      '@ucanto/principal': 9.0.2
-      '@ucanto/transport': 9.1.1
-      '@web3-storage/access': 20.2.0
-      '@web3-storage/blob-index': 1.0.5
-      '@web3-storage/capabilities': 18.1.0
-      '@web3-storage/did-mailto': 2.1.0
-      '@web3-storage/filecoin-client': 3.3.5
-      '@web3-storage/upload-client': 17.1.4(encoding@0.1.13)
-    transitivePeerDependencies:
-      - encoding
 
   '@webassemblyjs/ast@1.14.1':
     dependencies:
@@ -10628,8 +10431,6 @@ snapshots:
   error-ex@1.3.2:
     dependencies:
       is-arrayish: 0.2.1
-
-  error-kid@0.0.4: {}
 
   eruda@3.4.1: {}
 
@@ -11836,8 +11637,6 @@ snapshots:
 
   is-map@2.0.3: {}
 
-  is-network-error@1.1.0: {}
-
   is-number-object@1.1.1:
     dependencies:
       call-bound: 1.0.3
@@ -12933,12 +12732,6 @@ snapshots:
   p-retry@5.1.2:
     dependencies:
       '@types/retry': 0.12.1
-      retry: 0.13.1
-
-  p-retry@6.2.1:
-    dependencies:
-      '@types/retry': 0.12.2
-      is-network-error: 1.1.0
       retry: 0.13.1
 
   p-timeout@6.1.4: {}
@@ -14283,10 +14076,6 @@ snapshots:
       '@jridgewell/trace-mapping': 0.3.25
       '@types/istanbul-lib-coverage': 2.0.6
       convert-source-map: 2.0.0
-
-  valibot@1.0.0-beta.14(typescript@5.5.4):
-    optionalDependencies:
-      typescript: 5.5.4
 
   varint@6.0.0: {}
 
