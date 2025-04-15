@@ -1,5 +1,5 @@
-import { AbsolutePeriod } from '@/api'
-import { SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
+import { AbsolutePeriod, BackupData, BackupModel, DialogData, EncryptedByteView, EntityData, EntityType, MessageData } from '@/api'
+import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
 import * as Block from 'multiformats/block'
@@ -7,6 +7,7 @@ import { sha256 } from 'multiformats/hashes/sha2'
 import * as CAR from '@storacha/upload-client/car'
 import * as Crypto from '../crypto'
 import { IterMessagesParams } from '@/vendor/telegram/client/messages'
+import { Entity } from '@/vendor/telegram/define'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 
@@ -30,7 +31,7 @@ export interface Options {
 
 export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
   const { onDialogStored, onDialogRetrieved } = options ?? {}
-  const dialogMessages: Record<string, UnknownLink> = {}
+  const dialogMessages: BackupData['dialogs'] = {}
 
   console.log('chats: ', dialogs)
   const selectedChats = Array.from(dialogs)
@@ -40,22 +41,41 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   }
 
   for (const chatId of selectedChats) {
-    console.log('chat ID: ', chatId)
-    const messages = []
+    console.log('backing up dialog:', chatId)
+    const entity = await ctx.telegram.getEntity(chatId)
+
+    const entities: DialogData['entities'] = {
+      [entity.id.value]: toEntityData(entity)
+    }
+
+    const messages: MessageData[] = []
     const [firstMessage] = await ctx.telegram.getMessages(chatId, {
       limit: 1,
       offsetDate: period[0],
     })
-    console.log('firstMessage: ', firstMessage)
+    console.log('first message:', firstMessage)
     const options: Partial<IterMessagesParams> = { offsetDate: period[1] }
-    if(firstMessage) {
+    if (firstMessage) {
       options.minId = firstMessage.id
     }
 
     for await (const message of ctx.telegram.iterMessages(chatId, options)) {
-      console.log('Message ID: ', message.id)
+      let fromID
+      if (message.fromId?.className === 'PeerUser') {
+        fromID = message.fromId.userId
+      } else if (message.fromId?.className === 'PeerChat') {
+        fromID = message.fromId.chatId
+      } else if (message.fromId?.className === 'PeerChannel') {
+        fromID = message.fromId.channelId
+      }
+      if (!fromID) {
+        // TODO: IDK what do we do here?
+        continue
+      }
+
+      entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
       
-      let mediaCid
+      // let mediaCid
       // if (message.media) {
       //   try {
       //     TODO: download the media in the next app iteration
@@ -69,14 +89,13 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
       //   }
       // }
 
-      const parsedMessage = await formatMessage(ctx.telegram, message, mediaCid)
-      messages.push(parsedMessage)
+      messages.push(toMessageData(message))
     }
     await onDialogRetrieved?.(chatId)
 
     console.log(`Backup for chat ${chatId}:`, messages)
 
-    const backupChatData = dagCBOR.encode(messages)
+    const backupChatData = dagCBOR.encode({ entities, messages } as DialogData)
 
     console.log('encrypting backup...')
     const encryptedContent = await Crypto.encryptContent(backupChatData, ctx.encryptionPassword)
@@ -85,14 +104,14 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 
     console.log('uploading chat data to storacha...')
     await ctx.storacha.setCurrentSpace(space)
-    const root = await ctx.storacha.uploadFile(blob)
+    const root = (await ctx.storacha.uploadFile(blob)) as Link<EncryptedByteView<DialogData>>
     console.log('Upload CID: ', root.toString())
 
     dialogMessages[chatId.toString()] = root
     await onDialogStored?.(chatId)
   }
 
-  const rootData = {
+  const rootData: BackupModel = {
     [versionTag]: {
       dialogs: dialogMessages,
       period,
@@ -104,72 +123,61 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   return rootBlock.cid
 }
 
-export function calculatePoints(sizeInBytes: number): number {
-    const POINTS_PER_BYTE = Number(process.env.NEXT_PUBLIC_POINTS_PER_BYTE) ?? 1
-    return sizeInBytes * POINTS_PER_BYTE
+// TODO: reinstate when we add media to backups
+// function getMediaType(media?: Api.TypeMessageMedia) {
+//     if (!media) return null
+//     if (!('_' in media)) return 'file'
+//     switch (media._) {
+//         case 'messageMediaPhoto':
+//             return 'photo'
+//         case 'messageMediaDocument':
+//             return 'document'
+//         case 'messageMediaWebPage':
+//             return 'webpage'
+//         case 'messageMediaGeo':
+//             return 'location'
+//         default:
+//             return 'file'
+//     }
+// }
+
+const toMessageData = (message: Api.Message): MessageData => {
+  const id = message.id
+  let from = '0'
+  if (message.fromId?.className === 'PeerUser') {
+    from = message.fromId.userId.toString()
+  } else if (message.fromId?.className === 'PeerChat') {
+    from = message.fromId.chatId.toString()
+  } else if (message.fromId?.className === 'PeerChannel') {
+    from = message.fromId.channelId.toString()
+  }
+  const date = message.date ?? 0
+  return { id, from, date, message: message.message ?? '' }
 }
 
-function getMediaType(media?: Api.TypeMessageMedia) {
-    if (!media) return null
-    if (!('_' in media)) return 'file'
-    switch (media._) {
-        case 'messageMediaPhoto':
-            return 'photo'
-        case 'messageMediaDocument':
-            return 'document'
-        case 'messageMediaWebPage':
-            return 'webpage'
-        case 'messageMediaGeo':
-            return 'location'
-        default:
-            return 'file'
-    }
-}
-
-async function formatMessage(client: TelegramClient, message: Api.Message, mediaCid?: string) {
-    let fromId = null
-    let senderName = 'Unknown'
-
-    try {
-      const fromType = message.fromId?.className
-      if (fromType) {
-        const entity = await client.getEntity(fromId)
-        if (fromType === "PeerUser") {
-          fromId = message.fromId?.userId.toString()
-          // @ts-expect-error this is a entity of type User
-          senderName = `${entity.firstName ?? ''} ${entity.lastName ?? ''}`.trim()
-        } else if (fromType === "PeerChat") {
-          fromId = message.fromId?.chatId.toString()
-          // @ts-expect-error this is a entity of type Chat
-          senderName = entity.title ?? 'Group'
-        } else if (fromType === "PeerChannel") {
-          fromId = message.fromId?.channelId.toString()
-          // @ts-expect-error this is a entity of type Channel
-          senderName = entity.title ?? 'Channel'
-        }
+const toEntityData = (entity: Entity): EntityData => {
+  const id = entity.id?.value ?? '0'
+  let type: EntityType = 'unknown'
+  let name = ''
+  let photo: EntityData['photo']
+  if (entity.className === 'User') {
+    type = 'user'
+    name = [entity.firstName, entity.lastName].filter(s => !!s).join(' ')
+    if (entity.photo?.className === 'UserProfilePhoto') {
+      photo = { id: entity.photo.photoId.toString() }
+      if (entity.photo.strippedThumb) {
+        photo.strippedThumb = new Uint8Array(entity.photo.strippedThumb)
       }
-    } catch (err) {
-      console.warn(`Failed to fetch entity info for fromId ${message.fromId}`, err)
     }
-
-    const media = message.media ? 
-      {
-        mediaType: getMediaType(message.media),
-        mediaCid: mediaCid ?? null
+  } else if (entity.className === 'Chat' || entity.className === 'Channel') {
+    type = entity.className === 'Chat' ? 'chat' : 'channel'
+    name = entity.title ?? ''
+    if (entity.photo?.className === 'ChatPhoto') {
+      photo = { id: entity.photo.photoId.toString() }
+      if (entity.photo.strippedThumb) {
+        photo.strippedThumb = new Uint8Array(entity.photo.strippedThumb)
       }
-      : null
-
-    return {
-      id: message.id.toString(),
-      date: message.date,
-      from: {
-        id: fromId,
-        name: senderName,
-      },
-      text: message.message,
-      media,
-      reactions: [], // Optional: would be nice to include it in the future
-      replies: [],  // Optional: would be nice to include it in the future.
-      raw: JSON.stringify(message)
     }
+  }
+  return { id, type, name, photo }
 }

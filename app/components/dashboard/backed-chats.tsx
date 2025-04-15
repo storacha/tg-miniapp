@@ -1,6 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '../ui/button'
-import { Upload, ShieldCheck } from 'lucide-react'
+import { ShieldCheck, ChevronRight } from 'lucide-react'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
 import { MouseEventHandler, useEffect, useState } from 'react'
@@ -33,14 +32,17 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 
 	return (
 		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={String(dialog.id)} onClick={onClick}>
-			<div className="flex gap-4 items-center">
-				<Avatar>
+			<div className="flex gap-4 items-center w-full">
+				<Avatar className="flex-none">
 					<AvatarImage src={thumbSrc} />
 					<AvatarFallback>{initials}</AvatarFallback>
 				</Avatar>
-				<div>
+				<div className="flex-auto">
 					<h1 className="font-semibold text-foreground/80">{title}</h1>
 					<p className="text-sm text-foreground/60">Last Backup: {latestBackupDate ? latestBackupDate.toLocaleString() : <span className="text-red-900">Never</span>}</p>
+				</div>
+				<div className={`flex-none ${latestBackupDate ? '' : 'text-gray-300'}`}>
+					<ChevronRight />
 				</div>
 			</div>
 		</div>
@@ -88,12 +90,15 @@ export default function BackedChats() {
 					<p className="text-center text-sm text-foreground/40">Secure your data today with our encrypted storage.</p>
 				</div>
 			)}
-			<div className="flex flex-col">
-				{dialogs.map(d => {
-					const latestBackup = sortedBackups.find(b => d.id && b.dialogs.has(d.id.value))
-					return <DialogItem key={String(d.id)} dialog={d} latestBackup={latestBackup} onClick={handleDialogItemClick} />
-				})}
-			</div>
+			{backups.items.length > 0 && (
+				<div className="flex flex-col">
+					{loading && <p className='text-center'>Loading chats...</p>}
+					{!loading && dialogs.map(d => {
+						const latestBackup = sortedBackups.find(b => d.id && b.dialogs.has(d.id.value))
+						return <DialogItem key={String(d.id)} dialog={d} latestBackup={latestBackup} onClick={handleDialogItemClick} />
+					})}
+				</div>
+			)}
 		</div>
 	)
 }

@@ -1,3 +1,6 @@
+import { ByteView } from "multiformats"
+import { EncryptedByteView } from "@/api"
+
 // Centralized encryption parameters
 const ENCRYPTION_CONFIG = {
     algorithm: 'AES-CBC',
@@ -13,7 +16,7 @@ const ENCRYPTION_CONFIG = {
  * @param password - The password to derive the encryption key.
  * @returns A buffer containing the salt and encrypted data.
  */
-export async function encryptContent(content: Uint8Array, password: string): Promise<Uint8Array> {
+export async function encryptContent<T>(content: ByteView<T>, password: string): Promise<EncryptedByteView<T>> {
     const salt = crypto.getRandomValues(new Uint8Array(ENCRYPTION_CONFIG.saltLength))
     const { key, iv } = await deriveKeyAndIV(password, salt)
 
