@@ -3,8 +3,28 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AlignJustify, LogOut } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Progress } from '@/components/ui/progress'
+import { useTelegram } from '@/providers/telegram'
+import { useGlobal } from '@/zustand/global'
+import { MouseEventHandler } from 'react'
 
 export function Menu() {
+	const [{ client, user }] = useTelegram()
+	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber } = useGlobal()
+	const initials = user?.firstName ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase() : ''
+
+	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = e => {
+		e.preventDefault()
+		if (!confirm('Are you sure you want to log out?')) return
+		// TODO: I don't think this actually does anything 😱
+		// There's no client logout method (there is in Python)
+		client.session.delete()
+		// TODO: remove other stuff in global?
+		setPhoneNumber('')
+		// TODO: remove Storacha auth data
+		setIsTgAuthorized(false)
+		setIsStorachaAuthorized(false)
+	}
+
 	return (
 		<Drawer>
 			<DrawerTrigger>
@@ -15,15 +35,15 @@ export function Menu() {
 					<div className="px-5 flex justify-between items-center">
 						<div className="flex items-center gap-2 py-5">
 							<Avatar className="h-12 w-12">
-								<AvatarImage src="https://github.com/shadcn.png" />
-								<AvatarFallback>CN</AvatarFallback>
+								<AvatarImage src={user?.photoUrl} />
+								<AvatarFallback>{initials}</AvatarFallback>
 							</Avatar>
-							<div className="flex flex-col justify-center items-center">
-								<p className="text-base">Alena Donin</p>
-								<p className="text-sm text-blue-600">+123 4567 8900</p>
+							<div className="flex flex-col justify-center">
+								<p className="text-base">{user?.firstName} {user?.lastName ?? ''}</p>
+								<p className="text-sm text-blue-600">{phoneNumber}</p>
 							</div>
 						</div>
-						<button type="button">
+						<button type="button" onClick={handleLogOutClick}>
 							<LogOut />
 						</button>
 					</div>

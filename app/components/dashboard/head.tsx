@@ -3,13 +3,15 @@
 import { Button } from '../ui/button'
 import Coin from '../svgs/coin'
 import { useRouter } from 'next/navigation'
+import { useTelegram } from '@/providers/telegram'
 
 export default function Head() {
 	const router = useRouter()
+	const [{ user }] = useTelegram()
 	return (
 		<div className="bg-background rounded-sm">
 			<div className="flex justify-between items-center px-5 py-3">
-				<p>Hi, Alex</p>
+				<p>Hi, {user?.firstName ?? ''}</p>
 				<div className="flex items-center gap-10 text-blue-600">
 					<p>#__</p>
 					<div className="flex justify-center items-center gap-1">
