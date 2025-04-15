@@ -49,7 +49,7 @@ export function Menu() {
 					</div>
 				</DrawerTitle>
 
-				<div className="bg-background">
+				{/* <div className="bg-background">
 					<div className="py-5 px-5 flex flex-col gap-2 border-b border-foreground/10">
 						<p className="text-base text-foreground/80">Storage</p>
 						<Progress value={55} className="w-full" />
@@ -66,7 +66,7 @@ export function Menu() {
 							<Button className="w-full">Go Pro</Button>
 						</div>
 					</div>
-				</div>
+				</div> */}
 			</DrawerContent>
 		</Drawer>
 	)

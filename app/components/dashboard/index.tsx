@@ -11,11 +11,11 @@ export default function Dashboard() {
 
 	return (
 		<div className="w-full flex items-center flex-col h-full">
-			<div className="w-full px-5">
+			{/* <div className="w-full px-5">
 				<Head />
-			</div>
+			</div> */}
 			{jobs.items.map(j => <JobItem key={j.id} job={j} />)}
-			<div className="rounded-t-xl bg-background flex-grow w-full shadow-t-xl mt-5 pt-5">
+			<div className="rounded-t-xl bg-background flex-grow w-full shadow-t-xl pt-5">
 				<BackedChats />
 			</div>
 			<div className="sticky bottom-0 bg-white w-full px-5 pb-5">
@@ -29,8 +29,8 @@ export default function Dashboard() {
 
 const JobItem = ({ job }: { job: Job }) => {
 	return (
-		<div className="w-full px-5">
-			<div className="w-full mt-5 bg-background rounded-sm border">
+		<div className="w-full px-5 mb-5">
+			<div className="w-full bg-background rounded-sm border">
 				<p className="px-5 pt-3">Backup <span className="capitalize">{job.state}</span></p>
 				<div className="flex justify-between items-center px-3 py-3">
 					<div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
