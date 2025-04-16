@@ -61,15 +61,21 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
         }
 
         dialogEntity = await ctx.telegram.getEntity(dialogID)
-        const [firstMessage] = await ctx.telegram.getMessages(dialogID, {
-          limit: 1,
-          // FML, there is a falsey check on this value so we cannot pass 0
-          // because the library thinks we passed no value.
-          offsetDate: period[0] === 0 ? 1 : period[0],
-        })
+
+        let minId
+        if (period[0] > 0) {
+          // if start date is not the beginning of time get the first message
+          // before the start date (if there is one), and then iterate from end
+          // date to first message (exclusive).
+          const [firstMessage] = await ctx.telegram.getMessages(dialogID, {
+            limit: 1,
+            offsetDate: period[0],
+          })
+          minId = firstMessage?.id
+        }
         messageIterator = ctx.telegram.iterMessages(dialogID, {
           offsetDate: period[1],
-          minId: firstMessage?.id
+          minId
         })[Symbol.asyncIterator]()
       }
 
