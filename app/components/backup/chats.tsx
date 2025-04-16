@@ -8,6 +8,7 @@ import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, use
 import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
 import { cloudStorage } from "@telegram-apps/sdk-react";
+import { Backup } from '@/api'
 
 async function getLastBackups() {
   const lastBackups = new Map<bigint, Date>()
@@ -17,28 +18,26 @@ async function getLastBackups() {
 
     for (const key of keys) {
 		
-      if (key.startsWith("bckp")) {
+      if (key.startsWith("backup-")) {
         const value = await cloudStorage.getItem(key)
 
         if (value) {
-          const backup = JSON.parse(value)
-          const backupDate = new Date(backup.date)
+          const backup: Backup = JSON.parse(value)
+          const backupDate = new Date(backup.created)
+		  const chats = Array.from(backup.dialogs)
 
-          for (const chatIdStr of backup.chats) {
-            const chatId = BigInt(chatIdStr)
-
+          for (const chatId of chats) {
             if (!lastBackups.has(chatId) || lastBackups.get(chatId)! < backupDate) {
-              lastBackups.set(chatId, backupDate);
+              lastBackups.set(chatId, backupDate)
             }
           }
         }
       }
     }
   } else {
-    console.error("Cloud storage is not available.");
+    console.error("Cloud storage is not available.")
   }
-
-  return lastBackups;
+  return lastBackups
 }
 
 interface Filter {

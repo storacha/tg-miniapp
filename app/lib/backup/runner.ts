@@ -24,7 +24,6 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   const onDialogStored = options?.onDialogStored
   const dialogMessages: Record<string, UnknownLink> = {}
 
-  console.log('chats: ', dialogs)
   const selectedChats = Array.from(dialogs)
 
   if (!ctx.telegram.connected) {
@@ -32,12 +31,13 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   }
 
   for (const chatId of selectedChats) {
-    console.log('chat ID: ', chatId)
+    console.log(`Runner.run: chat ID ${chatId} getting messages... `)
     const messages = []
     const [firstMessage] = await ctx.telegram.getMessages(chatId, {
       limit: 1,
       offsetDate: period[0],
     })
+    
     console.log('firstMessage: ', firstMessage)
     const options: Partial<IterMessagesParams> = { offsetDate: period[1] }
     if(firstMessage) {
@@ -45,7 +45,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
     }
 
     for await (const message of ctx.telegram.iterMessages(chatId, options)) {
-      console.log('Message ID: ', message.id)
+      console.log(`Message id: ${message.id}, text: ${message.text}, message: ${message.message}, has media: ${message.media != undefined}`)
       
       let mediaCid
       // if (message.media) {
@@ -118,49 +118,82 @@ function getMediaType(media?: Api.TypeMessageMedia) {
 }
 
 async function formatMessage(client: TelegramClient, message: Api.Message, mediaCid?: string) {
-    let fromId = null
-    let senderName = 'Unknown'
+  let fromId: string | null = null
+  let senderName = 'Unknown'
 
-    try {
-      const fromType = message.fromId?.className
-      if (fromType) {
-        const entity = await client.getEntity(fromId)
-        if (fromType === "PeerUser") {
+  console.log(message)
+
+  try {
+    const fromType = message.fromId?.className
+    if (fromType) {
+      const entity = await client.getEntity(message.fromId)
+
+      switch (fromType) {
+        case 'PeerUser':
           fromId = message.fromId?.userId.toString()
-          // @ts-expect-error this is a entity of type User
+          // @ts-expect-error entity is a User
           senderName = `${entity.firstName ?? ''} ${entity.lastName ?? ''}`.trim()
-        } else if (fromType === "PeerChat") {
+          break
+        case 'PeerChat':
           fromId = message.fromId?.chatId.toString()
-          // @ts-expect-error this is a entity of type Chat
+          // @ts-expect-error entity is a Chat
           senderName = entity.title ?? 'Group'
-        } else if (fromType === "PeerChannel") {
+          break
+        case 'PeerChannel':
           fromId = message.fromId?.channelId.toString()
-          // @ts-expect-error this is a entity of type Channel
+          // @ts-expect-error entity is a Channel
           senderName = entity.title ?? 'Channel'
-        }
+          break
       }
-    } catch (err) {
-      console.warn(`Failed to fetch entity info for fromId ${message.fromId}`, err)
     }
+  } catch (err) {
+    console.warn(`Failed to fetch entity info for fromId ${message.fromId}`, err)
+  }
 
-    const media = message.media ? 
-      {
+  const action = message.action
+  ? {
+      name: message.action.className.replace(/^MessageAction/, '').split(/(?=[A-Z])/).join(" "),
+      arguments: message.action.originalArgs
+    }
+  : null
+
+  const media = message.media
+    ? {
         mediaType: getMediaType(message.media),
         mediaCid: mediaCid ?? null
       }
-      : null
+    : null
 
-    return {
-      id: message.id.toString(),
-      date: message.date,
-      from: {
-        id: fromId,
-        name: senderName,
-      },
-      text: message.message,
-      media,
-      reactions: [], // Optional: would be nice to include it in the future
-      replies: [],  // Optional: would be nice to include it in the future.
-      raw: JSON.stringify(message)
-    }
+  const reactions = message.reactions?.results?.map(r => ({
+    reaction: r.reaction.originalArgs,
+    count: r.count
+  })) ?? []
+
+  const replies = message.replies
+    ? {
+        count: message.replies.replies,
+        thread: message.replies.comments
+      }
+    : null
+
+  return {
+    id: message.id.toString(),
+    messageType: message.className,
+    action,
+    outgoing: message.out,
+    date: message.date,
+    from: {
+      id: fromId,
+      name: senderName
+    },
+    text: message.message ?? '',
+    timestamp: message.date,
+    replyTo: message.replyTo?.originalArgs ?? null,
+    media,
+    reactions,
+    replies,
+    raw: JSON.stringify(message.originalArgs, (_, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    )
+  }
 }
