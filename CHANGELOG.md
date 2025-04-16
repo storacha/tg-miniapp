@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.2.0...tg-mini-app-v1.2.1) (2025-04-16)
+
+
+### Bug Fixes
+
+* useEffect in telegram provider ([c63b141](https://github.com/storacha/tg-miniapp/commit/c63b1411a6b418adaf8f1c0cdf2a79153e1a363f))
+
 ## [1.2.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.1.0...tg-mini-app-v1.2.0) (2025-04-16)
 
 
