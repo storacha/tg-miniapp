@@ -1,4 +1,4 @@
-import { AbsolutePeriod, BackupData, BackupModel, DialogData, EncryptedByteView, EntityData, EntityRecordData, EntityType, MessageData } from '@/api'
+import { AbsolutePeriod, BackupData, BackupModel, DialogData, EncryptedByteView, EntityData, EntityRecordData, EntityType, MessageData, ServiceMessageData } from '@/api'
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
@@ -36,12 +36,12 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   let dialogEntity: Entity | null = null
 
   let entities: EntityRecordData = {}
-  let messages: MessageData[] = []
-  let messageLinks: Array<Link<EncryptedByteView<MessageData[]>>> = []
+  let messages: Array<MessageData | ServiceMessageData> = []
+  let messageLinks: Array<Link<EncryptedByteView<Array<MessageData | ServiceMessageData>>>> = []
 
   // null value signals that no more messages will come and the current dialog
   // can now be finalized
-  let messageIterator: AsyncIterator<Api.Message> | null = null
+  let messageIterator: AsyncIterator<Api.TypeMessage> | null = null
 
   const blockStream = new ReadableStream<Block>({
     async start () {
@@ -123,6 +123,10 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
           break
         }
 
+        if (message.className === 'MessageEmpty') {
+          // TODO: IDK what do we do here?
+          continue
+        }
         let fromID
         if (message.fromId?.className === 'PeerUser') {
           fromID = message.fromId.userId
@@ -209,9 +213,8 @@ const encodeAndEncrypt = <T>(ctx: Context, data: T) =>
 //     }
 // }
 
-const toMessageData = (message: Api.Message): MessageData => {
-  const id = message.id
-  let from = '0'
+const toMessageData = (message: Api.Message | Api.MessageService): MessageData | ServiceMessageData => {
+  let from
   if (message.fromId?.className === 'PeerUser') {
     from = message.fromId.userId.toString()
   } else if (message.fromId?.className === 'PeerChat') {
@@ -219,8 +222,23 @@ const toMessageData = (message: Api.Message): MessageData => {
   } else if (message.fromId?.className === 'PeerChannel') {
     from = message.fromId.channelId.toString()
   }
-  const date = message.date ?? 0
-  return { id, from, date, message: message.message ?? '' }
+
+  if (message.className === 'MessageService') {
+    return {
+      id: message.id,
+      type: 'service',
+      ...(from == null ? {} : { from }),
+      date: message.date,
+    }
+  }
+
+  return {
+    id: message.id,
+    type: 'message',
+    ...(from == null ? {} : { from }),
+    date: message.date,
+    message: message.message ?? ''
+  }
 }
 
 const toEntityData = (entity: Entity): EntityData => {
