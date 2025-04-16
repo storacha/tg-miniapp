@@ -10,7 +10,7 @@ export function Layouts({
 	return (
 		<div
 			className={cn(
-				'h-screen flex flex-col',
+				'min-h-screen flex flex-col',
 				isSinglePage ? cn(isBackgroundBlue ? 'bg-blue-100/80' : 'bg-background') : 'bg-blue-100/80 ',
 			)}
 		>

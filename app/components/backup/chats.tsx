@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { useRouter, useSearchParams } from 'next/navigation'
 import { useTelegram } from '@/providers/telegram'
 import { Button } from '../ui/button'
 import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useState } from 'react'
@@ -18,10 +17,7 @@ const and = (...filters: Filter[]) => (dialog: Dialog) => filters.every(f => f(d
 
 const filterPrivate = (dialog: Dialog) => !dialog.isChannel
 const filterPublic = (dialog: Dialog) => dialog.isChannel
-const filterAll = () => true
-
-const toTypeFilter = (n: string) =>
-	n === 'public' ? filterPublic : n === 'private' ? filterPrivate : filterAll
+const noFilter = () => true
 
 const toSearchFilter = (t: string) => (dialog: Dialog) => {
 	const title = dialog.name ?? dialog.title ?? ''
@@ -69,16 +65,15 @@ export interface ChatsProps {
 }
 
 export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
-	const router = useRouter()
-	const searchParams = useSearchParams()
 	const [{ client }] = useTelegram()
 	const [{ backups }] = useBackups()
-	const [searchTerm, setSearchTerm] = useState(searchParams.get('q') ?? '')
+	const [searchTerm, setSearchTerm] = useState('')
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
 	const [loading, setLoading] = useState(true)
 
-	const typeFilter = toTypeFilter(searchParams.get('t') ?? 'all')
-	const searchFilter = toSearchFilter(searchParams.get('q') ?? '')
+	const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
+	const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
+
 	const items = dialogs.filter(and(typeFilter, searchFilter))
 
 	const sortedBackups = backups.items.sort((a, b) => b.period[1] - a.period[1])
@@ -101,25 +96,13 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		setSearchTerm(e.target.value)
 		if (!e.target.value) {
-			const params = new URLSearchParams(searchParams)
-			params.set('q', '')
-			router.push(window.location.pathname + '?' + params)
+			setSearchFilter(() => noFilter)
 		}
 	}
 
 	const handleSearchSubmit: FormEventHandler<HTMLFormElement> = e => {
 		e.preventDefault()
-		const params = new URLSearchParams(searchParams)
-		params.set('q', searchTerm)
-		router.push(window.location.pathname + '?' + params)
-	}
-
-	const handleTypeClick: MouseEventHandler<HTMLButtonElement> = e => {
-		e.preventDefault()
-		const type = e.currentTarget.getAttribute('data-type') ?? 'all'
-		const params = new URLSearchParams(searchParams)
-		params.set('t', type)
-		router.push(window.location.pathname + '?' + params)
+		setSearchFilter(() => toSearchFilter(searchTerm))
 	}
 
 	const handleDialogItemClick: MouseEventHandler = (e) => {
@@ -148,13 +131,13 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 					</form>
 				</div>
 				<div className="px-5 flex gap-5">
-					<Button size="sm" variant={typeFilter === filterAll ? 'outline' : 'secondary'} data-type='all' onClick={handleTypeClick}>
+					<Button size="sm" variant={typeFilter === noFilter ? 'outline' : 'secondary'} onClick={() => setTypeFilter(() => noFilter)}>
 						All
 					</Button>
-					<Button size="sm" variant={typeFilter === filterPublic ? 'outline' : 'secondary'} data-type='public' onClick={handleTypeClick}>
+					<Button size="sm" variant={typeFilter === filterPublic ? 'outline' : 'secondary'} onClick={() => setTypeFilter(() => filterPublic)}>
 						Public
 					</Button>
-					<Button size="sm" variant={typeFilter === filterPrivate ? 'outline' : 'secondary'} data-type='private' onClick={handleTypeClick}>
+					<Button size="sm" variant={typeFilter === filterPrivate ? 'outline' : 'secondary'} onClick={() => setTypeFilter(() => filterPrivate)}>
 						Private
 					</Button>
 				</div>
