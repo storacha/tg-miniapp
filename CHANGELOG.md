@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.0...tg-mini-app-v1.0.1) (2025-04-16)
+
+
+### Bug Fixes
+
+* required release please permissions ([b391069](https://github.com/storacha/tg-miniapp/commit/b3910697a8b3e50a3ab0c2b1e24d656da113059c))
+
 ## 1.0.0 (2025-04-16)
 
 
