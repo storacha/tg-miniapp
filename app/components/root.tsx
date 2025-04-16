@@ -8,7 +8,7 @@ import LogoSplash from './svgs/logo-splash'
 import { Provider as TelegramProvider, useTelegram } from '@/providers/telegram'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import { Provider as StorachaProvider, useW3 as useStoracha } from '@storacha/ui-react'
-import { uploadServiceConnection } from '@storacha/client/service'
+import { uploadServiceConnection, defaultHeaders } from '@storacha/client/service'
 import { parse as parseDID } from '@ipld/dag-ucan/did'
 import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
@@ -22,11 +22,14 @@ import { useGlobal } from '@/zustand/global'
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
+const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 
 // TODO: Temporary, until service respects `did:web:up.storacha.network`
 const serviceID = parseDID('did:web:web3.storage')
 // TODO: Temporary, until service respects `did:web:up.storacha.network`
 const connection = uploadServiceConnection({ id: serviceID })
+// Add the miniapp identifier to the client header
+defaultHeaders['X-Client'] += ` tg-miniapp/${version.split('.')[0]}`
 
 // Initialize telegram react SDK
 if (typeof window !== 'undefined') {
