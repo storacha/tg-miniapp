@@ -6,22 +6,25 @@ import { AlignJustify, LogOut } from 'lucide-react'
 import { useTelegram } from '@/providers/telegram'
 import { useGlobal } from '@/zustand/global'
 import { MouseEventHandler } from 'react'
+import { useW3 as useStoracha } from '@storacha/ui-react'
 
 export function Menu() {
-	const [{ client, user }] = useTelegram()
-	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber } = useGlobal()
+	const [{ client: telegram, user }] = useTelegram()
+	const [, { logout }] = useStoracha()
+	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber, setSpace } = useGlobal()
 	const initials = user?.firstName ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase() : ''
 
-	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = e => {
+	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async e => {
 		e.preventDefault()
 		if (!confirm('Are you sure you want to log out?')) return
+		setPhoneNumber('')
+		setSpace(null)
+		// TODO: remove other stuff in global?
 		// TODO: I don't think this actually does anything 😱
 		// There's no client logout method (there is in Python)
-		client.session.delete()
-		// TODO: remove other stuff in global?
-		setPhoneNumber('')
-		// TODO: remove Storacha auth data
+		telegram.session.delete()
 		setIsTgAuthorized(false)
+		await logout()
 		setIsStorachaAuthorized(false)
 	}
 
