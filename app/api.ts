@@ -115,7 +115,7 @@ export interface EntityData {
   }
 }
 
-export type MessageData =  {
+export interface MessageData {
   id: MessageID
   type: 'message'
   /**
