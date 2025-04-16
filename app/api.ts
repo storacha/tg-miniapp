@@ -1,4 +1,4 @@
-import { SpaceDID, UnknownLink } from '@storacha/ui-react'
+import { ByteView, Link, Phantom, SpaceDID, ToString, UnknownLink, Variant } from '@storacha/ui-react'
 
 export type AbsolutePeriod = [from: number, to: number]
 
@@ -59,6 +59,68 @@ export interface BackupStorage extends EventTarget {
 export interface JobManager {
   /** Add a backup job to the queue. */
   add: (space: SpaceDID, dialogs: Set<bigint>, period: Period) => Promise<JobID>
-  /** Restart an existing job. */
-  restart: (id: JobID) => Promise<void>
+  /** 
+   * Remove an existing job. If the job is queued it will be cancelled. Jobs
+   * that are running cannot be removed and will throw an error.
+   */
+  remove: (id: JobID) => Promise<void>
+}
+
+export type BackupModel = Variant<{
+  'tg-miniapp-backup@0.0.1': BackupData
+}>
+
+/** A Telegram entity ID. */
+export type EntityID = bigint
+export type PhotoID = bigint
+export type MessageID = number
+
+export type EncryptedByteView<T> = ByteView<T>
+
+export interface BackupData {
+  /** The dialogs available in this backup. */
+  dialogs: Record<ToString<EntityID>, Link<EncryptedByteView<DialogData>>>
+  /** The period this backup covers. */
+  period: AbsolutePeriod
+}
+
+export interface DialogData extends EntityData {
+  /** A link to the entities that participated in this dialog. */
+  entities: Link<EncryptedByteView<EntityRecordData>>
+  /**
+   * An array of links to lists of ordered messages sent by entities
+   * participating in this dialog.
+   *
+   * Messages are ordered newest to oldest.
+   *
+   * Each list has a maximum of 1,000 messages.
+   */
+  messages: Array<Link<EncryptedByteView<MessageData[]>>>
+}
+
+export type EntityRecordData = Record<ToString<EntityID>, EntityData>
+
+export type EntityType = 'user' | 'chat' | 'channel' | 'unknown'
+
+export interface EntityData {
+  id: ToString<EntityID>
+  /** Type of the entity. */
+  type: EntityType
+  /** Normalized name of the entity. */
+  name: string
+  /** Photo for the entity. */
+  photo?: {
+    id: ToString<PhotoID>
+    strippedThumb?: Uint8Array
+  }
+}
+
+export interface MessageData {
+  id: MessageID
+  /** ID of the peer who sent this message. */
+  from: ToString<EntityID>
+  /** Timestamp in seconds since Unix epoch that this message was sent. */
+  date: number
+  /** The string text of the message. */
+  message: string
 }

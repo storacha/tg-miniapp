@@ -67,11 +67,8 @@ export const update = (target: EventTarget, id: JobID, data: Partial<Omit<Job, '
 export const remove = (target: EventTarget, id: JobID) => {
   const job = find(id)
   if (!job) throw new Error(`job not found: ${id}`)
-  console.log('REMOVING JOB', id)
   localStorage.removeItem(`job:${id}`)
   const jobIDs: string[] = dagJSON.parse(localStorage.getItem('jobs') ?? '[]')
-  console.log(jobIDs)
   localStorage.setItem('jobs', dagJSON.stringify(jobIDs.filter(jid => jid !== id)))
-  console.log(dagJSON.stringify(jobIDs.filter(jid => jid !== id)))
   target.dispatchEvent(new CustomEvent('remove', { detail: job }))
 }

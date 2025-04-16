@@ -61,3 +61,22 @@ export const decodeStrippedThumb = (bytes: Uint8Array) => {
 export const toJPGDataURL = (bytes: Uint8Array) =>
 	// @ts-expect-error Uint8Array is effectively number[]
 	'data:image/jpeg;base64,' + btoa(String.fromCharCode.apply(null, bytes))
+
+
+export const toAsyncIterable = <T>(stream: ReadableStream<T>): AsyncIterable<T> => {
+	if (Symbol.asyncIterator in stream) {
+		return stream as AsyncIterable<T>
+	}
+	return (async function* () {
+		const reader = stream.getReader()
+		try {
+			while (true) {
+				const {done, value} = await reader.read()
+				if (done) return
+				yield value
+			}
+		} finally {
+			reader.releaseLock()
+		}
+	})()
+}
