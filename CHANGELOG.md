@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.4...tg-mini-app-v1.1.0) (2025-04-16)
+
+
+### Features
+
+* add invocation tracking ([#43](https://github.com/storacha/tg-miniapp/issues/43)) ([fdac461](https://github.com/storacha/tg-miniapp/commit/fdac46142457db87a5140a1901a65f397a25cac8))
+
+
+### Bug Fixes
+
+* back button when creating backup ([#45](https://github.com/storacha/tg-miniapp/issues/45)) ([17e545c](https://github.com/storacha/tg-miniapp/commit/17e545cb221df6a614b14a0a4b9b835deda0e98f))
+
 ## [1.0.4](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.3...tg-mini-app-v1.0.4) (2025-04-16)
 
 
