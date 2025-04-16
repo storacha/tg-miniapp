@@ -46,6 +46,8 @@ jobs:
           echo "NEXT_PUBLIC_STORACHA_GATEWAY_HOSTNAME=ipfs-staging.w3s.link" >> .env
           echo "NEXT_PUBLIC_STORACHA_GATEWAY_ID=did:web:ipfs-staging.w3s.link" >> .env
           echo "NEXT_PUBLIC_SENTRY_ENV=staging" >> .env
+          echo "NEXT_PUBLIC_TELEGRAM_API_ID=${{ secrets.TELEGRAM_API_ID }}" >> .env
+          echo "NEXT_PUBLIC_TELEGRAM_API_HASH=${{ secrets.TELEGRAM_API_HASH }}" >> .env
           echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> .env
       # as long as this uses https://github.com/cloudflare/next-on-pages/blob/dc529d7efa8f8568ea8f71b5cdcf78df89be6c12/packages/next-on-pages/bin/index.js,
       # env vars won't get passed through to wrangler, so if wrangler will need them, write them to .env like the previous step
@@ -154,6 +156,8 @@ jobs:
           echo "NEXT_PUBLIC_STORACHA_GATEWAY_ID=did:web:w3s.link" >> .env
           echo "NEXT_PUBLIC_IPFS_GATEWAY_URL=https://%ROOT_CID%.ipfs.w3s.link" >> .env
           echo "NEXT_PUBLIC_SENTRY_ENV=production" >> .env
+          echo "NEXT_PUBLIC_TELEGRAM_API_ID=${{ secrets.TELEGRAM_API_ID }}" >> .env
+          echo "NEXT_PUBLIC_TELEGRAM_API_HASH=${{ secrets.TELEGRAM_API_HASH }}" >> .env
           echo "SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}" >> .env
       - run: pnpm pages:build
         # as long as this uses https://github.com/cloudflare/next-on-pages/blob/dc529d7efa8f8568ea8f71b5cdcf78df89be6c12/packages/next-on-pages/bin/index.js,
