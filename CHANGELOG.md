@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.3...tg-mini-app-v1.0.4) (2025-04-16)
+
+
+### Bug Fixes
+
+* logout from storacha ([#48](https://github.com/storacha/tg-miniapp/issues/48)) ([15f35b7](https://github.com/storacha/tg-miniapp/commit/15f35b761809e4a5705d2cd26f11ae5a73f884c7))
+
 ## [1.0.3](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.2...tg-mini-app-v1.0.3) (2025-04-16)
 
 
