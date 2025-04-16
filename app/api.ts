@@ -95,7 +95,7 @@ export interface DialogData extends EntityData {
    *
    * Each list has a maximum of 1,000 messages.
    */
-  messages: Array<Link<EncryptedByteView<MessageData[]>>>
+  messages: Array<Link<EncryptedByteView<Array<MessageData>>>>
 }
 
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>
@@ -115,10 +115,16 @@ export interface EntityData {
   }
 }
 
+export type MessageType = 'message' | 'service'
+
 export interface MessageData {
   id: MessageID
-  /** ID of the peer who sent this message. */
-  from: ToString<EntityID>
+  type: MessageType
+  /**
+   * ID of the peer who sent this message. It will be undefined for anonymous
+   * messages.
+   */
+  from?: ToString<EntityID>
   /** Timestamp in seconds since Unix epoch that this message was sent. */
   date: number
   /** The string text of the message. */
