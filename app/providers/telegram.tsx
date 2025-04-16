@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, PropsWithChildren } from 'react'
+import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect } from 'react'
 import { TelegramClient } from '@/vendor/telegram'
 import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@telegram-apps/sdk-react'
 import { Session } from '@/vendor/telegram/sessions/Abstract'
@@ -42,11 +42,20 @@ export interface ProviderProps extends PropsWithChildren {
  * the context.
  */
 export const Provider = ({ apiId, apiHash, session, clientParams, children }: ProviderProps): ReactNode => {
-  session = session ?? (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
-  const params = { ...defaultClientParams, ...clientParams }
-  const client = new TelegramClient(session, apiId, apiHash, params)
+  const [client, setClient] = useState<TelegramClient>()
   const launchParams = useLaunchParams()
   const user = useSignal(initData.user)
+
+  useEffect(() => {
+    session = session ?? (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
+    const params = { ...defaultClientParams, ...clientParams }
+    setClient(new TelegramClient(session, apiId, apiHash, params))
+  }, [apiId, apiHash, session, clientParams])
+
+  if (!client) {
+    return null
+  }
+
   return (
     <Context.Provider value={[{ client, user, launchParams }, {}]}>
       {children}
