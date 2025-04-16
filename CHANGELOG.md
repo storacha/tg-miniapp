@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.1.0...tg-mini-app-v1.2.0) (2025-04-16)
+
+
+### Features
+
+* add message types ([#42](https://github.com/storacha/tg-miniapp/issues/42)) ([6dde2d3](https://github.com/storacha/tg-miniapp/commit/6dde2d3885615f2fe9c1a32a0d846d965296368c))
+
 ## [1.1.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.4...tg-mini-app-v1.1.0) (2025-04-16)
 
 
