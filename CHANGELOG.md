@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.2...tg-mini-app-v1.0.3) (2025-04-16)
+
+
+### Bug Fixes
+
+* connect client if not already connected ([b910f04](https://github.com/storacha/tg-miniapp/commit/b910f04307be3521c82b95aa88b4dd5535f1c75a))
+
 ## [1.0.2](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.1...tg-mini-app-v1.0.2) (2025-04-16)
 
 
