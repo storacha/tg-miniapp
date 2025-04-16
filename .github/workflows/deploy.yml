@@ -103,6 +103,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      issues: write
       pull-requests: write
     outputs:
       releases_created: ${{ steps.tag-release.outputs.releases_created }}
