@@ -73,7 +73,7 @@ function OTPForm({ onSubmit, onCodeChange, onResend, code, loading, error }: { o
 			</div>
 			<div className="flex justify-center items-center">
 				<Button type="submit" className="w-full" disabled={disabled}>
-					{loading ? 'Loading...' : 'Submit OTP'}
+					{loading ? 'Loading...' : 'Submit Pin'}
 				</Button>
 			</div>
 		</form>
@@ -86,7 +86,7 @@ export default function TelegramAuth() {
 	const [codeHash, setCodeHash] = useState('')
 	const [code, setCode] = useState('')
 	const { setIsTgAuthorized, phoneNumber, setPhoneNumber } = useGlobal()
-	const [{ client }] = useTelegram()
+	const [{ client, user }] = useTelegram()
 
 	const handlePhoneSubmit: FormEventHandler<HTMLFormElement> = async e => {
 		e.preventDefault()
@@ -124,6 +124,9 @@ export default function TelegramAuth() {
 			)
 			if (result instanceof Api.auth.AuthorizationSignUpRequired) {
 				throw new Error('user needs to sign up')
+			}
+			if (result.user.id.value !== BigInt(user?.id ?? 0)) {
+				throw new Error('login user and user using the app must match')
 			}
 
 			setIsTgAuthorized(true)
