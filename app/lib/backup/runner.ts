@@ -44,6 +44,11 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   let messageIterator: AsyncIterator<Api.Message> | null = null
 
   const blockStream = new ReadableStream<Block>({
+    async start () {
+      if (!ctx.telegram.connected) {
+        await ctx.telegram.connect()
+      }
+    },
     async pull (controller) {
       if (!dialogEntity) {
         // get the next dialog to back up
