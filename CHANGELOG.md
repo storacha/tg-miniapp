@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.1...tg-mini-app-v1.0.2) (2025-04-16)
+
+
+### Bug Fixes
+
+* telegram API ID and hash ([87e1ccb](https://github.com/storacha/tg-miniapp/commit/87e1ccb72c03dacb8f54b6a3daad79cd29929141))
+
 ## [1.0.1](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.0.0...tg-mini-app-v1.0.1) (2025-04-16)
 
 
