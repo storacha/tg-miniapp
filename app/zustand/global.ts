@@ -21,7 +21,7 @@ interface GlobalState {
 	setIsStorachaAuthorized: (isStorachaAuthorized: boolean) => void
 	setUser: (user: User) => void
 	setPhoneNumber: (phone: string) => void
-	setSpace: (space: SpaceDID) => void
+	setSpace: (space: SpaceDID | null) => void
 }
 
 export const useGlobal = create<GlobalState>()(
