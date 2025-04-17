@@ -1,24 +1,23 @@
 'use client'
 
-import { Layouts } from '@/components/layouts'
-import { useParams, useSearchParams } from 'next/navigation'
-import { Backup, BackupModel, DialogData, EntityData, MessageData } from '@/api'
-import { Media } from '@/components/ui/media'
-import { useBackups } from '@/providers/backup'
-import { useTelegram } from '@/providers/telegram'
-import { cloudStorage} from '@telegram-apps/sdk-react'
-import { useEffect, useState } from 'react'
-import { decryptContent } from '@/lib/crypto'
-import * as dagCBOR from '@ipld/dag-cbor'
 import { CAR } from '@ucanto/core'
 import { CID } from 'multiformats'
 import { CarIndexer } from '@ipld/car'
+import * as dagCBOR from '@ipld/dag-cbor'
+import { useEffect, useState } from 'react'
 import { exporter } from 'ipfs-unixfs-exporter'
 import { MemoryBlockstore } from 'blockstore-core'
+import { useTelegram } from '@/providers/telegram'
+import { cloudStorage} from '@telegram-apps/sdk-react'
+import { useParams, useSearchParams } from 'next/navigation'
+
 import * as Crypto from '@/lib/crypto'
+import { Layouts } from '@/components/layouts'
+import { Media } from '@/components/ui/media'
+import { useBackups } from '@/providers/backup'
+import { BackupModel, DialogData, EntityData, MessageData } from '@/api'
 
 export const runtime = 'edge'
-
 
 type BackupDialogProps = {
   dialog: DialogData
@@ -109,17 +108,30 @@ const getEncryptedDataFromCar = async (car: Uint8Array, encryptedDataCID: string
   return encryptedDataBytes
 }
 
+const getFromStoracha = async (cid: string) => {
+  const url = new URL(`/ipfs/${cid}`, process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL)
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch: ${response.status} ${response.statusText} ${url}`);
+  }
+  return response
+}
+
+
 export default function Page () {
   const [{ client }] = useTelegram()
   const [{ backups, dialog }] = useBackups()
   const [loading, setLoading] = useState(true)
+  const [dialogData, setDialogData] = useState<DialogData | null>(null)
+  const [messages, setMessages] = useState<MessageData[]>([])
+  const [participants, setParticipants] = useState<Record<string, EntityData>>({})
   const params = useParams<{ id: string }>()
   const searchParams = useSearchParams()
   const backupCid = searchParams.get('backupData')
 
   useEffect(() => {
       let cancel = false
-      ;(async () => {
+      const restoreBackup = async () => {
         try{
           if (!client.connected) await client.connect()
 
@@ -128,15 +140,10 @@ export default function Page () {
           }
           let encryptionPassword = await cloudStorage.getItem('encryption-password')
           if (!encryptionPassword) {
-            throw new Error('Encryption password not found in cloud storage');
+            throw new Error('Encryption password not found in cloud storage')
           }
           
-          // fetch from storacha
-          const url = new URL(`/ipfs/${backupCid}?format=car`, process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL)
-          const response = await fetch(url)
-          if (!response.ok) {
-            throw new Error(`Failed to fetch: ${response.status} ${response.statusText} ${url}`);
-          }
+          const response = await getFromStoracha(`${backupCid}?format=car`)
           const car = new Uint8Array(await response.arrayBuffer());
           console.log('CAR file fetched');
 
@@ -154,31 +161,57 @@ export default function Page () {
           const root = roots[0]
           const backupRaw = dagCBOR.decode(root.bytes) as BackupModel
           console.log('Decoded CAR root')
-          console.log(backupRaw)
+          console.log(JSON.stringify(backupRaw))
 
           const id = params.id.replace('-', '')
           const dialogCid = backupRaw['tg-miniapp-backup@0.0.1'].dialogs[id].toString()
-          
-          const encryptedDialogData = await getEncryptedDataFromCar(car, dialogCid)
-          console.log(JSON.stringify(encryptedDialogData))
+          const dialogResult = await getFromStoracha(dialogCid)
+          const encryptedDialogData = new Uint8Array(await dialogResult.arrayBuffer())
 
           const decryptedDialogData = dagCBOR.decode(
             await Crypto.decryptContent(encryptedDialogData, encryptionPassword)
-          ) as DialogData[]
-
+          ) as DialogData
+          
+          console.log(JSON.stringify(decryptedDialogData))
+       
+        // Restore messages and entities
+          const restoredMessages: MessageData[] = [];
+          for (const messageLink of decryptedDialogData.messages) {
+            const messagesResult = await getFromStoracha(messageLink.toString())
+            const encryptedMessageData = new Uint8Array(await messagesResult.arrayBuffer())
+            const decryptedMessageData = dagCBOR.decode(
+              await Crypto.decryptContent(encryptedMessageData, encryptionPassword)
+            ) as MessageData[]
+            restoredMessages.push(...decryptedMessageData)
+          }
     
-        // working on
+          const restoredEntities: Record<string, EntityData> = {}
+          const entitiesResult = await getFromStoracha(decryptedDialogData.entities.toString())
+          const encryptedEntitiesData = new Uint8Array(await entitiesResult.arrayBuffer())
+          const decryptedEntitiesData = dagCBOR.decode(
+            await Crypto.decryptContent(encryptedEntitiesData, encryptionPassword)
+          ) as Record<string, EntityData>
+          Object.assign(restoredEntities, decryptedEntitiesData)
+    
+          console.log('Restored messages:', restoredMessages)
+          console.log(JSON.stringify(restoredMessages))
+          console.log('Restored entities:', restoredEntities)
+          console.log(JSON.stringify(restoredEntities))
 
           setLoading(false)
+          setDialogData(decryptedDialogData)
+          setMessages(restoredMessages)
+          setParticipants(restoredEntities)
 
       } catch (error) {
-        console.error('Error in useEffect:', error);
+        console.error('Error in useEffect:', error)
       }
-      })()
+    }
+    restoreBackup()
       return () => { cancel = true }
-    }, [client])
+    }, [client, backupCid, params.id])
 
-  if (!dialog) {
+  if ( !dialogData) { 
     return (
       <Layouts isSinglePage isBackgroundBlue>
         <div className="flex flex-col items-center justify-center h-screen">
@@ -189,46 +222,9 @@ export default function Page () {
     );
   }
 
-  const dialogId = params.id
-
-  const participants: Record<string, EntityData> = {
-    '123': { id: '123', name: 'Me', type: 'user' },
-    '456': { id: '456', name: 'Alice', type: 'user' },
-  }
-
-  const messages = [
-    {
-      id: 1,
-      from: '123',
-      date: 1700000000,
-      message: 'Hey, this is my backup!',
-    },
-    {
-      id: 2,
-      from: '456',
-      date: 1700000600,
-      message: 'Cool, backup with storacha.',
-    },
-    {
-      id: 3,
-      from: '123',
-      date: 1700001200,
-      message: 'uhuu storacha.',
-    },
-  ]
-
-  // Mock data for now — in a real app you'd fetch it based on dialogId
-  const dialogData: DialogData = {
-    id: params.id,
-    name: (dialog.name ?? dialog.title ?? '').trim() || 'Unknown',
-    type: "chat",
-    entities: {} as any,
-    messages: [],
-  }
-
   return (
     <Layouts isSinglePage isBackgroundBlue>
-      { dialog && 
+      { dialogData && 
         <BackupDialog dialog={dialogData} messages={messages} participants={participants} />
       }
       </Layouts>
