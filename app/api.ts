@@ -206,7 +206,14 @@ export interface ChatEditTitleActionData {
 /** @see https://core.telegram.org/api/files#image-thumbnail-types */
 export type ThumbType = 's'|'m'|'x'|'y'|'w'|'a'|'b'|'c'|'d'|'i'|'j'
 
-export interface PhotoSizeData {
+export type PhotoSizeData = 
+  | DefaultPhotoSizeData
+  | CachedPhotoSizeData
+  | StrippedPhotoSizeData
+  | ProgressivePhotoSizeData
+  | PathPhotoSizeData
+
+export interface DefaultPhotoSizeData {
   type: 'photo-size'
   /**
    * Indicator for resolution and image transform that was applied server-side.
@@ -273,7 +280,12 @@ export interface PathPhotoSizeData {
 /** @see https://core.telegram.org/api/files#video-types */
 export type VideoType = 'u'|'v'|'f'
 
-export interface VideoSizeData {
+export type VideoSizeData = 
+  | DefaultVideoSizeData
+  | EmojiMarkupVideoSizeData
+  | StickerMarkupVideoSizeData
+
+export interface DefaultVideoSizeData {
   type: 'video-size'
   videoType: VideoType
   w: number
@@ -384,8 +396,8 @@ export interface PhotoData {
   accessHash: ToString<bigint>
   fileReference: Uint8Array
   date: number
-  sizes: Array<PhotoSizeData|CachedPhotoSizeData|StrippedPhotoSizeData|ProgressivePhotoSizeData|PathPhotoSizeData>
-  videoSizes?: Array<VideoSizeData|EmojiMarkupVideoSizeData|StickerMarkupVideoSizeData>
+  sizes: PhotoSizeData[]
+  videoSizes?: VideoSizeData[]
 }
 
 export interface ChatEditPhotoActionData {
