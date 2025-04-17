@@ -3,7 +3,7 @@
 import * as React from "react"
 
 interface MediaProps {
-  mediaType: 'image' | 'audio' | 'video' | 'file'
+  mediaType?: 'image' | 'audio' | 'video' | 'file'
   mediaUrl?: string
   altText?: string
 }
@@ -88,5 +88,5 @@ const FileMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
 
 // Unknown Media Fallback
 const UnknownMedia: React.FC = () => {
-  return <PlaceholderBubble label="Unknown media type" />
+  return <PlaceholderBubble label="unknown media" />
 }

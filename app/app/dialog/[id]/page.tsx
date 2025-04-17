@@ -16,6 +16,8 @@ import { Layouts } from '@/components/layouts'
 import { Media } from '@/components/ui/media'
 import { useBackups } from '@/providers/backup'
 import { BackupModel, DialogData, EntityData, MessageData } from '@/api'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { toJPGDataURL } from '@/lib/utils'
 
 export const runtime = 'edge'
 
@@ -25,6 +27,8 @@ type BackupDialogProps = {
   participants: Record<string, EntityData>
 }
 
+const formatDate = (timestamp: number) => (new Date(timestamp * 1000)).toLocaleString()
+
 export function BackupDialog({
   dialog,
   messages,
@@ -32,6 +36,7 @@ export function BackupDialog({
 }: BackupDialogProps) {
   const sortedMessages = [...messages].sort((a, b) => a.date - b.date)
   const selfId = dialog.id
+  
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -51,14 +56,26 @@ export function BackupDialog({
         {sortedMessages.map((msg) => {
           const isOutgoing = msg.from === selfId
           const sender = participants[msg.from]?.name ?? 'Unknown'
+          let thumbSrc = ''
+          if(participants[msg.from].photo?.strippedThumb){
+           thumbSrc = toJPGDataURL(participants[msg.from].photo?.strippedThumb!)
+          }
+          console.log(JSON.stringify(msg))
+          console.log(JSON.stringify(participants[msg.from].photo))
 
           return (
             <div key={msg.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
               <div className="flex flex-col max-w-[75%]">
                 {!isOutgoing && (
-                  <p className="text-xs text-muted-foreground mb-1 font-medium">
-                    {sender}
-                  </p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar>
+                      <AvatarImage src={thumbSrc} />
+                      <AvatarFallback>{sender.substring(0,1)}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      {sender}
+                    </p>
+                  </div>
                 )}
                 <div
                   className={`px-4 py-2 text-sm rounded-xl whitespace-pre-line shadow-sm ${
@@ -67,45 +84,21 @@ export function BackupDialog({
                       : 'bg-gray-100 text-foreground rounded-bl-none'
                   }`}
                 >
-                  <p>{msg.message || '...'}</p>
+                  {msg.message ? 
+                    (<p>{msg.message}</p>) :
+                    (<Media  />)
+                  }
                   <div className="text-xs text-muted-foreground text-right mt-1">
-                    {msg.date}
+                    {formatDate(msg.date)}
                   </div>
                 </div>
               </div>
             </div>
           )
         })}
-        <Media mediaType="image" mediaUrl={"https://pbs.twimg.com/profile_images/1870215288886611968/uh8Kub12_400x400.png"} />
       </div>
     </div>
   )
-}
-
-
-const getEncryptedDataFromCar = async (car: Uint8Array, encryptedDataCID: string) => {
-  // NOTE: convert CAR to a block store
-  const iterable = await CarIndexer.fromBytes(car)
-  const blockstore = new MemoryBlockstore()
-
-  for await (const { cid, blockLength, blockOffset } of iterable) {
-    const blockBytes = car.slice(blockOffset, blockOffset + blockLength)
-    await blockstore.put(cid, blockBytes)
-  }
-
-  // NOTE: get the encrypted Data from the CAR file
-  const encryptedDataEntry = await exporter(
-    CID.parse(encryptedDataCID),
-    blockstore
-  )
-  const encryptedDataBytes = new Uint8Array(Number(encryptedDataEntry.size))
-  let offset = 0
-  for await (const chunk of encryptedDataEntry.content()) {
-    encryptedDataBytes.set(chunk, offset)
-    offset += chunk.length
-  }
-
-  return encryptedDataBytes
 }
 
 const getFromStoracha = async (cid: string) => {
@@ -116,7 +109,6 @@ const getFromStoracha = async (cid: string) => {
   }
   return response
 }
-
 
 export default function Page () {
   const [{ client }] = useTelegram()
@@ -216,7 +208,6 @@ export default function Page () {
       <Layouts isSinglePage isBackgroundBlue>
         <div className="flex flex-col items-center justify-center h-screen">
           <p className="text-lg font-semibold text-red-500">Dialog not found</p>
-          <p className="text-sm text-muted-foreground">Please select another dialog</p>
         </div>
       </Layouts>
     );
