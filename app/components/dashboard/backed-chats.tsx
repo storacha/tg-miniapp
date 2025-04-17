@@ -52,7 +52,7 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 
 export default function BackedChats() {
 	const [{ client }] = useTelegram()
-	const [{ backups }] = useBackups()
+	const [{ backups }, {setDialog}] = useBackups()
 	const router = useRouter()
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
 	const [loading, setLoading] = useState(true)
@@ -77,9 +77,12 @@ export default function BackedChats() {
 	const handleDialogItemClick: MouseEventHandler = e => {
 		e.preventDefault()
 		const id = BigInt(e.currentTarget.getAttribute('data-id') ?? 0)
-		const hasBackup = sortedBackups.some(b => id && b.dialogs.has(id))
-		if (!hasBackup) return
-		router.push(`/dialog/${id}`)
+		const backupWithDialog = sortedBackups.find(b => id && b.dialogs.has(id))
+		const dialog = dialogs.find(d => d.id.toString() == id.toString())
+		if (!backupWithDialog || !dialog) return
+		setDialog(dialog)
+		const backupData = backupWithDialog.data.toString()
+		router.push(`/dialog/${id}?backupData=${encodeURIComponent(backupData)}`)
 	}
 
 	return (
