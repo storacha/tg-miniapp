@@ -229,6 +229,7 @@ const toMessageData = (message: Api.Message | Api.MessageService): MessageData |
       type: 'service',
       ...(from == null ? {} : { from }),
       date: message.date,
+      action: { type: 'unknown' }
     }
   }
 
