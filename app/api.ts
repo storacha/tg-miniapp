@@ -484,38 +484,18 @@ export interface PaymentSentActionData {
   invoiceSlug?: string
 }
 
-export interface MissedPhoneCallDiscardReasonData {
-  type: 'missed-phone-call'
-}
-
-export interface DisconnectPhoneCallDiscardReasonData {
-  type: 'disconnect-phone-call'
-}
-
-export interface HangupPhoneCallDiscardReasonData {
-  type: 'hangup-phone-call'
-}
-
-export interface BusyPhoneCallDiscardReasonData {
-  type: 'busy-phone-call'
-}
-
-export interface UnknownPhoneCallDiscardReasonData {
-  type: 'unknown'
-}
-
-export type PhoneCallDiscardReasonData =
-  | MissedPhoneCallDiscardReasonData
-  | DisconnectPhoneCallDiscardReasonData
-  | HangupPhoneCallDiscardReasonData
-  | BusyPhoneCallDiscardReasonData
-  | UnknownPhoneCallDiscardReasonData
+export type PhoneCallDiscardReason =
+  | 'missed'
+  | 'disconnect'
+  | 'hangup'
+  | 'busy'
+  | 'unknown'
 
 export interface PhoneCallActionData {
   type: 'phone-call'
   video?: boolean
   call: ToString<bigint>
-  reason?: PhoneCallDiscardReasonData
+  reason?: PhoneCallDiscardReason
   duration?: number
 }
 
