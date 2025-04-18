@@ -14,7 +14,6 @@
 		"pages:deploy": "pnpm run pages:build && wrangler pages deploy"
 	},
 	"dependencies": {
-		"@ipld/car": "^5.4.0",
 		"@ipld/dag-cbor": "^9.2.2",
 		"@ipld/dag-json": "^10.2.3",
 		"@ipld/dag-ucan": "^3.4.5",
@@ -32,13 +31,11 @@
 		"@storacha/upload-client": "^1.0.9",
 		"@telegram-apps/sdk-react": "^2.0.20",
 		"@ucanto/core": "^10.3.1",
-		"blockstore-core": "^5.0.2",
 		"carstream": "^2.3.0",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
 		"crypto": "^1.0.1",
 		"input-otp": "^1.4.2",
-		"ipfs-unixfs-exporter": "^13.6.2",
 		"jsonwebtoken": "^9.0.2",
 		"lucide-react": "^0.469.0",
 		"mongoose": "^8.10.1",
