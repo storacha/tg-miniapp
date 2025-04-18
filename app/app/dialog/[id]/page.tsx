@@ -25,7 +25,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 export const runtime = 'edge'
 
 type BackupDialogProps = {
-  userId: number
+  userId: string
   dialog: DialogData
   messages: MessageData[]
   participants: Record<string, EntityData>
@@ -71,7 +71,7 @@ export function BackupDialog({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {sortedMessages.map((msg, index) => {
-          const isOutgoing = msg.from === String(userId)
+          const isOutgoing = msg.from === userId
           const sender = participants[msg.from]?.name ?? 'Unknown'
 
           const showSenderHeader =
@@ -140,6 +140,7 @@ export default function Page () {
   const [loading, setLoading] = useState(true)
   const [dialogData, setDialogData] = useState<DialogData | null>(null)
   const [messages, setMessages] = useState<MessageData[]>([])
+  const [userId, setUserId] = useState<string>()
   const [participants, setParticipants] = useState<Record<string, EntityData>>({})
   const params = useParams<{ id: string }>()
   const searchParams = useSearchParams()
@@ -150,6 +151,9 @@ export default function Page () {
       const restoreBackup = async () => {
         try{
           if (!client.connected) await client.connect()
+
+          const userId = (await client.getMe()).id
+          setUserId(userId.toString())
 
           if(!cloudStorage.getKeys.isAvailable()){
             throw new Error('Error trying to access cloud storage')
@@ -233,8 +237,8 @@ export default function Page () {
           <p className="text-lg font-semibold text-red-500">Dialog not found</p>
         </div>
       }
-      {dialogData && 
-        <BackupDialog userId={user?.id!} dialog={dialogData} messages={messages} participants={participants} />
+      {userId && dialogData && 
+        <BackupDialog userId={userId} dialog={dialogData} messages={messages} participants={participants} />
       }
     </Layouts>
   )
