@@ -3,6 +3,7 @@ import { Backup, BackupStorage, Job, JobID, JobManager, JobStorage, Period } fro
 import { SpaceDID } from '@storacha/ui-react'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
+import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
 
 export interface Result<T> {
   items: T[]
@@ -22,8 +23,8 @@ export interface ContextState {
   backups: Result<Backup>
   // /** The current backup item. */
   // backup?: Backup
-  // /** The current dialog item. */
-  // dialog?: Dialog
+  /** The current dialog item. */
+  dialog?: Dialog
   // /** Messages in the current dialog. */
   // messages: Result<Message>
   // /** Media of the current backup (or current dialog if set). */
@@ -34,7 +35,7 @@ export interface ContextActions {
   addBackupJob: (space: SpaceDID, chats: Set<bigint>, period: Period) => Promise<JobID>
   removeBackupJob: (job: JobID) => Promise<void>
   // setBackup: (id: Link|null) => void
-  // setDialog: (id: bigint|null) => void
+  setDialog: (dialog: Dialog | null) => void
 }
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
@@ -43,6 +44,7 @@ export const ContextDefaultValue: ContextValue = [
   {
     jobs: { items: [], loading: false },
     backups: { items: [], loading: false },
+    dialog: undefined,
     // messages: { items: [], loading: false },
     // media: { items: [], loading: false }
   },
@@ -50,7 +52,7 @@ export const ContextDefaultValue: ContextValue = [
     addBackupJob: () => Promise.reject(new Error('provider not setup')),
     removeBackupJob: () => Promise.reject(new Error('provider not setup')),
     // setBackup: () => {},
-    // setDialog: () => {}
+    setDialog: () => {}
   },
 ]
 
@@ -82,6 +84,11 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
     items: backups,
     loading: backupsLoading,
     error: backupsError
+  }
+
+  const [dialog, setDialogState] = useState<Dialog | undefined>(undefined)
+  const setDialog = (dialog: Dialog | null) => {
+    setDialogState(dialog || undefined) 
   }
 
   const addBackupJob = (space: SpaceDID, dialogs: Set<bigint>, period: Period) =>
@@ -150,7 +157,7 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
   }, [backupStore])
 
   return (
-    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult }, { addBackupJob, removeBackupJob }]}>
+    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, dialog}, { addBackupJob, removeBackupJob, setDialog }]}>
       {children}
     </Context.Provider>
   )
