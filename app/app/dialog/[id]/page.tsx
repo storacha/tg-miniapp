@@ -58,9 +58,9 @@ export function BackupDialog({
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="flex items-center gap-4 px-5 py-4 border-b border-border bg-muted">
-          <Avatar>
+            <Avatar>
             <AvatarImage src={dialogThumbSrc} />
-            <AvatarFallback>{getInitials(dialog.name)}</AvatarFallback>
+            <AvatarFallback className='bg-gray-300'>{getInitials(dialog.name)}</AvatarFallback>
           </Avatar>
         <div>
           <h1 className="text-lg font-semibold text-foreground">{dialog.name}</h1>
@@ -71,10 +71,7 @@ export function BackupDialog({
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {sortedMessages.map((msg, index) => {
-          const isOutgoing = msg.from === '883154390'
-          // console.log('msg.from: ', msg.from)
-          // console.log('userId: ', String(userId))
-          // console.log('isOutgoing: ', isOutgoing)
+          const isOutgoing = msg.from === String(userId)
           const sender = participants[msg.from]?.name ?? 'Unknown'
 
           const showSenderHeader =
@@ -82,11 +79,9 @@ export function BackupDialog({
             (index === 0 || sortedMessages[index - 1].from !== msg.from)
 
           let thumbSrc = ''
-          // console.log('strippedThumb:', participants[msg.from]?.photo?.strippedThumb)
           if(participants[msg.from].photo?.strippedThumb){
            thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb!))
           }
-          console.log('thumbSrc: ', thumbSrc)
 
           return (
             <div key={msg.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
@@ -94,7 +89,7 @@ export function BackupDialog({
                 {showSenderHeader && (
                   <div className="flex items-center gap-2 mb-2">
                     <Avatar>
-                      <AvatarImage src={thumbSrc} />
+                      <AvatarImage src={thumbSrc} /> 
                       <AvatarFallback>{getInitials(sender)}</AvatarFallback>
                     </Avatar>
                     <p className="text-xs text-muted-foreground font-medium">
@@ -166,7 +161,7 @@ export default function Page () {
           
           const response = await getFromStoracha(`${backupCid}?format=car`)
           const car = new Uint8Array(await response.arrayBuffer());
-          console.log('CAR file fetched');
+          console.log('CAR file fetched')
 
           // decode
           const { roots } = CAR.decode(car)
@@ -182,7 +177,7 @@ export default function Page () {
           const root = roots[0]
           const backupRaw = dagCBOR.decode(root.bytes) as BackupModel
           console.log('Decoded CAR root')
-          console.log(JSON.stringify(backupRaw))
+          // console.log(JSON.stringify(backupRaw))
 
           const id = params.id.replace('-', '')
           const dialogCid = backupRaw['tg-miniapp-backup@0.0.1'].dialogs[id].toString()
@@ -214,10 +209,8 @@ export default function Page () {
           ) as Record<string, EntityData>
           Object.assign(restoredEntities, decryptedEntitiesData)
     
-          console.log('Restored messages:', restoredMessages)
-          console.log(JSON.stringify(restoredMessages))
-          console.log('Restored entities:', restoredEntities)
-          console.log(JSON.stringify(restoredEntities))
+          // console.log(JSON.stringify(restoredMessages))
+          // console.log(JSON.stringify(restoredEntities))
 
           setLoading(false)
           setDialogData(decryptedDialogData)

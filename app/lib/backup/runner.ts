@@ -135,9 +135,23 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
         } else if (message.fromId?.className === 'PeerChannel') {
           fromID = message.fromId.channelId
         }
+        
         if (!fromID) {
-          // TODO: IDK what do we do here?
-          continue
+          /**
+           * Note: 
+           *  If fromID is undefined and the peerId is of type PeerUser, use the userId from peerId as the from ID. 
+           *  This means that this is the chat of the user who our Telegram user is talking to.
+           * 
+           * TODO:
+           *  Should handle other cases.
+           *  Can be None for anonymous messages, like from channel admins or bots posting without attribution.
+           */
+         
+          if (message.peerId.className === 'PeerUser') {
+            fromID = message.peerId.userId
+          } else {
+            continue
+          }
         }
 
         entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
@@ -215,12 +229,25 @@ const encodeAndEncrypt = <T>(ctx: Context, data: T) =>
 
 const toMessageData = (message: Api.Message | Api.MessageService): MessageData | ServiceMessageData => {
   let from
-  if (message.fromId?.className === 'PeerUser') {
-    from = message.fromId.userId.toString()
-  } else if (message.fromId?.className === 'PeerChat') {
-    from = message.fromId.chatId.toString()
-  } else if (message.fromId?.className === 'PeerChannel') {
-    from = message.fromId.channelId.toString()
+  let fromEntity
+
+  if(message.fromId){ 
+    fromEntity = message.fromId
+  } else {
+    /**
+     * Note: 
+     *   In the context of a private chat with another user, the `fromId` can be undefined. 
+     *   In such cases, the `peerId` represents the user our Telegram account is communicating with.
+     */
+    fromEntity = message.peerId
+  }
+
+  if (fromEntity.className === 'PeerUser') {
+    from = fromEntity.userId.toString()
+  } else if (fromEntity.className === 'PeerChat') {
+    from = fromEntity.chatId.toString()
+  } else if (fromEntity.className === 'PeerChannel') {
+    from = fromEntity.channelId.toString()
   }
 
   if (message.className === 'MessageService') {
