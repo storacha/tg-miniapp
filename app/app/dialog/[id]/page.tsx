@@ -10,24 +10,16 @@ import { useParams, useSearchParams } from 'next/navigation'
 import * as Crypto from '@/lib/crypto'
 import { Media } from '@/components/ui/media'
 import { Layouts } from '@/components/layouts'
-import { useBackups } from '@/providers/backup'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
-import { BackupModel, DialogData, EntityData, MessageData } from '@/api'
+import { BackupModel, DialogData, EntityData, MessageData, ServiceMessageData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-
-/**
- * TODO:
- * [] something is wrong with the message.from id, it's not the same as the user.id for the same user
- * [x] thumbnail
- * [x] text out of the box
- */
 
 export const runtime = 'edge'
 
 type BackupDialogProps = {
   userId: string
   dialog: DialogData
-  messages: MessageData[]
+  messages: (MessageData | ServiceMessageData)[]
   participants: Record<string, EntityData>
 }
 
@@ -70,17 +62,22 @@ export function BackupDialog({
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
-        {sortedMessages.map((msg, index) => {
+        {sortedMessages
+          .filter((msg) => msg.type !== "service") // TODO: handle this once the message service types are defined
+          .map((msg, index) => {
           const isOutgoing = msg.from === userId
-          const sender = participants[msg.from]?.name ?? 'Unknown'
+          const sender = msg.from
+            ? participants[msg.from]?.name ?? 'Unknown'
+            : 'Anonymous'
+
 
           const showSenderHeader =
             !isOutgoing &&
             (index === 0 || sortedMessages[index - 1].from !== msg.from)
 
           let thumbSrc = ''
-          if(participants[msg.from].photo?.strippedThumb){
-           thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb!))
+          if(msg.from && participants[msg.from].photo?.strippedThumb){
+           thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb as Uint8Array<ArrayBufferLike>))
           }
 
           return (
@@ -135,8 +132,7 @@ const getFromStoracha = async (cid: string) => {
 }
 
 export default function Page () {
-  const [{ client, user }] = useTelegram()
-  const [{ backups, dialog }] = useBackups()
+  const [{ client }] = useTelegram()
   const [loading, setLoading] = useState(true)
   const [dialogData, setDialogData] = useState<DialogData | null>(null)
   const [messages, setMessages] = useState<MessageData[]>([])
@@ -147,7 +143,6 @@ export default function Page () {
   const backupCid = searchParams.get('backupData')
 
   useEffect(() => {
-      let cancel = false
       const restoreBackup = async () => {
         try{
           if (!client.connected) await client.connect()
@@ -158,7 +153,8 @@ export default function Page () {
           if(!cloudStorage.getKeys.isAvailable()){
             throw new Error('Error trying to access cloud storage')
           }
-          let encryptionPassword = await cloudStorage.getItem('encryption-password')
+          
+          const encryptionPassword = await cloudStorage.getItem('encryption-password')
           if (!encryptionPassword) {
             throw new Error('Encryption password not found in cloud storage')
           }
@@ -194,7 +190,7 @@ export default function Page () {
           
           console.log(JSON.stringify(decryptedDialogData))
        
-        // Restore messages and entities
+          // Restore messages and entities
           const restoredMessages: MessageData[] = [];
           for (const messageLink of decryptedDialogData.messages) {
             const messagesResult = await getFromStoracha(messageLink.toString())
@@ -221,12 +217,12 @@ export default function Page () {
           setMessages(restoredMessages)
           setParticipants(restoredEntities)
 
-      } catch (error) {
-        console.error('Error in useEffect:', error)
-      }
+        } catch (error) {
+          console.error('Error in useEffect:', error)
+        }
       }
       restoreBackup()
-      return () => { cancel = true }
+     
     }, [client, backupCid, params.id])
 
   return (
