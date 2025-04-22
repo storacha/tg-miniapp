@@ -10,7 +10,6 @@ import { createFileEncoderStream } from '@storacha/upload-client/unixfs'
 import { Entity } from '@/vendor/telegram/define'
 import * as Crypto from '@/lib/crypto'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
-import { act } from 'react'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
