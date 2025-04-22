@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.2.1...tg-mini-app-v1.3.0) (2025-04-22)
+
+
+### Features
+
+* add support for 2FA enabled accounts ([#54](https://github.com/storacha/tg-miniapp/issues/54)) ([b77698c](https://github.com/storacha/tg-miniapp/commit/b77698c543c089300eb8daf65263aa3019840e66))
+* implement backup of service messages ([#56](https://github.com/storacha/tg-miniapp/issues/56)) ([7d75af9](https://github.com/storacha/tg-miniapp/commit/7d75af9b71a061033379efdfe6c9e5c07ee80f3d))
+* service message types ([#55](https://github.com/storacha/tg-miniapp/issues/55)) ([36a89ae](https://github.com/storacha/tg-miniapp/commit/36a89ae6a074fbc0a2e42c3d4d42c1dbb2e4ae11))
+
 ## [1.2.1](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.2.0...tg-mini-app-v1.2.1) (2025-04-16)
 
 

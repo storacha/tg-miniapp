@@ -1,6 +1,5 @@
 'use client'
 
-import { CAR } from '@ucanto/core'
 import * as dagCBOR from '@ipld/dag-cbor'
 import { useEffect, useState } from 'react'
 import { useTelegram } from '@/providers/telegram'
@@ -34,7 +33,7 @@ const getInitials = (name: string) => {
   return (words[0][0] + words[1][0]).toUpperCase()
 }
 
-export function BackupDialog({
+function BackupDialog({
   userId,
   dialog,
   messages,
@@ -78,7 +77,7 @@ export function BackupDialog({
 
           let thumbSrc = ''
           if(msg.from && participants[msg.from].photo?.strippedThumb){
-           thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb as Uint8Array<ArrayBufferLike>))
+           thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb as Uint8Array))
           }
 
           return (
