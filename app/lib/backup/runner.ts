@@ -127,12 +127,27 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
           // TODO: IDK what do we do here?
           continue
         }
-        const fromID = message.fromId && toPeerID(message.fromId)
-        if (!fromID) {
-          // TODO: IDK what do we do here?
-          continue
-        }
 
+        let fromID = message.fromId && toPeerID(message.fromId)
+
+        if (!fromID) {
+          /**
+           * Note: 
+           *  If fromID is undefined and the peerId is of type PeerUser, use the userId from peerId as the from ID. 
+           *  This means that this is the chat of the user who our Telegram user is talking to.
+           * 
+           * TODO:
+           *  Should handle other cases.
+           *  Can be None for anonymous messages, like from channel admins or bots posting without attribution.
+           */
+         
+          if (message.peerId.className === 'PeerUser') {
+            fromID = message.peerId.userId
+          } else {
+            continue
+          }
+        }
+        // @ts-expect-error the missing fromID is being handle above
         entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
 
         // let mediaCid
@@ -206,8 +221,20 @@ const encodeAndEncrypt = <T>(ctx: Context, data: T) =>
 //     }
 // }
 
-const toMessageData = withCleanUndef((message: Api.Message | Api.MessageService): MessageData | ServiceMessageData => {
-  const from = message.fromId && toPeerID(message.fromId)
+const toMessageData = (message: Api.Message | Api.MessageService): MessageData | ServiceMessageData => {
+  let fromEntity
+  if(message.fromId){ 
+    fromEntity = message.fromId
+  } else {
+    /**
+     * Note: 
+     *   In the context of a private chat with another user, the `fromId` can be undefined. 
+     *   In such cases, the `peerId` represents the user our Telegram account is communicating with.
+     */
+    fromEntity = message.peerId
+  }
+
+  const from = message.fromId && toPeerID(fromEntity)
 
   if (message.className === 'MessageService') {
     const action = toActionData(message.action)
@@ -228,7 +255,7 @@ const toMessageData = withCleanUndef((message: Api.Message | Api.MessageService)
     date: message.date,
     message: message.message ?? ''
   }
-})
+}
 
 const toPeerID = (peer: Api.TypePeer): ToString<EntityID> => {
   if (peer.className === 'PeerUser') {
