@@ -1,5 +1,7 @@
 import { ByteView, Link, SpaceDID, ToString, UnknownLink, Variant } from '@storacha/ui-react'
 
+export type { ByteView, Link, SpaceDID, ToString, UnknownLink, Variant }
+
 export type AbsolutePeriod = [from: number, to: number]
 
 /**
@@ -212,9 +214,10 @@ export type PhotoSizeData =
   | StrippedPhotoSizeData
   | ProgressivePhotoSizeData
   | PathPhotoSizeData
+  | UnknownPhotoSizeData
 
 export interface DefaultPhotoSizeData {
-  type: 'photo-size'
+  type: 'default'
   /**
    * Indicator for resolution and image transform that was applied server-side.
    * @see https://core.telegram.org/api/files#image-thumbnail-types
@@ -227,7 +230,7 @@ export interface DefaultPhotoSizeData {
 }
 
 export interface CachedPhotoSizeData {
-  type: 'cached-photo-size'
+  type: 'cached'
   /**
    * Indicator for resolution and image transform that was applied server-side.
    * @see https://core.telegram.org/api/files#image-thumbnail-types
@@ -240,14 +243,12 @@ export interface CachedPhotoSizeData {
 }
 
 export interface StrippedPhotoSizeData {
-  type: 'stripped-photo-size'
+  type: 'stripped'
   /**
    * Indicator for resolution and image transform that was applied server-side.
    * @see https://core.telegram.org/api/files#image-thumbnail-types
    */
   thumbType: ThumbType
-  w: number
-  h: number
   /**
    * A low-resolution compressed JPG payload.
    * @see https://core.telegram.org/api/files#stripped-thumbnails
@@ -256,7 +257,7 @@ export interface StrippedPhotoSizeData {
 }
 
 export interface ProgressivePhotoSizeData {
-  type: 'progressive-photo-size'
+  type: 'progressive'
   /**
    * Indicator for resolution and image transform that was applied server-side.
    * @see https://core.telegram.org/api/files#image-thumbnail-types
@@ -269,12 +270,16 @@ export interface ProgressivePhotoSizeData {
 }
 
 export interface PathPhotoSizeData {
-  type: 'path-photo-size'
+  type: 'path'
   /**
    * Compressed SVG path payload.
    * @see https://core.telegram.org/api/files#vector-thumbnails
    */
   bytes: Uint8Array
+}
+
+export interface UnknownPhotoSizeData {
+  type: 'unknown'
 }
 
 /** @see https://core.telegram.org/api/files#video-types */
@@ -284,15 +289,16 @@ export type VideoSizeData =
   | DefaultVideoSizeData
   | EmojiMarkupVideoSizeData
   | StickerMarkupVideoSizeData
+  | UnknownVideoSizeData
 
 export interface DefaultVideoSizeData {
-  type: 'video-size'
+  type: 'default'
   videoType: VideoType
   w: number
   h: number
   size: number
   /** Timestamp that should be shown as static preview to the user (seconds). */
-  videoStartTs: number
+  videoStartTs?: number
 }
 
 export type RGB24Color =
@@ -302,7 +308,7 @@ export type RGB24Color =
   | [number,number,number,number]
 
 export interface EmojiMarkupVideoSizeData {
-  type: 'emoji-markup-video-size'
+  type: 'emoji-markup'
   /**
    * The custom emoji sticker is shown at the center of the profile picture and
    * occupies at most 67% of it.
@@ -380,7 +386,8 @@ export type StickerSetData =
   | UnknownStickerSetData
 
 export interface StickerMarkupVideoSizeData {
-  stickerset: StickerSetData
+  type: 'sticker-markup'
+  stickerset?: StickerSetData
   sticker: ToString<bigint>
   /**
    * 1, 2, 3 or 4 RBG-24 colors used to generate a solid (1), gradient (2) or
@@ -388,6 +395,10 @@ export interface StickerMarkupVideoSizeData {
    * generated. The rotation angle for gradient backgrounds is 0.
    */
   backgroundColors: RGB24Color
+}
+
+export interface UnknownVideoSizeData {
+  type: 'unknown'
 }
 
 export interface PhotoData {
@@ -402,7 +413,7 @@ export interface PhotoData {
 
 export interface ChatEditPhotoActionData {
   type: 'chat-edit-photo'
-  photo: PhotoData
+  photo?: PhotoData
 }
 
 export interface ChatDeletePhotoActionData {
@@ -520,8 +531,8 @@ export interface CustomActionActionData {
   message: string
 }
 
-export interface BotAppNotModifiedData {
-  type: 'bot-app-not-modified'
+export interface NotModifiedBotAppData {
+  type: 'not-modified'
 }
 
 export interface ImageSizeDocumentAttributeData {
@@ -545,7 +556,7 @@ export interface StickerDocumentAttributeData {
   type: 'sticker'
   mask?: boolean
   alt: string
-  stickerset: StickerSetData
+  stickerset?: StickerSetData
   maskCoords?: MaskCoordsData
 }
 
@@ -585,7 +596,7 @@ export interface CustomEmojiDocumentAttributeData {
   free?: boolean
   textColor?: boolean
   alt: string
-  stickerset: StickerSetData
+  stickerset?: StickerSetData
 }
 
 export interface UnknownDocumentAttributeData {
@@ -612,12 +623,12 @@ export interface DocumentData {
   size: ToString<bigint>
   thumbs?: PhotoSizeData[]
   videoThumbs?: VideoSizeData[]
-  dcId: ToString<bigint>
+  dc: ToString<bigint>
   attributes: DocumentAttributeData[]
 }
 
-export interface BotAppData {
-  type: 'bot-app'
+export interface DefaultBotAppData {
+  type: 'default'
   id: ToString<bigint>
   accessHash: ToString<bigint>
   shortName: string
@@ -628,12 +639,21 @@ export interface BotAppData {
   hash: ToString<bigint>
 }
 
+export interface UnknownBotAppData {
+  type: 'unknown'
+}
+
+export type BotAppData =
+  | DefaultBotAppData
+  | NotModifiedBotAppData
+  | UnknownBotAppData
+
 export interface BotAllowedActionData {
   type: 'bot-allowed'
   attachMenu?: boolean
   fromRequest?: boolean
   domain?: string
-  app?: BotAppNotModifiedData | BotAppData
+  app?: BotAppData
 }
 
 export type SecureValueType =
@@ -662,7 +682,7 @@ export interface SecureFileData {
   id: ToString<bigint>
   accessHash: ToString<bigint>
   size: ToString<bigint>
-  dcId: number
+  dc: number
   date: number
   fileHash: Uint8Array
   secret: Uint8Array
@@ -713,7 +733,7 @@ export interface SecureValuesSentMeActionData {
 
 export interface SecureValuesSentActionData {
   type: 'secure-values-sent'
-  types: SecureValueData[]
+  types: SecureValueType[]
 }
 
 export interface ContactSignUpActionData {
@@ -942,7 +962,7 @@ export interface TopicCreateActionData {
   type: 'topic-create'
   title: string
   iconColor: number
-  iconEmoji: ToString<bigint>
+  iconEmoji?: ToString<bigint>
 }
 
 export interface TopicEditActionData {
@@ -955,7 +975,7 @@ export interface TopicEditActionData {
 
 export interface SuggestProfilePhotoActionData {
   type: 'suggest-profile-photo'
-  photo: PhotoData
+  photo?: PhotoData
 }
 
 export interface RequestedPeerActionData {
@@ -985,7 +1005,7 @@ export interface DefaultWallPaperData {
   dark?: boolean
   accessHash: ToString<bigint>
   slug: string
-  document: DocumentData
+  document?: DocumentData
   settings?: WallPaperSettingsData
 }
 
@@ -1046,7 +1066,7 @@ export interface BoostApplyActionData {
 
 export interface UserRequestedPeerData {
   type: 'user'
-  user: ToString<EntityID>
+  id: ToString<EntityID>
   firstName?: string
   lastName?: string
   username?: string
@@ -1055,14 +1075,14 @@ export interface UserRequestedPeerData {
 
 export interface ChatRequestedPeerData {
   type: 'chat'
-  chat: ToString<EntityID>
+  id: ToString<EntityID>
   title?: string
   photo?: PhotoData
 }
 
 export interface ChannelRequestedPeerData {
   type: 'channel'
-  channel: ToString<EntityID>
+  id: ToString<EntityID>
   title?: string
   username?: string
   photo?: PhotoData
@@ -1117,7 +1137,7 @@ export interface StarGiftData {
   soldOut?: boolean
   birthday?: boolean
   id: ToString<bigint>
-  sticker: DocumentData
+  sticker?: DocumentData
   stars: ToString<bigint>
   availabilityRemains?: number
   availabilityTotal?: number

@@ -80,3 +80,20 @@ export const toAsyncIterable = <T>(stream: ReadableStream<T>): AsyncIterable<T> 
 		}
 	})()
 }
+
+/** Delete properties with the value `undefined` from the target object. */
+export const cleanUndef = <T extends object>(obj: T): T => {
+	let k: keyof typeof obj
+	for (k in obj) {
+		if (obj[k] === undefined) {
+			delete obj[k]
+		}
+	}
+	return obj
+}
+
+export const withCleanUndef = <I, O>(f: (input: I) => O): (input: I) => O =>
+	(input: I) => {
+		const output = f(input)
+		return output && cleanUndef(output)
+	}
