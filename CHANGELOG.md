@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.1](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.0...tg-mini-app-v1.3.1) (2025-04-22)
+
+
+### Bug Fixes
+
+* use entity ID on dialog item click handler ([01f6ba4](https://github.com/storacha/tg-miniapp/commit/01f6ba479ba9db1a5d808c228f7dd74e3aa67a5b))
+
+
+### Other Changes
+
+* address review comments ([bd7d684](https://github.com/storacha/tg-miniapp/commit/bd7d6844e5d70341460bd24c52ed52b3c81d77b2))
+* fix merge conflicts ([e0fdf26](https://github.com/storacha/tg-miniapp/commit/e0fdf265bb0729c243de0400c97f16617b52a37d))
+
 ## [1.3.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.2.1...tg-mini-app-v1.3.0) (2025-04-22)
 
 
