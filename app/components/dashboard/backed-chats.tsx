@@ -82,7 +82,8 @@ export default function BackedChats() {
 		if (!backupWithDialog || !dialog) return
 		setDialog(dialog)
 		const backupData = backupWithDialog.data.toString()
-		router.push(`/dialog/${id}?backupData=${encodeURIComponent(backupData)}`)
+		const pageId = dialog.entity ? dialog.entity.id : id
+		router.push(`/dialog/${pageId}?backupData=${encodeURIComponent(backupData)}`)
 	}
 
 	return (

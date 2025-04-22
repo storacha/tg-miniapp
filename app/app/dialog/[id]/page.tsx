@@ -5,7 +5,7 @@ import * as dagCBOR from '@ipld/dag-cbor'
 import { useEffect, useState } from 'react'
 import { useTelegram } from '@/providers/telegram'
 import { cloudStorage} from '@telegram-apps/sdk-react'
-import { useParams, useSearchParams } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 import * as Crypto from '@/lib/crypto'
 import { Media } from '@/components/ui/media'
@@ -13,6 +13,7 @@ import { Layouts } from '@/components/layouts'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
 import { BackupModel, DialogData, EntityData, MessageData, ServiceMessageData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ConnectError } from '@/components/backup/connect'
 
 export const runtime = 'edge'
 
@@ -138,6 +139,8 @@ export default function Page () {
   const [messages, setMessages] = useState<MessageData[]>([])
   const [userId, setUserId] = useState<string>()
   const [participants, setParticipants] = useState<Record<string, EntityData>>({})
+  const router = useRouter()
+  const [restoreErr, setRestoreErr] = useState<Error>()
   const params = useParams<{ id: string }>()
   const searchParams = useSearchParams()
   const backupCid = searchParams.get('backupData')
@@ -177,7 +180,6 @@ export default function Page () {
           const root = roots[0]
           const backupRaw = dagCBOR.decode(root.bytes) as BackupModel
           console.log('Decoded CAR root')
-          // console.log(JSON.stringify(backupRaw))
 
           const id = params.id.replace('-', '')
           const dialogCid = backupRaw['tg-miniapp-backup@0.0.1'].dialogs[id].toString()
@@ -188,8 +190,6 @@ export default function Page () {
             await Crypto.decryptContent(encryptedDialogData, encryptionPassword)
           ) as DialogData
           
-          console.log(JSON.stringify(decryptedDialogData))
-       
           // Restore messages and entities
           const restoredMessages: MessageData[] = [];
           for (const messageLink of decryptedDialogData.messages) {
@@ -219,6 +219,7 @@ export default function Page () {
 
         } catch (error) {
           console.error('Error in useEffect:', error)
+            setRestoreErr(new Error(`restoring backup failed! Reason: ${error instanceof Error ? error.message : 'Unknown error'}`))
         }
       }
       restoreBackup()
@@ -227,6 +228,7 @@ export default function Page () {
 
   return (
     <Layouts isSinglePage isBackgroundBlue>
+      {restoreErr && <ConnectError open={restoreErr != undefined} error={restoreErr} onDismiss={() => { setRestoreErr(undefined); router.back()}} />}
       {loading && <p className='text-center'>Loading...</p> }
       {!loading && !dialogData && 
         <div className="flex flex-col items-center justify-center h-screen">
