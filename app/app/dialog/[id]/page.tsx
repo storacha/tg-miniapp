@@ -162,27 +162,10 @@ export default function Page () {
             throw new Error('Encryption password not found in cloud storage')
           }
           
-          const response = await getFromStoracha(`${backupCid}?format=car`)
-          const car = new Uint8Array(await response.arrayBuffer());
-          console.log('CAR file fetched')
+          const response = await getFromStoracha(`${backupCid}?format=raw`)
+          const backupRaw = dagCBOR.decode(new Uint8Array(await response.arrayBuffer())) as BackupModel
 
-          // decode
-          const { roots } = CAR.decode(car)
-          if (!roots.length) {
-            throw new Error('Missing root block')
-          }
-          const { code } = roots[0].cid
-          if (code !== dagCBOR.code) {
-          throw new Error(`unexpected root CID codec: 0x${code.toString(16)}`)
-          }
-
-          console.log('decoding...')
-          const root = roots[0]
-          const backupRaw = dagCBOR.decode(root.bytes) as BackupModel
-          console.log('Decoded CAR root')
-
-          const id = params.id.replace('-', '')
-          const dialogCid = backupRaw['tg-miniapp-backup@0.0.1'].dialogs[id].toString()
+          const dialogCid = backupRaw['tg-miniapp-backup@0.0.1'].dialogs[params.id].toString()
           const dialogResult = await getFromStoracha(dialogCid)
           const encryptedDialogData = new Uint8Array(await dialogResult.arrayBuffer())
 
@@ -191,23 +174,30 @@ export default function Page () {
           ) as DialogData
           
           // Restore messages and entities
-          const restoredMessages: MessageData[] = [];
-          for (const messageLink of decryptedDialogData.messages) {
-            const messagesResult = await getFromStoracha(messageLink.toString())
-            const encryptedMessageData = new Uint8Array(await messagesResult.arrayBuffer())
-            const decryptedMessageData = dagCBOR.decode(
-              await Crypto.decryptContent(encryptedMessageData, encryptionPassword)
-            ) as MessageData[]
-            restoredMessages.push(...decryptedMessageData)
-          }
-    
-          const restoredEntities: Record<string, EntityData> = {}
-          const entitiesResult = await getFromStoracha(decryptedDialogData.entities.toString())
-          const encryptedEntitiesData = new Uint8Array(await entitiesResult.arrayBuffer())
-          const decryptedEntitiesData = dagCBOR.decode(
-            await Crypto.decryptContent(encryptedEntitiesData, encryptionPassword)
-          ) as Record<string, EntityData>
-          Object.assign(restoredEntities, decryptedEntitiesData)
+          const [restoredMessages, restoredEntities] = await Promise.all([
+            // Fetch and decrypt messages
+            (async () => {
+              const messages: MessageData[] = []
+              for (const messageLink of decryptedDialogData.messages) {
+                const messagesResult = await getFromStoracha(messageLink.toString())
+                const encryptedMessageData = new Uint8Array(await messagesResult.arrayBuffer())
+                const decryptedMessageData = dagCBOR.decode(
+                  await Crypto.decryptContent(encryptedMessageData, encryptionPassword)
+                ) as MessageData[]
+                messages.push(...decryptedMessageData)
+              }
+              return messages
+            })(),
+      
+            // Fetch and decrypt entities
+            (async () => {
+              const entitiesResult = await getFromStoracha(decryptedDialogData.entities.toString())
+              const encryptedEntitiesData = new Uint8Array(await entitiesResult.arrayBuffer())
+              return dagCBOR.decode(
+                await Crypto.decryptContent(encryptedEntitiesData, encryptionPassword)
+              ) as Record<string, EntityData>
+            })(),
+          ])
     
           // console.log(JSON.stringify(restoredMessages))
           // console.log(JSON.stringify(restoredEntities))
