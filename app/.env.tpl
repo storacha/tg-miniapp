@@ -6,6 +6,7 @@ NEXT_PUBLIC_STORACHA_PROVIDER=did:web:staging.web3.storage
 
 # set this to your gateway URL
 NEXT_PUBLIC_STORACHA_GATEWAY_URL=https://staging.w3s.link
+NEXT_PUBLIC_STORACHA_GATEWAY_ID=did:web:staging.w3s.link
 
 # Sentry
 NEXT_PUBLIC_SENTRY_DSN=https://bf79c216fe3c72328219f04aabeebc99@o609598.ingest.us.sentry.io/4508456692940801
