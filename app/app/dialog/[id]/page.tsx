@@ -16,6 +16,8 @@ import { ConnectError } from '@/components/backup/connect'
 
 export const runtime = 'edge'
 
+const gatewayURL = process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'
+
 type BackupDialogProps = {
   userId: string
   dialog: DialogData
@@ -123,7 +125,7 @@ function BackupDialog({
 }
 
 const getFromStoracha = async (cid: string) => {
-  const url = new URL(`/ipfs/${cid}`, process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL)
+  const url = new URL(`/ipfs/${cid}`, gatewayURL)
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error(`Failed to fetch: ${response.status} ${response.statusText} ${url}`);
