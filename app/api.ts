@@ -121,10 +121,20 @@ export interface MessageData {
   id: MessageID
   type: 'message'
   /**
-   * ID of the peer who sent this message. It will be undefined for anonymous
-   * messages.
+   * ID of the peer who sent this message. Will be undefined for anonymous messages.
+   * Indicates the sender of the message.
+   *
+   * In a private chat, this is usually undefined since the context already implies the sender.
    */
   from?: ToString<EntityID>
+
+  /**
+   * ID of the peer (chat, user, or channel) where the message was sent.
+   * Indicates the destination or context of the message.
+   *
+   * In a private chat, this will be the ID of the other user you're chatting with.
+   */
+  peer: ToString<EntityID>
   /** Timestamp in seconds since Unix epoch that this message was sent. */
   date: number
   /** The string text of the message. */
@@ -1158,4 +1168,11 @@ export interface StarGiftActionData {
 
 export interface UnknownActionData {
    type: 'unknown'
+}
+
+export interface RestoredBackup {
+  dialogData: DialogData
+  messages: MessageData[]
+  participants: Record<string, EntityData>
+  hasMoreMessages: boolean
 }

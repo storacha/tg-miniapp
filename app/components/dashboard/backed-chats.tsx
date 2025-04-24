@@ -52,7 +52,7 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 
 export default function BackedChats() {
 	const [{ client }] = useTelegram()
-	const [{ backups }, {setDialog}] = useBackups()
+	const [{ backups }] = useBackups()
 	const router = useRouter()
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
 	const [loading, setLoading] = useState(true)
@@ -80,7 +80,6 @@ export default function BackedChats() {
 		const backupWithDialog = sortedBackups.find(b => id && b.dialogs.has(id))
 		const dialog = dialogs.find(d => d.id.toString() == id.toString())
 		if (!backupWithDialog || !dialog) return
-		setDialog(dialog)
 		const backupData = backupWithDialog.data.toString()
 		const pageId = dialog.entity ? dialog.entity.id : id
 		router.push(`/dialog/${pageId}?backupData=${encodeURIComponent(backupData)}`)

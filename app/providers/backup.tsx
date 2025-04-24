@@ -1,12 +1,13 @@
-import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect } from 'react'
-import { Backup, BackupStorage, Job, JobID, JobManager, JobStorage, Period } from '@/api'
+import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect, useCallback } from 'react'
+import { cloudStorage} from '@telegram-apps/sdk-react'
+import { Backup, BackupStorage, Job, JobID, JobManager, JobStorage, Period, RestoredBackup } from '@/api'
 import { SpaceDID } from '@storacha/ui-react'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
-import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
-
+import { restoreBackup as restoreBackupAction, fetchMoreMessages as fetchMoreMessagesAction} from '@/lib/backup/recoverer'
 export interface Result<T> {
   items: T[]
+  item?: T
   loading: boolean
   error?: Error
 }
@@ -23,10 +24,7 @@ export interface ContextState {
   backups: Result<Backup>
   // /** The current backup item. */
   // backup?: Backup
-  /** The current dialog item. */
-  dialog?: Dialog
-  // /** Messages in the current dialog. */
-  // messages: Result<Message>
+  restoredBackup: Result<RestoredBackup>
   // /** Media of the current backup (or current dialog if set). */
   // media: Result<Media>
 }
@@ -34,8 +32,10 @@ export interface ContextState {
 export interface ContextActions {
   addBackupJob: (space: SpaceDID, chats: Set<bigint>, period: Period) => Promise<JobID>
   removeBackupJob: (job: JobID) => Promise<void>
+  restoreBackup: ( backupCid: string, dialogId: string, limit: number ) => Promise<void>
+  fetchMoreMessages: ( offset: number, limit: number ) => Promise<void>
   // setBackup: (id: Link|null) => void
-  setDialog: (dialog: Dialog | null) => void
+  // setDialog: (id: bigint | null) => void
 }
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
@@ -44,15 +44,17 @@ export const ContextDefaultValue: ContextValue = [
   {
     jobs: { items: [], loading: false },
     backups: { items: [], loading: false },
-    dialog: undefined,
+    restoredBackup: { items: [], loading: false}
     // messages: { items: [], loading: false },
     // media: { items: [], loading: false }
   },
   {
     addBackupJob: () => Promise.reject(new Error('provider not setup')),
     removeBackupJob: () => Promise.reject(new Error('provider not setup')),
+    restoreBackup: () => Promise.reject(new Error('provider not setup')),
+    fetchMoreMessages: () => Promise.reject(new Error('provider not setup'))
     // setBackup: () => {},
-    setDialog: () => {}
+    // setDialog: () => {}
   },
 ]
 
@@ -85,10 +87,67 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
     loading: backupsLoading,
     error: backupsError
   }
+  
+  const [restoredBackup, setRestoredBackup] = useState<RestoredBackup>()
+  const [restoredBackupLoading, setRestoredBackupLoading] = useState(false)
+  const [restoredBackupError, setRestoredBackupError] = useState<Error>()
+  const restoreBackupResult = {
+    items: [],
+    item: restoredBackup,
+    loading: restoredBackupLoading,
+    error: restoredBackupError
+  }
 
-  const [dialog, setDialogState] = useState<Dialog | undefined>(undefined)
-  const setDialog = (dialog: Dialog | null) => {
-    setDialogState(dialog || undefined) 
+  const restoreBackup = useCallback(async ( backupCid: string, dialogId: string, limit: number ) => {
+    setRestoredBackupLoading(true)
+    try {
+      setRestoredBackupError(undefined)
+
+      if(!cloudStorage.getKeys.isAvailable){
+        throw new Error('Error trying to access cloud storage.')
+      }
+
+      const encryptionPassword = await cloudStorage.getItem('encryption-password')
+      if (!encryptionPassword) {
+        throw new Error('Encryption password not found in cloud storage')
+      }
+
+      const result = await restoreBackupAction(backupCid, dialogId, encryptionPassword, limit)
+      setRestoredBackup(result)
+    } catch (err: any) {
+      console.error('Error: restoring backup', err)
+      setRestoredBackupError(err)
+    }
+    finally {
+      setRestoredBackupLoading(false)
+    }
+  }, [])
+  
+  const fetchMoreMessages = async (offset: number, limit: number) => {
+    if (!restoredBackup) {
+      console.warn('fetchMoreMessages called without a restored backup')
+      return
+    }
+  
+    try {
+      if(!cloudStorage.getKeys.isAvailable){
+        throw new Error('Error trying to access cloud storage.')
+      }
+
+      const encryptionPassword = await cloudStorage.getItem('encryption-password')
+      if (!encryptionPassword) {
+        throw new Error('Encryption password not found in cloud storage')
+      }
+
+      const newMessages = await fetchMoreMessagesAction(restoredBackup.dialogData, encryptionPassword, offset, limit)
+      setRestoredBackup((prev) => ({
+        ...prev!,
+        messages: [...prev!.messages, ...newMessages],
+      }))
+    } catch (err: any) {
+      console.error('Error: fetching more messages', err)
+      setRestoredBackupError(err)
+    }
   }
 
   const addBackupJob = (space: SpaceDID, dialogs: Set<bigint>, period: Period) =>
@@ -157,7 +216,7 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
   }, [backupStore])
 
   return (
-    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, dialog}, { addBackupJob, removeBackupJob, setDialog }]}>
+    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, restoredBackup: restoreBackupResult }, { addBackupJob, removeBackupJob, restoreBackup, fetchMoreMessages}]}>
       {children}
     </Context.Provider>
   )
