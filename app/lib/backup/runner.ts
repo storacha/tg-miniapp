@@ -582,7 +582,9 @@ const toPhotoData = withCleanUndef((photo: Api.TypePhoto): PhotoData | undefined
   if (photo.className === 'PhotoEmpty') {
     return
   }
+
   return {
+    type: 'default',
     id: photo.id.toString(),
     hasStickers: photo.hasStickers,
     accessHash: String(photo.accessHash),
