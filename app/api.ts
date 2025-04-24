@@ -115,8 +115,13 @@ export interface EntityData {
     id: ToString<PhotoID>
     strippedThumb?: Uint8Array
   }
-}
+} 
 
+export type PeerType = 'user' | 'chat' | 'channel' 
+export interface PeerData {
+  type: PeerType
+  id: ToString<EntityID>
+}
 export interface MessageData {
   id: MessageID
   type: 'message'
@@ -1175,4 +1180,274 @@ export interface RestoredBackup {
   messages: MessageData[]
   participants: Record<string, EntityData>
   hasMoreMessages: boolean
+}
+
+export type MediaData =
+  | EmptyMediaData
+  | PhotoMediaData
+  | GeoMediaData
+  | ContactMediaData
+  | UnsupportedMediaData
+  | DocumentMediaData
+  | WebPageMediaData
+  | VenueMediaData
+  | GameMediaData
+  | InvoiceMediaData
+  | GeoLiveMediaData
+  | PollMediaData
+  | DiceMediaData
+  | StoryMediaData
+  | GiveawayMediaData
+  | GiveawayResultsMediaData
+  | PaidMediaData;
+
+// Define each media type interface
+export interface EmptyMediaData {
+  type: 'empty'
+}
+
+export interface PhotoMediaData {
+  type: 'photo'
+  photo: PhotoData
+  spoiler?: boolean
+  ttlSeconds?: number
+}
+
+export interface GeoPointData {
+  lat: number
+  long: number
+  accessHash: ToString<bigint>
+  accuracyRadius?: number
+}
+
+export interface GeoMediaData {
+  type: 'geo'
+  geo: GeoPointData
+}
+
+export interface ContactMediaData {
+  type: 'contact'
+  phoneNumber: string
+  firstName: string
+  lastName: string
+  vcard: string
+  userId: ToString<EntityID>
+}
+
+export interface UnsupportedMediaData {
+  type: 'unsupported'
+}
+
+export interface DocumentMediaData {
+  type: 'document'
+  document?: DocumentData // as far as I understood, one is for one document and the other is for an array of documents
+  altDocuments?: DocumentData[]
+  nopremium?: boolean
+  spoiler?: boolean
+  video?: boolean
+  round?: boolean
+  voice?: boolean
+  ttlSeconds?: number
+}
+
+// TODO: need to add WebPageData based on TypeWebPage
+export interface WebPageMediaData {
+  type: 'web-page'
+  url: string
+  title?: string
+  description?: string
+  photo?: PhotoData
+}
+
+export interface VenueMediaData {
+  type: 'venue'
+  geo: GeoPointData
+  title: string
+  address: string
+  provider: string
+  venueId: string
+  venueType: string
+}
+
+export interface GameData {
+  id: ToString<bigint>
+  title: string
+  description: string
+  shortName: string
+  accessHash: ToString<bigint>
+  photo: PhotoData
+  document?: DocumentData
+}
+
+export interface GameMediaData {
+  type: 'game'
+  game: GameData
+}
+
+export interface WebDocumentData {
+  url: string
+  size: number
+  mimeType: string
+  attributes: DocumentAttributeData[]
+  accessHash?: ToString<bigint>
+}
+
+export interface ExtendedMediaData {
+  media: MediaData
+}
+
+export interface ExtendedMediaPreviewData {
+  w?: number
+  h?: number
+  thumb?: PhotoSizeData
+  videoDuration?: number
+}
+
+export type MessageExtendedMediaData = 
+  | ExtendedMediaPreviewData
+  | ExtendedMediaData
+export interface InvoiceMediaData {
+  type: 'invoice'
+  title: string
+  description: string
+  startParam: string
+  currency: string
+  totalAmount: ToString<bigint>
+  test?: boolean
+  receiptMsgId?: number
+  shippingAddressRequested?: boolean
+  photo?: WebDocumentData
+  extendedMedia?: MessageExtendedMediaData
+  
+}
+export interface GeoLiveMediaData {
+  type: 'geo-live'
+  geo: GeoPointData
+  period: number
+  heading?: number
+  proximityNotificationRadius?: number
+}
+
+export interface PollAnswerData {
+  text: TextWithEntitiesData
+  option: Uint8Array
+}
+export interface PoolData {
+  id: ToString<bigint>
+  question: TextWithEntitiesData
+  answers: Array<PollAnswerData>
+  closed?: boolean
+  publicVoters?: boolean
+  multipleChoice?: boolean
+  quiz?: boolean
+  closePeriod?: number
+  closeDate?: number
+}
+
+export interface PollAnswerVotersData {
+  chosen?: boolean
+  correct?: boolean
+  option: Uint8Array
+  voters: number
+}
+export interface PollResultsData {
+  min?: boolean
+  results?: PollAnswerVotersData[]
+  totalVoters?: number
+  recentVoters?: PeerData[]
+  solution?: string
+  solutionEntities?: MessageData[]
+}
+
+export interface PollMediaData {
+  type: 'poll'
+  poll: PoolData
+  results: PollResultsData
+}
+
+export interface DiceMediaData {
+  type: 'dice'
+  value: number
+  emoticon: string
+}
+
+export type StoryDataStatus = 'active' | 'expired' | 'deleted'
+
+export interface StoryViewsData {
+  hasViewers?: boolean
+  viewsCount: number
+  forwardsCount?: number
+  reactionsCount?: number
+  recentViewers?: bigint[]
+  // reactions?: Api.TypeReactionCount[]
+}
+export interface StoryItemData {
+  type: StoryDataStatus
+  pinned?: boolean
+  public?: boolean
+  closeFriends?: boolean
+  min?: boolean
+  noforwards?: boolean
+  edited?: boolean
+  contacts?: boolean
+  selectedContacts?: boolean
+  out?: boolean
+  id: number
+  date: number
+  expireDate: number
+  caption?: string
+  fromId?: PeerData
+  media: MediaData
+  views?: StoryViewsData
+  // fwdFrom?: Api.TypeStoryFwdHeader
+  // entities?: Api.TypeMessageEntity[]
+  // mediaAreas?: Api.TypeMediaArea[]
+  // privacy?: Api.TypePrivacyRule[]
+  // sentReaction?: Api.TypeReaction
+}
+
+ 
+
+export interface StoryMediaData {
+  type: 'story'
+  id: number
+  peer: PeerData
+  viaMention?: boolean
+  story: StoryItemData
+}
+
+export interface GiveawayMediaData {
+  type: 'giveaway'
+  onlyNewSubscribers?: boolean
+  winnersAreVisible?: boolean
+  channels: ToString<bigint>[]
+  countriesIso2?: string[]
+  prizeDescription?: string
+  quantity: number
+  months?: number
+  stars?: ToString<bigint>
+  untilDate: number
+}
+
+export interface GiveawayResultsMediaData {
+  type: 'giveaway-results'
+  channelId: ToString<bigint>
+  launchMsgId: number
+  winnersCount: number
+  unclaimedCount: number
+  winners: ToString<bigint>[]
+  untilDate: number
+  onlyNewSubscribers?: boolean;
+  refunded?: boolean
+  additionalPeersCount?: number
+  months?: number
+  stars?: ToString<bigint>
+  prizeDescription?: string
+  
+}
+
+export interface PaidMediaData {
+  type: 'paid-media'
+  starsAmount: ToString<bigint>
+  extendedMedia: MessageExtendedMediaData
 }
