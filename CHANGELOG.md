@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.4.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.3...tg-mini-app-v1.4.0) (2025-04-24)
+
+
+### Features
+
+* add media types ([008efdc](https://github.com/storacha/tg-miniapp/commit/008efdccd9cbd4e157547f1f40d45026f0278a87))
+* add missing media types ([3542576](https://github.com/storacha/tg-miniapp/commit/35425768db6259ed318178a05db6976cb4948bdb))
+
+
+### Bug Fixes
+
+* adjust toPhotoData return type ([5a40f2c](https://github.com/storacha/tg-miniapp/commit/5a40f2c0e1f8b4d086022f481b610daf6bb2f381))
+
+
+### Other Changes
+
+* address review comments ([4d96f5e](https://github.com/storacha/tg-miniapp/commit/4d96f5e3a6616e56cc133e208d4c75b6d1546387))
+
 ## [1.3.3](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.2...tg-mini-app-v1.3.3) (2025-04-24)
 
 
