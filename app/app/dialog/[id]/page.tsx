@@ -25,11 +25,9 @@ type BackupDialogProps = {
 const formatDate = (timestamp: number) => (new Date(timestamp * 1000)).toLocaleString()
 
 const getInitials = (name: string) => {
-  const words = name.trim().split(' ')
-  if (words.length === 1) {
-    return words[0][0].toUpperCase() 
-  }
-  return (words[0][0] + words[1][0]).toUpperCase()
+  const title = name.trim() || 'Unknown'
+	const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
+	return parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 
 function BackupDialog({

@@ -86,9 +86,9 @@ export default function BackedChats() {
 	}
 
 	return (
-		<div className="flex flex-col gap-5">
+		<div className="flex flex-col gap-5 min-h-screen">
 			<h1 className="px-5">Chats</h1>
-			{backups.items.length === 0 && (
+			{backups.items.length === 0 && !loading && (
 				<div className="flex flex-col justify-center items-center px-10 pt-20 gap-2">
 					<div className="text-foreground/40 p-2">
 						<ShieldCheck size={30} />

@@ -2,8 +2,10 @@ import * as dagCBOR from '@ipld/dag-cbor'
 import * as Crypto from '@/lib/crypto'
 import { BackupModel, DialogData, EntityData, MessageData, RestoredBackup } from '@/api'
 
+const gatewayURL = process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'
+
 export const getFromStoracha = async (cid: string) => {
-	const url = new URL(`/ipfs/${cid}`, process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL)
+	const url = new URL(`/ipfs/${cid}`, gatewayURL)
 	const response = await fetch(url)
 	if (!response.ok) {
 		throw new Error(`Failed to fetch: ${response.status} ${response.statusText} ${url}`);
