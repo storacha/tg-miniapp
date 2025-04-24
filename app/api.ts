@@ -116,10 +116,8 @@ export interface EntityData {
     strippedThumb?: Uint8Array
   }
 } 
-
-export type PeerType = 'user' | 'chat' | 'channel' 
 export interface PeerData {
-  type: PeerType
+  type: EntityType
   id: ToString<EntityID>
 }
 export interface MessageData {
@@ -416,7 +414,22 @@ export interface UnknownVideoSizeData {
   type: 'unknown'
 }
 
-export interface PhotoData {
+export type PhotoData =
+  | EmptyPhotoData
+  | DefaultPhotoData
+  | UnknownPhotoData
+
+export interface EmptyPhotoData {
+  type: 'empty'
+  id: ToString<bigint>
+}
+
+export interface UnknownPhotoData {
+  type: 'unknown'
+}
+
+export interface DefaultPhotoData {
+  type: 'default'
   id: ToString<PhotoID>
   hasStickers?: boolean
   accessHash: ToString<bigint>
@@ -424,6 +437,7 @@ export interface PhotoData {
   date: number
   sizes: PhotoSizeData[]
   videoSizes?: VideoSizeData[]
+  dcId?: number
 }
 
 export interface ChatEditPhotoActionData {
@@ -1199,9 +1213,9 @@ export type MediaData =
   | StoryMediaData
   | GiveawayMediaData
   | GiveawayResultsMediaData
-  | PaidMediaData;
+  | PaidMediaData
+  | UnknownMediaData
 
-// Define each media type interface
 export interface EmptyMediaData {
   type: 'empty'
 }
@@ -1250,13 +1264,131 @@ export interface DocumentMediaData {
   ttlSeconds?: number
 }
 
-// TODO: need to add WebPageData based on TypeWebPage
-export interface WebPageMediaData {
-  type: 'web-page'
+export type BaseThemeData =
+  | BaseThemeClassicData
+  | BaseThemeDayData
+  | BaseThemeNightData
+  | BaseThemeTintedData
+  | BaseThemeArcticData
+  | UnknownBaseThemeData
+
+export interface BaseThemeClassicData {
+  type: 'classic'
+}
+
+export interface BaseThemeDayData {
+  type: 'day'
+}
+
+export interface BaseThemeNightData {
+  type: 'night'
+}
+
+export interface BaseThemeTintedData {
+  type: 'tinted'
+}
+
+export interface BaseThemeArcticData {
+  type: 'arctic'
+}
+
+export interface UnknownBaseThemeData {
+  type: 'unknown'
+}
+export interface ThemeSettingsData {
+  messageColorsAnimated?: boolean
+  baseTheme: BaseThemeData
+  accentColor: number
+  outboxAccentColor?: number
+  messageColors?: number[]
+  wallpaper?: WallPaperData
+}
+
+export type WebPageAttributeData =
+  | WebPageAttributeThemeData
+  | WebPageAttributeStoryData
+  | WebPageAttributeStickerSetData
+  | UnknownWebPageAttributeData
+
+export interface WebPageAttributeThemeData {
+  type: 'theme'
+  documents?: DocumentData[]
+  settings?: ThemeSettingsData
+}
+
+export interface WebPageAttributeStoryData {
+  type: 'story'
+  id: number
+  peer: PeerData
+  story?: StoryItemData
+}
+
+export interface WebPageAttributeStickerSetData {
+  type: 'sticker'
+  emojis?: boolean;
+  textColor?: boolean;
+  stickers: DocumentData[]
+}
+
+export interface UnknownWebPageAttributeData {
+  type: 'unknown'
+}
+
+export type WebPageData = 
+  | EmptyWebPageData
+  | WebPagePendingData
+  | WebPageNotModifiedData
+  | DefaultWebPageData
+  | UnknownWebPageData
+
+export interface EmptyWebPageData {
+  type: 'empty'
+  id: ToString<bigint>
+  url?: string
+}
+export interface WebPagePendingData {
+  type: 'pending'
+  id: ToString<bigint>
+  date: number
+  url?: string
+}
+export interface WebPageNotModifiedData {
+  type: 'not-modified'
+  cachedPageViews?: number
+}
+export interface DefaultWebPageData {
+  type: 'default'
+  id: bigint
   url: string
+  displayUrl: string
+  hash: number
+  hasLargeMedia?: boolean
+  tg_type?: string // maps to telegram original 'type' attribute
+  siteName?: string
   title?: string
   description?: string
   photo?: PhotoData
+  embedUrl?: string
+  embedType?: string
+  embedWidth?: number
+  embedHeight?: number
+  duration?: number
+  author?: string
+  document?: DocumentData
+  // attributes?: WebPageAttributeData[]
+}
+
+export interface UnknownWebPageData {
+  type: 'unknown'
+}
+
+export interface WebPageMediaData {
+  type: 'web-page'
+  forceLargeMedia?: boolean
+  forceSmallMedia?: boolean
+  manual?: boolean
+  safe?: boolean
+  webpage: WebPageData
 }
 
 export interface VenueMediaData {
@@ -1284,7 +1416,13 @@ export interface GameMediaData {
   game: GameData
 }
 
-export interface WebDocumentData {
+export type WebDocumentData =
+  | DefaultWebDocumentData
+  | WebDocumentNoProxyData
+  | UnknownWebDocumentData
+
+export interface DefaultWebDocumentData {
+  type: 'default'
   url: string
   size: number
   mimeType: string
@@ -1292,20 +1430,40 @@ export interface WebDocumentData {
   accessHash?: ToString<bigint>
 }
 
-export interface ExtendedMediaData {
+export interface WebDocumentNoProxyData {
+  type: 'proxy'
+  url: string
+  size: number
+  mimeType: string
+  attributes: DocumentAttributeData[]
+}
+
+export interface UnknownWebDocumentData {
+  type: 'unknown'
+}
+
+export type ExtendedMediaData = 
+  | ExtendedMediaPreviewData
+  | DefaultExtendedMediaData
+  | UnknownExtendedMediaData
+
+export interface DefaultExtendedMediaData {
+  type: 'default'
   media: MediaData
 }
 
 export interface ExtendedMediaPreviewData {
+  type: 'preview'
   w?: number
   h?: number
   thumb?: PhotoSizeData
   videoDuration?: number
 }
 
-export type MessageExtendedMediaData = 
-  | ExtendedMediaPreviewData
-  | ExtendedMediaData
+export interface UnknownExtendedMediaData {
+  type: 'unknown'
+}
+
 export interface InvoiceMediaData {
   type: 'invoice'
   title: string
@@ -1317,7 +1475,7 @@ export interface InvoiceMediaData {
   receiptMsgId?: number
   shippingAddressRequested?: boolean
   photo?: WebDocumentData
-  extendedMedia?: MessageExtendedMediaData
+  extendedMedia?: ExtendedMediaData
   
 }
 export interface GeoLiveMediaData {
@@ -1371,8 +1529,6 @@ export interface DiceMediaData {
   emoticon: string
 }
 
-export type StoryDataStatus = 'active' | 'expired' | 'deleted'
-
 export interface StoryViewsData {
   hasViewers?: boolean
   viewsCount: number
@@ -1381,8 +1537,30 @@ export interface StoryViewsData {
   recentViewers?: bigint[]
   // reactions?: Api.TypeReactionCount[]
 }
-export interface StoryItemData {
-  type: StoryDataStatus
+
+export type StoryItemData = 
+  | StoryItemDeletedData
+  | StoryItemSkippedData
+  | DefaultStoryItemData
+  | UnknownStoryItemData
+
+export interface StoryItemSkippedData {
+  type: 'deleted'
+  id: number
+}
+
+export interface StoryItemDeletedData {
+  type: 'skipped'
+  id: number
+  date: number
+  expireDate: number
+  closeFriends?: boolean
+}
+export interface DefaultStoryItemData {
+  type: 'default'
+  id: number
+  date: number
+  expireDate: number
   pinned?: boolean
   public?: boolean
   closeFriends?: boolean
@@ -1392,12 +1570,9 @@ export interface StoryItemData {
   contacts?: boolean
   selectedContacts?: boolean
   out?: boolean
-  id: number
-  date: number
-  expireDate: number
   caption?: string
   fromId?: PeerData
-  media: MediaData
+  media?: MediaData
   views?: StoryViewsData
   // fwdFrom?: Api.TypeStoryFwdHeader
   // entities?: Api.TypeMessageEntity[]
@@ -1406,7 +1581,9 @@ export interface StoryItemData {
   // sentReaction?: Api.TypeReaction
 }
 
- 
+export interface UnknownStoryItemData {
+  type: 'unknown'
+}
 
 export interface StoryMediaData {
   type: 'story'
@@ -1443,11 +1620,14 @@ export interface GiveawayResultsMediaData {
   months?: number
   stars?: ToString<bigint>
   prizeDescription?: string
-  
 }
 
 export interface PaidMediaData {
   type: 'paid-media'
   starsAmount: ToString<bigint>
-  extendedMedia: MessageExtendedMediaData
+  extendedMedia: ExtendedMediaData
+}
+
+export interface UnknownMediaData {
+  type: 'unknown'
 }
