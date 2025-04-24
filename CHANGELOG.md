@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.3.2](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.1...tg-mini-app-v1.3.2) (2025-04-23)
+
+
+### Bug Fixes
+
+* default gateway URL ([#59](https://github.com/storacha/tg-miniapp/issues/59)) ([b54afbb](https://github.com/storacha/tg-miniapp/commit/b54afbbb67a6d0e224b02e53adcbfb02fe4c02a6))
+* initials ([#61](https://github.com/storacha/tg-miniapp/issues/61)) ([a7cc583](https://github.com/storacha/tg-miniapp/commit/a7cc583d690dad5a4dfa4471a38cffe7b7efc668))
+* rendering while loading chats ([59510f5](https://github.com/storacha/tg-miniapp/commit/59510f59b0729a1e82fccbb43cc42c3deda4298c))
+
 ## [1.3.1](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.0...tg-mini-app-v1.3.1) (2025-04-22)
 
 
