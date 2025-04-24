@@ -115,8 +115,11 @@ export interface EntityData {
     id: ToString<PhotoID>
     strippedThumb?: Uint8Array
   }
+} 
+export interface PeerData {
+  type: EntityType
+  id: ToString<EntityID>
 }
-
 export interface MessageData {
   id: MessageID
   type: 'message'
@@ -411,7 +414,16 @@ export interface UnknownVideoSizeData {
   type: 'unknown'
 }
 
-export interface PhotoData {
+export type PhotoData =
+  | DefaultPhotoData
+  | UnknownPhotoData
+
+export interface UnknownPhotoData {
+  type: 'unknown'
+}
+
+export interface DefaultPhotoData {
+  type: 'default'
   id: ToString<PhotoID>
   hasStickers?: boolean
   accessHash: ToString<bigint>
@@ -419,6 +431,7 @@ export interface PhotoData {
   date: number
   sizes: PhotoSizeData[]
   videoSizes?: VideoSizeData[]
+  dc?: number
 }
 
 export interface ChatEditPhotoActionData {
@@ -1175,4 +1188,430 @@ export interface RestoredBackup {
   messages: MessageData[]
   participants: Record<string, EntityData>
   hasMoreMessages: boolean
+}
+
+export type MediaData = 
+  | PhotoMediaData
+  | GeoMediaData
+  | ContactMediaData
+  | UnsupportedMediaData
+  | DocumentMediaData
+  | WebPageMediaData
+  | VenueMediaData
+  | GameMediaData
+  | InvoiceMediaData
+  | GeoLiveMediaData
+  | PollMediaData
+  | DiceMediaData
+  | StoryMediaData
+  | GiveawayMediaData
+  | GiveawayResultsMediaData
+  | PaidMediaData
+  | UnknownMediaData
+
+
+export interface PhotoMediaData {
+  type: 'photo'
+  photo?: PhotoData
+  spoiler?: boolean
+  ttlSeconds?: number
+}
+
+export interface GeoPointData {
+  lat: number
+  long: number
+  accessHash: ToString<bigint>
+  accuracyRadius?: number
+}
+
+export interface GeoMediaData {
+  type: 'geo'
+  geo: GeoPointData
+}
+
+export interface ContactMediaData {
+  type: 'contact'
+  phoneNumber: string
+  firstName: string
+  lastName: string
+  vcard: string
+  user: ToString<EntityID>
+}
+
+export interface UnsupportedMediaData {
+  type: 'unsupported'
+}
+
+export interface DocumentMediaData {
+  type: 'document'
+  document?: DocumentData // as far as I understood, one is for one document and the other is for an array of documents
+  altDocuments?: DocumentData[]
+  nopremium?: boolean
+  spoiler?: boolean
+  video?: boolean
+  round?: boolean
+  voice?: boolean
+  ttlSeconds?: number
+}
+
+export type BaseThemeData =
+  | BaseThemeClassicData
+  | BaseThemeDayData
+  | BaseThemeNightData
+  | BaseThemeTintedData
+  | BaseThemeArcticData
+  | UnknownBaseThemeData
+
+export interface BaseThemeClassicData {
+  type: 'classic'
+}
+
+export interface BaseThemeDayData {
+  type: 'day'
+}
+
+export interface BaseThemeNightData {
+  type: 'night'
+}
+
+export interface BaseThemeTintedData {
+  type: 'tinted'
+}
+
+export interface BaseThemeArcticData {
+  type: 'arctic'
+}
+
+export interface UnknownBaseThemeData {
+  type: 'unknown'
+}
+export interface ThemeSettingsData {
+  messageColorsAnimated?: boolean
+  baseTheme: BaseThemeData
+  accentColor: number
+  outboxAccentColor?: number
+  messageColors?: number[]
+  wallpaper?: WallPaperData
+}
+
+export type WebPageAttributeData =
+  | WebPageAttributeThemeData
+  | WebPageAttributeStoryData
+  | WebPageAttributeStickerSetData
+  | UnknownWebPageAttributeData
+
+export interface WebPageAttributeThemeData {
+  type: 'theme'
+  documents?: DocumentData[]
+  settings?: ThemeSettingsData
+}
+
+export interface WebPageAttributeStoryData {
+  type: 'story'
+  id: number
+  peer: PeerData
+  story?: StoryItemData
+}
+
+export interface WebPageAttributeStickerSetData {
+  type: 'sticker'
+  emojis?: boolean;
+  textColor?: boolean;
+  stickers: DocumentData[]
+}
+
+export interface UnknownWebPageAttributeData {
+  type: 'unknown'
+}
+
+export type WebPageData = 
+  | WebPagePendingData
+  | WebPageNotModifiedData
+  | DefaultWebPageData
+  | UnknownWebPageData
+
+export interface WebPagePendingData {
+  type: 'pending'
+  id: ToString<bigint>
+  date: number
+  url?: string
+}
+export interface WebPageNotModifiedData {
+  type: 'not-modified'
+  cachedPageViews?: number
+}
+export interface DefaultWebPageData {
+  type: 'default'
+  id: bigint
+  url: string
+  displayUrl: string
+  hash: number
+  hasLargeMedia?: boolean
+  tg_type?: string // maps to telegram original 'type' attribute
+  siteName?: string
+  title?: string
+  description?: string
+  photo?: PhotoData
+  embedUrl?: string
+  embedType?: string
+  embedWidth?: number
+  embedHeight?: number
+  duration?: number
+  author?: string
+  document?: DocumentData
+  // attributes?: WebPageAttributeData[]
+}
+
+export interface UnknownWebPageData {
+  type: 'unknown'
+}
+
+export interface WebPageMediaData {
+  type: 'web-page'
+  forceLargeMedia?: boolean
+  forceSmallMedia?: boolean
+  manual?: boolean
+  safe?: boolean
+  webpage: WebPageData
+}
+
+export interface VenueMediaData {
+  type: 'venue'
+  geo: GeoPointData
+  title: string
+  address: string
+  provider: string
+  venue: string
+  venueType: string
+}
+
+export interface GameData {
+  id: ToString<bigint>
+  title: string
+  description: string
+  shortName: string
+  accessHash: ToString<bigint>
+  photo: PhotoData
+  document?: DocumentData
+}
+
+export interface GameMediaData {
+  type: 'game'
+  game: GameData
+}
+
+export type WebDocumentData =
+  | DefaultWebDocumentData
+  | WebDocumentNoProxyData
+  | UnknownWebDocumentData
+
+export interface DefaultWebDocumentData {
+  type: 'default'
+  url: string
+  size: number
+  mimeType: string
+  attributes: DocumentAttributeData[]
+  accessHash?: ToString<bigint>
+}
+
+export interface WebDocumentNoProxyData {
+  type: 'proxy'
+  url: string
+  size: number
+  mimeType: string
+  attributes: DocumentAttributeData[]
+}
+
+export interface UnknownWebDocumentData {
+  type: 'unknown'
+}
+
+export type ExtendedMediaData = 
+  | ExtendedMediaPreviewData
+  | DefaultExtendedMediaData
+  | UnknownExtendedMediaData
+
+export interface DefaultExtendedMediaData {
+  type: 'default'
+  media: MediaData
+}
+
+export interface ExtendedMediaPreviewData {
+  type: 'preview'
+  w?: number
+  h?: number
+  thumb?: PhotoSizeData
+  videoDuration?: number
+}
+
+export interface UnknownExtendedMediaData {
+  type: 'unknown'
+}
+
+export interface InvoiceMediaData {
+  type: 'invoice'
+  title: string
+  description: string
+  startParam: string
+  currency: string
+  totalAmount: ToString<bigint>
+  test?: boolean
+  receiptMsg?: number
+  shippingAddressRequested?: boolean
+  photo?: WebDocumentData
+  extendedMedia?: ExtendedMediaData
+  
+}
+export interface GeoLiveMediaData {
+  type: 'geo-live'
+  geo: GeoPointData
+  period: number
+  heading?: number
+  proximityNotificationRadius?: number
+}
+
+export interface PollAnswerData {
+  text: TextWithEntitiesData
+  option: Uint8Array
+}
+export interface PoolData {
+  id: ToString<bigint>
+  question: TextWithEntitiesData
+  answers: Array<PollAnswerData>
+  closed?: boolean
+  publicVoters?: boolean
+  multipleChoice?: boolean
+  quiz?: boolean
+  closePeriod?: number
+  closeDate?: number
+}
+
+export interface PollAnswerVotersData {
+  chosen?: boolean
+  correct?: boolean
+  option: Uint8Array
+  voters: number
+}
+export interface PollResultsData {
+  min?: boolean
+  results?: PollAnswerVotersData[]
+  totalVoters?: number
+  recentVoters?: PeerData[]
+  solution?: string
+  solutionEntities?: MessageData[]
+}
+
+export interface PollMediaData {
+  type: 'poll'
+  poll: PoolData
+  results: PollResultsData
+}
+
+export interface DiceMediaData {
+  type: 'dice'
+  value: number
+  emoticon: string
+}
+
+export interface StoryViewsData {
+  hasViewers?: boolean
+  viewsCount: number
+  forwardsCount?: number
+  reactionsCount?: number
+  recentViewers?: Array<ToString<bigint>>
+  // reactions?: Api.TypeReactionCount[]
+}
+
+export type StoryItemData = 
+  | StoryItemDeletedData
+  | StoryItemSkippedData
+  | DefaultStoryItemData
+  | UnknownStoryItemData
+
+export interface StoryItemSkippedData {
+  type: 'deleted'
+  id: number
+}
+
+export interface StoryItemDeletedData {
+  type: 'skipped'
+  id: number
+  date: number
+  expireDate: number
+  closeFriends?: boolean
+}
+export interface DefaultStoryItemData {
+  type: 'default'
+  id: number
+  date: number
+  expireDate: number
+  pinned?: boolean
+  public?: boolean
+  closeFriends?: boolean
+  min?: boolean
+  noforwards?: boolean
+  edited?: boolean
+  contacts?: boolean
+  selectedContacts?: boolean
+  out?: boolean
+  caption?: string
+  fromId?: PeerData
+  media?: MediaData
+  views?: StoryViewsData
+  // fwdFrom?: Api.TypeStoryFwdHeader
+  // entities?: Api.TypeMessageEntity[]
+  // mediaAreas?: Api.TypeMediaArea[]
+  // privacy?: Api.TypePrivacyRule[]
+  // sentReaction?: Api.TypeReaction
+}
+
+export interface UnknownStoryItemData {
+  type: 'unknown'
+}
+
+export interface StoryMediaData {
+  type: 'story'
+  id: number
+  peer: PeerData
+  viaMention?: boolean
+  story: StoryItemData
+}
+
+export interface GiveawayMediaData {
+  type: 'giveaway'
+  onlyNewSubscribers?: boolean
+  winnersAreVisible?: boolean
+  channels: ToString<bigint>[]
+  countriesIso2?: string[]
+  prizeDescription?: string
+  quantity: number
+  months?: number
+  stars?: ToString<bigint>
+  untilDate: number
+}
+
+export interface GiveawayResultsMediaData {
+  type: 'giveaway-results'
+  channel: ToString<bigint>
+  launchMsg: number
+  winnersCount: number
+  unclaimedCount: number
+  winners: ToString<bigint>[]
+  untilDate: number
+  onlyNewSubscribers?: boolean;
+  refunded?: boolean
+  additionalPeersCount?: number
+  months?: number
+  stars?: ToString<bigint>
+  prizeDescription?: string
+}
+
+export interface PaidMediaData {
+  type: 'paid-media'
+  starsAmount: ToString<bigint>
+  extendedMedia: ExtendedMediaData
+}
+
+export interface UnknownMediaData {
+  type: 'unknown'
 }
