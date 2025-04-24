@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.2...tg-mini-app-v1.3.3) (2025-04-24)
+
+
+### Bug Fixes
+
+* compatibility date ([b9d0549](https://github.com/storacha/tg-miniapp/commit/b9d05491c0235ff4ebbb84fc8d90b6bd6ac490b1))
+
 ## [1.3.2](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.1...tg-mini-app-v1.3.2) (2025-04-23)
 
 
