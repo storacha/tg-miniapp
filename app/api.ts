@@ -415,14 +415,8 @@ export interface UnknownVideoSizeData {
 }
 
 export type PhotoData =
-  | EmptyPhotoData
   | DefaultPhotoData
   | UnknownPhotoData
-
-export interface EmptyPhotoData {
-  type: 'empty'
-  id: ToString<bigint>
-}
 
 export interface UnknownPhotoData {
   type: 'unknown'
@@ -437,7 +431,7 @@ export interface DefaultPhotoData {
   date: number
   sizes: PhotoSizeData[]
   videoSizes?: VideoSizeData[]
-  dcId?: number
+  dc?: number
 }
 
 export interface ChatEditPhotoActionData {
@@ -1196,8 +1190,7 @@ export interface RestoredBackup {
   hasMoreMessages: boolean
 }
 
-export type MediaData =
-  | EmptyMediaData
+export type MediaData = 
   | PhotoMediaData
   | GeoMediaData
   | ContactMediaData
@@ -1216,13 +1209,10 @@ export type MediaData =
   | PaidMediaData
   | UnknownMediaData
 
-export interface EmptyMediaData {
-  type: 'empty'
-}
 
 export interface PhotoMediaData {
   type: 'photo'
-  photo: PhotoData
+  photo?: PhotoData
   spoiler?: boolean
   ttlSeconds?: number
 }
@@ -1245,7 +1235,7 @@ export interface ContactMediaData {
   firstName: string
   lastName: string
   vcard: string
-  userId: ToString<EntityID>
+  user: ToString<EntityID>
 }
 
 export interface UnsupportedMediaData {
@@ -1335,17 +1325,11 @@ export interface UnknownWebPageAttributeData {
 }
 
 export type WebPageData = 
-  | EmptyWebPageData
   | WebPagePendingData
   | WebPageNotModifiedData
   | DefaultWebPageData
   | UnknownWebPageData
 
-export interface EmptyWebPageData {
-  type: 'empty'
-  id: ToString<bigint>
-  url?: string
-}
 export interface WebPagePendingData {
   type: 'pending'
   id: ToString<bigint>
@@ -1397,7 +1381,7 @@ export interface VenueMediaData {
   title: string
   address: string
   provider: string
-  venueId: string
+  venue: string
   venueType: string
 }
 
@@ -1472,7 +1456,7 @@ export interface InvoiceMediaData {
   currency: string
   totalAmount: ToString<bigint>
   test?: boolean
-  receiptMsgId?: number
+  receiptMsg?: number
   shippingAddressRequested?: boolean
   photo?: WebDocumentData
   extendedMedia?: ExtendedMediaData
@@ -1534,7 +1518,7 @@ export interface StoryViewsData {
   viewsCount: number
   forwardsCount?: number
   reactionsCount?: number
-  recentViewers?: bigint[]
+  recentViewers?: Array<ToString<bigint>>
   // reactions?: Api.TypeReactionCount[]
 }
 
@@ -1608,8 +1592,8 @@ export interface GiveawayMediaData {
 
 export interface GiveawayResultsMediaData {
   type: 'giveaway-results'
-  channelId: ToString<bigint>
-  launchMsgId: number
+  channel: ToString<bigint>
+  launchMsg: number
   winnersCount: number
   unclaimedCount: number
   winners: ToString<bigint>[]
