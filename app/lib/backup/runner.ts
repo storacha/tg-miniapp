@@ -3,8 +3,6 @@ import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
 import { Block } from 'multiformats'
-import { encode as encodeBlock } from 'multiformats/block'
-import { sha256 } from 'multiformats/hashes/sha2'
 import { CARWriterStream } from 'carstream'
 import { createFileEncoderStream } from '@storacha/upload-client/unixfs'
 import { Entity } from '@/vendor/telegram/define'
