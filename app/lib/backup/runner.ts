@@ -59,8 +59,9 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
           const rootData: BackupModel = {
             [versionTag]: { dialogs: dialogDatas, period }
           }
-          const rootBlock = await encodeBlock({ value: rootData, codec: dagCBOR, hasher: sha256 })
-          controller.enqueue(rootBlock)
+          for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, rootData))) {
+            controller.enqueue(b)
+          }
           controller.close()
           return
         }

@@ -3,6 +3,7 @@
 Example:
 
 ```ts
+// bafy...backup
 {
   "tg-miniapp-backup@0.0.1": {
     // mapping of dialog ID to dialog backup data
@@ -15,7 +16,7 @@ Example:
 }
 
 // bafy...dialog
-encrypt({
+{
   id: 'string bigint',
   type: 'entity-type (user, chat, channel, unknown)',
   name: 'chat name',
@@ -33,10 +34,10 @@ encrypt({
     // older messages
     { '/': bafy...olderMessages }
   ]
-})
+}
 
 // bafy...entities
-encrypt({
+{
   entityID: {
     id: 'string bigint'
     type: 'entity-type (user, chat, channel, unknown)',
@@ -47,10 +48,10 @@ encrypt({
     }
   },
   anotherEntityID: { /* ... */ }
-})
+}
 
 // bafy...messages
-encrypt([
+[
   {
     id: 12345,
     from: 'entity ID', // find in `entities`
@@ -58,7 +59,7 @@ encrypt([
     message: 'Hello World!'
   },
   // more messages
-])
+]
 ```
 
 ## Versioning
@@ -67,7 +68,7 @@ The root block contains a version tag (e.g. `tg-miniapp-backup@0.0.1`) to allow 
 
 ## Encoding and Encryption
 
-All blocks that are not media items are `dag-cbor` encoded. Encoded data is then _encrypted_, the resulting bytes are encoded as IPFS UnixFS files (`dag-pb` encoded) to take advantage of chunking, and easy access from IPFS Gateways.
+All blocks that are not media items are `dag-cbor` encoded and _encrypted_. The resulting bytes are encoded as IPFS UnixFS files (`dag-pb` encoded) to take advantage of chunking, and easy access from IPFS Gateways.
 
 e.g.
 
