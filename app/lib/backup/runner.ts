@@ -234,7 +234,7 @@ const toPeerID = (peer: Api.TypePeer): ToString<EntityID> => {
 }
 
 const toEntityData = (entity: Entity): EntityData => {
-  const id = entity.id?.value ?? '0'
+  const id = entity.id?.value ?? '0' // TODO: this should be the dialog.id, dialog.entity.id is different
   let type: EntityType = 'unknown'
   let name = ''
   let photo: EntityData['photo']
