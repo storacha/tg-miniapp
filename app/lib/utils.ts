@@ -97,3 +97,9 @@ export const withCleanUndef = <I, O>(f: (input: I) => O): (input: I) => O =>
 		const output = f(input)
 		return output && cleanUndef(output)
 	}
+
+export const getInitials = (name: string) => {
+	const title = name.trim() || 'Unknown'
+		const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
+		return parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+	}
