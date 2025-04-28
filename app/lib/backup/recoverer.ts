@@ -25,10 +25,13 @@ export const restoreBackup = async (
   encryptionPassword: string,
   limit: number = 50
 ): Promise<RestoredBackup> => {
-  const response = await getFromStoracha(`${backupCid}?format=raw`)
-  const backupRaw = dagCBOR.decode(new Uint8Array(await response.arrayBuffer())) as BackupModel
+  const response = await getFromStoracha(backupCid)
+  const encryptedBackupRaw = new Uint8Array(await response.arrayBuffer())
+  const decryptedBackupRaw = dagCBOR.decode(
+    await Crypto.decryptContent(encryptedBackupRaw, encryptionPassword)
+  ) as BackupModel
 
-  const dialogCid = backupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogId].toString()
+  const dialogCid = decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogId].toString()
   const dialogResult = await getFromStoracha(dialogCid)
   const encryptedDialogData = new Uint8Array(await dialogResult.arrayBuffer())
 

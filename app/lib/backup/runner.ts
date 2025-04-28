@@ -3,8 +3,6 @@ import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
 import { Block } from 'multiformats'
-import { encode as encodeBlock } from 'multiformats/block'
-import { sha256 } from 'multiformats/hashes/sha2'
 import { CARWriterStream } from 'carstream'
 import { createFileEncoderStream } from '@storacha/upload-client/unixfs'
 import { Entity } from '@/vendor/telegram/define'
@@ -59,8 +57,9 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
           const rootData: BackupModel = {
             [versionTag]: { dialogs: dialogDatas, period }
           }
-          const rootBlock = await encodeBlock({ value: rootData, codec: dagCBOR, hasher: sha256 })
-          controller.enqueue(rootBlock)
+          for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, rootData))) {
+            controller.enqueue(b)
+          }
           controller.close()
           return
         }
