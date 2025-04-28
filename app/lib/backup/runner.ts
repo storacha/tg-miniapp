@@ -1,13 +1,11 @@
-import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedByteView, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData } from '@/api'
+import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedByteView, EncryptedTaggedByteView, Encrypter, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, UnknownBlock, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData } from '@/api'
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
-import { Block } from 'multiformats'
 import { CARWriterStream } from 'carstream'
-import { createFileEncoderStream } from '@storacha/upload-client/unixfs'
 import { Entity } from '@/vendor/telegram/define'
-import * as Crypto from '@/lib/crypto'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
+import { createEncodeAndEncryptStream } from '@/lib/crypto'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
@@ -15,7 +13,7 @@ const maxMessages = 1_000
 export interface Context {
   storacha: StorachaClient
   telegram: TelegramClient
-  encryptionPassword: string
+  cipher: Encrypter
 }
 
 export interface Options {
@@ -35,13 +33,13 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 
   let entities: EntityRecordData = {}
   let messages: Array<MessageData | ServiceMessageData> = []
-  let messageLinks: Array<Link<EncryptedByteView<Array<MessageData | ServiceMessageData>>>> = []
+  let messageLinks: Array<Link<EncryptedTaggedByteView<Array<MessageData | ServiceMessageData>>>> = []
 
   // null value signals that no more messages will come and the current dialog
   // can now be finalized
   let messageIterator: AsyncIterator<Api.TypeMessage> | null = null
 
-  const blockStream = new ReadableStream<Block>({
+  const blockStream = new ReadableStream<UnknownBlock>({
     async start () {
       if (!ctx.telegram.connected) {
         await ctx.telegram.connect()
@@ -57,7 +55,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
           const rootData: BackupModel = {
             [versionTag]: { dialogs: dialogDatas, period }
           }
-          for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, rootData))) {
+          for await (const b of toAsyncIterable(createEncodeAndEncryptStream(dagCBOR, ctx.cipher, rootData))) {
             controller.enqueue(b)
           }
           controller.close()
@@ -87,8 +85,8 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
         // we ran out of messages, create entries and a dialog object
         console.log(`creating ${Object.entries(entities).length} entities`)
         let entitiesRoot
-        for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, entities))) {
-          entitiesRoot = b.cid
+        for await (const b of toAsyncIterable(createEncodeAndEncryptStream(dagCBOR, ctx.cipher, entities))) {
+          entitiesRoot = b.cid as Link<EncryptedTaggedByteView<EntityRecordData>>
           controller.enqueue(b)
         }
         if (!entitiesRoot) throw new Error('missing entities root')
@@ -102,8 +100,8 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 
         console.log(`creating dialog: ${dialogEntity.id}`)
         let dialogRoot
-        for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, dialogData))) {
-          dialogRoot = b.cid
+        for await (const b of toAsyncIterable(createEncodeAndEncryptStream(dagCBOR, ctx.cipher, dialogData))) {
+          dialogRoot = b.cid as Link<EncryptedTaggedByteView<DialogData>>
           controller.enqueue(b)
         }
         if (!dialogRoot) throw new Error('missing dialog root')
@@ -162,8 +160,8 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 
       console.log(`creating ${messages.length} messages`)
       let messagesRoot
-      for await (const b of toAsyncIterable(encodeAndEncrypt(ctx, messages))) {
-        messagesRoot = b.cid
+      for await (const b of toAsyncIterable(createEncodeAndEncryptStream(dagCBOR, ctx.cipher, messages))) {
+        messagesRoot = b.cid as Link<EncryptedTaggedByteView<Array<MessageData | ServiceMessageData>>>
         controller.enqueue(b)
       }
 
@@ -180,18 +178,6 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   console.log(`backup job complete: ${root}`)
   return root
 }
-
-const encodeAndEncrypt = <T>(ctx: Context, data: T) =>
-  createFileEncoderStream({
-    stream: () => new ReadableStream({
-      async pull (controller) {
-        const bytes = dagCBOR.encode(data)
-        const encryptedBytes = await Crypto.encryptContent(bytes, ctx.encryptionPassword)
-        controller.enqueue(encryptedBytes)
-        controller.close()
-      }
-    })
-  }) as ReadableStream<Block<EncryptedByteView<T>>>
 
 // TODO: reinstate when we add media to backups
 // function getMediaType(media?: Api.TypeMessageMedia) {

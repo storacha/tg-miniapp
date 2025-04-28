@@ -28,7 +28,7 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 
 	let latestBackupDate
 	if (latestBackup) {
-		latestBackupDate = new Date(latestBackup.period[1] * 1000)
+		latestBackupDate = new Date(latestBackup.params.period[1] * 1000)
 	}
 
 	return (
@@ -57,7 +57,7 @@ export default function BackedChats() {
 	const [dialogs, setDialogs] = useState<Dialog[]>([])
 	const [loading, setLoading] = useState(true)
 
-	const sortedBackups = backups.items.sort((a, b) => b.period[1] - a.period[1])
+	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
 
 	useEffect(() => {
 		let cancel = false
@@ -77,7 +77,7 @@ export default function BackedChats() {
 	const handleDialogItemClick: MouseEventHandler = e => {
 		e.preventDefault()
 		const id = BigInt(e.currentTarget.getAttribute('data-id') ?? 0)
-		const backupWithDialog = sortedBackups.find(b => id && b.dialogs.has(id))
+		const backupWithDialog = sortedBackups.find(b => id && b.params.dialogs.includes(id.toString()))
 		const dialog = dialogs.find(d => d.id.toString() == id.toString())
 		if (!backupWithDialog || !dialog) return
 		const backupData = backupWithDialog.data.toString()
@@ -101,7 +101,7 @@ export default function BackedChats() {
 				<div className="flex flex-col">
 					{loading && <p className='text-center'>Loading chats...</p>}
 					{!loading && dialogs.map(d => {
-						const latestBackup = sortedBackups.find(b => d.id && b.dialogs.has(d.id.value))
+						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id.toString()))
 						return <DialogItem key={String(d.id)} dialog={d} latestBackup={latestBackup} onClick={handleDialogItemClick} />
 					})}
 				</div>

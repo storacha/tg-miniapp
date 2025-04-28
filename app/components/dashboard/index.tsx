@@ -4,7 +4,7 @@ import BackedChats from './backed-chats'
 import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'
 import { useBackups } from '@/providers/backup'
-import { Job, JobID } from '@/api'
+import { JobID, PendingJob } from '@/api'
 
 export default function Dashboard() {
 	const router = useRouter()
@@ -28,23 +28,24 @@ export default function Dashboard() {
 	)
 }
 
-const JobItem = ({ job, onRemove }: { job: Job, onRemove: (id: JobID) => unknown }) => {
+const JobItem = ({ job, onRemove }: { job: PendingJob, onRemove: (id: JobID) => unknown }) => {
+	const progress = job.status === 'running' || job.status === 'failed' ? job.progress : 0
 	return (
 		<div className="w-full px-5 mb-5">
 			<div className="w-full bg-background rounded-sm border">
 				<div className="flex justify-between items-center px-5 pt-3">
-					<p>Backup <span className="capitalize">{job.state}</span></p>
-					{job.state === 'failed' && <button onClick={() => onRemove(job.id)}><X /></button>}
+					<p>Backup <span className="capitalize">{job.status}</span></p>
+					{job.status === 'failed' && <button onClick={() => onRemove(job.id)}><X /></button>}
 				</div>
-				{job.error && <p className='px-5 pt-1 text-red-900 text-xs'>Error: {job.error}</p>}
+				{job.status === 'failed' && job.cause && <p className='px-5 pt-1 text-red-900 text-xs'>Error: {job.cause}</p>}
 				<div className="flex justify-between items-center px-3 py-3">
 					<div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-						<div className="bg-blue-900 h-2.5 rounded-full transition-all" style={{ width: `${job.progress * 100}%` }}></div>
+						<div className="bg-blue-900 h-2.5 rounded-full transition-all" style={{ width: `${progress * 100}%` }}></div>
 					</div>
 				</div>
 				<div className="flex justify-between items-center px-3 pb-4">
-					<span className="text-muted-foreground text-xs">{Math.floor(job.progress * 100)}% Completed</span>
-					<span className="text-muted-foreground text-xs">{job.dialogs.size} Chat{job.dialogs.size > 1 ? 's' : ''} Backing Up</span>
+					<span className="text-muted-foreground text-xs">{Math.floor(progress * 100)}% Completed</span>
+					<span className="text-muted-foreground text-xs">{job.params.dialogs.length} Chat{job.params.dialogs.length > 1 ? 's' : ''} Backing Up</span>
 				</div>
 			</div>
 		</div>

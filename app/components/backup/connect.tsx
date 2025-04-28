@@ -60,7 +60,7 @@ export const Verify = ({ open, email, onDismiss }: VerifyProps) => {
 				<DrawerFooter>
 					<div className="text-center">
 						<img src="/spinner.png" width="100" className="inline-block animate-[spin_3s_linear_infinite] mb-5" />
-						<DrawerDescription>Click the link in the email we sent to <span className='font-semibold tracking-wide'>{email}</span> to authorize this agent.</DrawerDescription>
+						<DrawerDescription className="mb-5">Click the link in the email we sent to <span className='font-semibold tracking-wide'>{email}</span> to authorize this agent.</DrawerDescription>
 					</div>
 				</DrawerFooter>
 			</DrawerContent>

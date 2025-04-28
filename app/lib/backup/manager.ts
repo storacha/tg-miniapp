@@ -1,21 +1,29 @@
-import { AbsolutePeriod, BackupStorage, JobID, JobStorage, Period } from '@/api'
+import { AbsolutePeriod, FailedJob, JobID, JobStorage, Period } from '@/api'
 import { SpaceDID } from '@storacha/ui-react'
 import Queue from 'p-queue'
 import * as Runner from './runner'
 import { Context as RunnerContext } from './runner'
 
-
 export interface Context extends RunnerContext {
   jobs: JobStorage
-  backups: BackupStorage
 }
 
 export const create = async (ctx: Context) => {
   // error any jobs that are queued or meant to be running
-  const { items: currentJobs } = await ctx.jobs.list()
+  const { items: currentJobs } = await ctx.jobs.listPending()
   for (const job of currentJobs) {
-    if (job.state !== 'failed') {
-      await ctx.jobs.update(job.id, { state: 'failed', error: 'backup failed, please try again.' })
+    if (job.status !== 'failed') {
+      const failure: FailedJob = {
+        id: job.id,
+        status: 'failed',
+        params: job.params,
+        progress: 'progress' in job ? job.progress : 0,
+        cause: 'backup failed, please try again.',
+        created: job.created,
+        ...('started' in job ? { started: job.started } : {}),
+        finished: Date.now()
+      }
+      await ctx.jobs.replace(failure)
     }
   }
   return new JobManager(ctx)
@@ -24,21 +32,19 @@ export const create = async (ctx: Context) => {
 class JobManager {
   storacha
   telegram
-  encryptionPassword
+  cipher
 
   #jobs
-  #backups
   #queue
   #queuedJobs
   #cancelledJobs
   #runningJobs
 
-  constructor ({ storacha, telegram, encryptionPassword, jobs, backups }: Context) {
+  constructor ({ storacha, telegram, cipher, jobs }: Context) {
     this.storacha = storacha
     this.telegram = telegram
-    this.encryptionPassword = encryptionPassword
+    this.cipher = cipher
     this.#jobs = jobs
-    this.#backups = backups
     this.#queue = new Queue({ concurrency: 1 })
     this.#queuedJobs = new Set()
     this.#runningJobs = new Set()
@@ -48,16 +54,30 @@ class JobManager {
   async add (space: SpaceDID, dialogs: Set<bigint>, period: Period) {
     const id = self.crypto.randomUUID()
     const absPeriod: AbsolutePeriod = [period[0], period[1] ?? Date.now() / 1000]
+    const params = {
+      space,
+      dialogs: [...dialogs].map(d => d.toString()),
+      period: absPeriod
+    }
+    const created = Date.now()
 
+    // await this.#jobs.add({
+    //   id,
+    //   status: 'waiting',
+    //   params: params,
+    //   created: Date.now(),
+    // })
+
+    // since the manager is also queue we can skip the `waiting` status
     await this.#jobs.add({
       id,
-      state: 'queued',
-      progress: 0,
-      space,
-      dialogs,
-      period: absPeriod
+      status: 'queued',
+      params: params,
+      created
     })
 
+    let progress = 0
+    let started: number
     this.#queue.add(async () => {
       try {
         this.#runningJobs.add(id)
@@ -68,29 +88,57 @@ class JobManager {
           return
         }
 
-        await this.#jobs.update(id, { state: 'running', error: '' })
+        started = Date.now()
+        await this.#jobs.replace({
+          id,
+          status: 'running',
+          params,
+          created,
+          started,
+          progress
+        })
 
         let dialogsRetrieved = 0
         const data = await Runner.run(this, space, dialogs, absPeriod, {
           onDialogRetrieved: async () => {
             dialogsRetrieved++
             try {
-              await this.#jobs.update(id, { progress: (dialogsRetrieved / dialogs.size) / 2.1 })
+              progress = (dialogsRetrieved / dialogs.size) / 2.1
+              await this.#jobs.replace({
+                id,
+                status: 'running',
+                params,
+                created,
+                started,
+                progress
+              })
             } catch (err) {
               console.error(err)
             }
           }
         })
 
-        await this.#jobs.update(id, { progress: 0.70 + (Math.random() / 10) })
-        await this.#backups.add({ data, dialogs, period: absPeriod, created: Date.now() })
-        await new Promise(resolve => setTimeout(resolve, 2000))
-        await this.#jobs.update(id, { progress: 1 })
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        await this.#jobs.remove(id)
+        await this.#jobs.replace({
+          id,
+          status: 'completed',
+          params,
+          data,
+          created,
+          started,
+          finished: Date.now()
+        })
       } catch (err) {
         console.error('backup failed', err)
-        await this.#jobs.update(id, { state: 'failed', error: (err as Error).message })
+        await this.#jobs.replace({
+          id,
+          status: 'failed',
+          params,
+          progress,
+          cause: (err as Error).message,
+          created,
+          started,
+          finished: Date.now()
+        })
       } finally {
         this.#runningJobs.delete(id)
       }

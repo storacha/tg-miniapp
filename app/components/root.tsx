@@ -13,9 +13,11 @@ import { parse as parseDID } from '@ipld/dag-ucan/did'
 import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
 import { create as createJobManager } from '@/lib/backup/manager'
-import { create as createJobStorage } from '@/lib/store/localstorage-jobs'
-import { create as createBackupStorage } from '@/lib/store/cloudstorage-backups'
-import { JobStorage, BackupStorage, JobManager } from '@/api'
+import { create as createObjectStorage } from '@/lib/store/object'
+import { create as createJobStorage } from '@/lib/store/jobs'
+import { create as createCipher } from '@/lib/aes-cbc-cipher'
+import { create as createRemoteStorage } from '@/lib/store/remote'
+import { JobStorage, JobManager, JobID, Job } from '@/api'
 import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
@@ -73,12 +75,12 @@ export function Root(props: PropsWithChildren) {
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 	const [{ client: storacha }] = useStoracha()
 	const [{ client: telegram }] = useTelegram()
+	const { isStorachaAuthorized, space } = useGlobal()
 	const [jobManager, setJobManager] = useState<JobManager>()
 	const [jobs, setJobs] = useState<JobStorage>()
-	const [backups, setBackups] = useState<BackupStorage>()
 
 	useEffect(() => {
-		if (!storacha || !telegram) {
+		if (!storacha || !telegram || !isStorachaAuthorized || !space) {
 			return
 		}
 		;(async () => {
@@ -91,22 +93,33 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 				console.log('found existing encryption password')
 			}
 
-			const jobs = createJobStorage()
-			const backups = createBackupStorage()
-			const jobManager = await createJobManager({ storacha, telegram, jobs, backups, encryptionPassword })
+			const proofs = storacha.proofs([{ can: 'clock/*', with: space }])
+			if (!proofs.length) {
+				console.warn('No proofs found ')
+			}
+
+			console.log('proofs', proofs)
+
+			const cipher = createCipher(encryptionPassword)
+			const remoteStore = createRemoteStorage(storacha)
+
+			const store = createObjectStorage<Record<JobID, Job>>({
+				remoteStore,
+				agent: storacha.agent.issuer,
+				proof: proofs[0],
+				cipher
+			})
+
+			const jobs = await createJobStorage({ store })
+			const jobManager = await createJobManager({ storacha, telegram, jobs, cipher })
 
 			setJobs(jobs)
-			setBackups(backups)
 			setJobManager(jobManager)
 		})()
-	}, [storacha, telegram])
-
-	if (!jobManager || !jobs || !backups) {
-		return null
-	}
+	}, [storacha, telegram, isStorachaAuthorized, space])
 
 	return (
-		<BackupProvider jobManager={jobManager} jobs={jobs} backups={backups}>
+		<BackupProvider jobManager={jobManager} jobs={jobs}>
 			{children}
 		</BackupProvider>
 	)

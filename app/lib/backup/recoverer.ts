@@ -1,6 +1,6 @@
 import * as dagCBOR from '@ipld/dag-cbor'
 import * as Crypto from '@/lib/crypto'
-import { BackupModel, DialogData, EntityData, MessageData, RestoredBackup } from '@/api'
+import { BackupModel, Decrypter, DialogData, EntityData, MessageData, RestoredBackup } from '@/api'
 
 const gatewayURL = process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'
 
@@ -13,31 +13,21 @@ export const getFromStoracha = async (cid: string) => {
 	return response
 }
 
-export const dercyptAndDecode = async (encryptedData: Uint8Array, encryptionPassword: string ) => {
-	return dagCBOR.decode(
-        await Crypto.decryptContent(encryptedData, encryptionPassword)
-    )
-}
-
 export const restoreBackup = async (
   backupCid: string,
   dialogId: string,
-  encryptionPassword: string,
+  cipher: Decrypter,
   limit: number = 50
 ): Promise<RestoredBackup> => {
   const response = await getFromStoracha(backupCid)
   const encryptedBackupRaw = new Uint8Array(await response.arrayBuffer())
-  const decryptedBackupRaw = dagCBOR.decode(
-    await Crypto.decryptContent(encryptedBackupRaw, encryptionPassword)
-  ) as BackupModel
+  const decryptedBackupRaw = await Crypto.decryptAndDecode(cipher, dagCBOR, encryptedBackupRaw) as BackupModel
 
   const dialogCid = decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogId].toString()
   const dialogResult = await getFromStoracha(dialogCid)
   const encryptedDialogData = new Uint8Array(await dialogResult.arrayBuffer())
 
-  const decryptedDialogData = dagCBOR.decode(
-    await Crypto.decryptContent(encryptedDialogData, encryptionPassword)
-  ) as DialogData
+  const decryptedDialogData = await Crypto.decryptAndDecode(cipher, dagCBOR, encryptedDialogData) as DialogData
 
   const messagesToFetch = decryptedDialogData.messages.slice(0, limit)
   const hasMoreMessages = decryptedDialogData.messages.length > limit
@@ -49,7 +39,7 @@ export const restoreBackup = async (
       for (const messageLink of messagesToFetch) {
         const messagesResult = await getFromStoracha(messageLink.toString())
         const encryptedMessageData = new Uint8Array(await messagesResult.arrayBuffer())
-        const decryptedMessageData = await dercyptAndDecode(encryptedMessageData, encryptionPassword) as MessageData[]
+        const decryptedMessageData = await Crypto.decryptAndDecode(cipher, dagCBOR, encryptedMessageData) as MessageData[]
         messages.push(...decryptedMessageData)
       }
       return messages
@@ -59,7 +49,7 @@ export const restoreBackup = async (
     (async () => {
       const entitiesResult = await getFromStoracha(decryptedDialogData.entities.toString())
       const encryptedEntitiesData = new Uint8Array(await entitiesResult.arrayBuffer())
-      return await dercyptAndDecode(encryptedEntitiesData, encryptionPassword) as Record<string, EntityData>
+      return await Crypto.decryptAndDecode(cipher, dagCBOR, encryptedEntitiesData) as Record<string, EntityData>
     })(),
   ])
 
@@ -72,14 +62,14 @@ export const restoreBackup = async (
 }
 
 
-export const fetchMoreMessages = async (dialogData: DialogData,  encryptionPassword: string, offset: number, limit: number) => {
+export const fetchMoreMessages = async (dialogData: DialogData, cipher: Decrypter, offset: number, limit: number) => {
     const newMessages: MessageData[] = []
     const messagesToFetch = dialogData.messages.slice(offset, offset + limit)
     
     for (const messageLink of messagesToFetch) {
       const messagesResult = await getFromStoracha(messageLink.toString())
       const encryptedMessageData = new Uint8Array(await messagesResult.arrayBuffer())
-      const decryptedMessageData = await dercyptAndDecode(encryptedMessageData, encryptionPassword) as MessageData[]
+      const decryptedMessageData = await Crypto.decryptAndDecode(cipher, dagCBOR, encryptedMessageData) as MessageData[]
       newMessages.push(...decryptedMessageData)
     }
     
