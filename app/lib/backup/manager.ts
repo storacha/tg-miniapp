@@ -1,4 +1,4 @@
-import { AbsolutePeriod, FailedJob, JobID, JobStorage, Period } from '@/api'
+import { AbsolutePeriod, JobID, JobStorage, Period } from '@/api'
 import { SpaceDID } from '@storacha/ui-react'
 import Queue from 'p-queue'
 import * as Runner from './runner'

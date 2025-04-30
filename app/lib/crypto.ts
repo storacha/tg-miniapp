@@ -1,4 +1,4 @@
-import { BlockDecoder, BlockEncoder, ByteView, Link } from 'multiformats'
+import { BlockDecoder, BlockEncoder, ByteView } from 'multiformats'
 import { create as createLink, decode as decodeLink } from 'multiformats/link'
 import { identity } from 'multiformats/hashes/identity'
 import * as Digest from 'multiformats/hashes/digest'
