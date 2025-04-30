@@ -173,9 +173,13 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
     if (!jobStore) return
 
     const handleJobChange = async () => {
+      console.debug('handling job change event...')
+
       try {
         setJobsError(undefined)
+        console.debug('listing pending jobs...')
         const jobs = await jobStore.listPending()
+        console.debug(`found ${jobs.items.length} pending jobs`)
         setJobs(jobs.items)
       } catch (err: any) {
         console.error('Error: handling job change event', err)
@@ -184,7 +188,9 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
 
       try {
         setBackupsError(undefined)
+        console.debug('listing completed jobs...')
         const backups = await jobStore.listCompleted()
+        console.debug(`found ${backups.items.length} completed jobs`)
         setBackups(backups.items)
       } catch (err: any) {
         console.error('Error: handling job change event', err)
@@ -196,6 +202,7 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
       setBackupsLoading(true)
       setJobsLoading(true)
       try {
+        console.debug('manually triggering job change to populate jobs and backups...')
         await handleJobChange()
       } finally {
         setBackupsLoading(false)

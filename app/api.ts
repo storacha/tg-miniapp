@@ -105,6 +105,7 @@ export interface RemoteStorage {
 
 /** Generic storage for a particular object. */
 export interface ObjectStorage<T> {
+  /** Initialize the object store if not already initialized. */
   init: (value: T) => Promise<void>
   set: (value: T) => Promise<void>
   get: () => Promise<T>

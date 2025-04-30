@@ -13,7 +13,7 @@ export const create = async (ctx: Context) => {
   const { items: currentJobs } = await ctx.jobs.listPending()
   for (const job of currentJobs) {
     if (job.status !== 'failed') {
-      const failure: FailedJob = {
+      await ctx.jobs.replace({
         id: job.id,
         status: 'failed',
         params: job.params,
@@ -22,8 +22,7 @@ export const create = async (ctx: Context) => {
         created: job.created,
         ...('started' in job ? { started: job.started } : {}),
         finished: Date.now()
-      }
-      await ctx.jobs.replace(failure)
+      })
     }
   }
   return new JobManager(ctx)

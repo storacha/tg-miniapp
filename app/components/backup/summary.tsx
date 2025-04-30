@@ -7,10 +7,11 @@ export interface SummaryProps {
 	chats: Set<bigint>
 	space: SpaceDID
   period: Period
+  starting: boolean
 	onSubmit: () => unknown
 }
 
-export const Summary = ({ chats, period, onSubmit }: SummaryProps) => {
+export const Summary = ({ chats, period, starting, onSubmit }: SummaryProps) => {
   const handleSubmit: FormEventHandler = e => {
     e.preventDefault()
     onSubmit()
@@ -36,7 +37,7 @@ export const Summary = ({ chats, period, onSubmit }: SummaryProps) => {
           )}
         </div>
         <div className="sticky bottom-0 w-full p-5">
-          <Button type="submit" className="w-full">Start Backup</Button>
+          <Button type="submit" className="w-full" disabled={starting}>{starting ? 'Starting...' : 'Start Backup'}</Button>
         </div>
       </div>
 		</form>

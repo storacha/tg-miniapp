@@ -12,19 +12,24 @@ class RemoteStore implements RemoteStorage{
   }
 
   async retrieveFile (link: UnknownLink) {
+    console.debug('remote store retrieving file...')
     const url = new URL(`/ipfs/${link}`, gatewayURL)
     const response = await fetch(url)
     if (!response.ok) {
       throw new Error(`retrieving file from URL: ${url} status: ${response.status}: ${response.statusText}`);
     }
     const type = response.headers.get('Content-Type') ?? 'application/octet-stream'
-    return new File([await response.arrayBuffer()], link.toString(), { type })
+    const file = new File([await response.arrayBuffer()], link.toString(), { type })
+    console.debug(`remote store retrieved file: ${link}`)
+    return file
   }
 
   async uploadBlocks (blocks: UnknownBlock[]) {
+    console.debug(`remote store uploading ${blocks.length} blocks...`)
+    const pending = [...blocks]
     const stream = new ReadableStream({
       pull (controller) {
-        const block = blocks.shift()
+        const block = pending.shift()
         if (!block) {
           controller.close()
           return
@@ -35,6 +40,7 @@ class RemoteStore implements RemoteStorage{
     await this.#client.uploadCAR({
       stream: () => stream.pipeThrough(new CARWriterStream())
     })
+    console.debug(`remote store uploaded blocks:\n  ${blocks.map(b => b.cid.toString()).join('\n  ')}`)
   }
 }
 

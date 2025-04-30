@@ -12,14 +12,7 @@ export interface Context {
 /** Create a new job storage, initializing it if empty. */
 export const create = async (init: Init): Promise<JobStorage> => {
   const store = new Store(init)
-  try {
-    const jobs = await init.store.get()
-    console.log(`found ${Object.keys(jobs).length} existing jobs`)
-  } catch (err) {
-    console.error(err) // TODO: what is the error that requires init
-    console.log('initializing store')
-    await init.store.init({})
-  }
+  await init.store.init({})
   return store
 }
 
@@ -46,15 +39,15 @@ class Store extends EventTarget implements JobStorage {
   }
 
   async add (job: Job) {
-    add(this, job)
+    await add(this, job)
   }
 
   async replace (data: Job) {
-    replace(this, data)
+    await replace(this, data)
   }
 
   async remove (id: JobID) {
-    remove(this, id)
+    await remove(this, id)
   }
 }
 
@@ -91,25 +84,32 @@ export const listCompleted = async (ctx: Context) => {
 }
 
 export const add = async ({ store, target }: Context, job: Job) => {
+  console.debug('job store adding job...')
   const jobs = await store.get()
   jobs[job.id] = job
   await store.set(jobs)
   target.dispatchEvent(new CustomEvent('add', { detail: job }))
+  console.debug(`job store added job: ${job.id} status: ${job.status}`)
 }
 
 export const replace = async ({ store, target }: Context, job: Job) => {
+  console.debug('job store replacing job...')
   const jobs = await store.get()
-  if (!jobs[job.id]) throw new Error(`job not found: ${job.id}`)
+  const prev = jobs[job.id]
+  if (!prev) throw new Error(`job not found: ${job.id}`)
   jobs[job.id] = job
   await store.set(jobs)
   target.dispatchEvent(new CustomEvent('replace', { detail: job }))
+  console.debug(`job store replacing job: ${job.id} status: ${prev.status} -> ${job.status}`)
 }
 
 export const remove = async ({ store, target }: Context, id: JobID) => {
+  console.debug('job store removing job...')
   const jobs = await store.get()
   const job = jobs[id]
   if (!job) throw new Error(`job not found: ${id}`)
   delete jobs[id]
   await store.set(jobs)
   target.dispatchEvent(new CustomEvent('remove', { detail: job }))
+  console.debug(`job store removed job: ${job.id}`)
 }

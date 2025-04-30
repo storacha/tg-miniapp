@@ -1,5 +1,5 @@
-import { Name } from '@storacha/ucn'
-import { BlockFetcher, Delegation, Signer, Block } from '@storacha/ucn/api'
+import { Name, NoValueError } from '@storacha/ucn'
+import { NameView } from '@storacha/ucn/api'
 import { BlockCodec } from 'multiformats'
 import { parse as parseLink } from 'multiformats/link'
 import * as dagCBOR from '@ipld/dag-cbor'
@@ -8,12 +8,9 @@ import { ObjectStorage, Cipher, UnknownBlock, RemoteStorage } from '@/api'
 import { toAsyncIterable } from '../utils'
 import { createEncodeAndEncryptStream, decryptAndDecode } from '../crypto'
 
-export type { BlockFetcher, Signer, Block, Delegation }
-
 export interface Init<T> {
   remoteStore: RemoteStorage
-  agent: Signer
-  proof: Delegation
+  name: NameView
   cipher: Cipher
   codec?: BlockCodec<number, T>
 }
@@ -26,16 +23,28 @@ class Store<T> implements ObjectStorage<T> {
   #codec: BlockCodec<number, T>
   #value: T | undefined
 
-  constructor ({ remoteStore, agent, proof, cipher, codec }: Init<T>) {
+  constructor ({ remoteStore, name, cipher, codec }: Init<T>) {
     this.#queue = new Queue({ concurrency: 1 })
     this.#remoteStore = remoteStore
-    this.#name = Name.from(agent, proof)
+    this.#name = name
     this.#cipher = cipher
     this.#codec = codec ?? dagCBOR
   }
 
   async init (value: T): Promise<void> {
-    return this.#queue.add(async () => {
+    await this.#queue.add(async () => {
+      console.debug('object store initializing...')
+      try {
+        const { value } = await Name.resolve(this.#name)
+        console.debug(`object store is already initialized with value: ${value}`)
+        return
+      } catch (err) {
+        // only initialize if no value is known, throw for other errors
+        if (!(err instanceof NoValueError)) {
+          throw err
+        }
+      }
+
       let root: UnknownBlock|null = null
       const blocks: UnknownBlock[] = []
       for await (const b of toAsyncIterable(createEncodeAndEncryptStream(this.#codec, this.#cipher, value))) {
@@ -51,6 +60,7 @@ class Store<T> implements ObjectStorage<T> {
       await this.#remoteStore.uploadBlocks(blocks)
       await Name.publish(this.#name, rev)
       this.#value = value
+      console.debug(`object store initialized with value: ${value}`)
     })
   }
 
@@ -58,18 +68,22 @@ class Store<T> implements ObjectStorage<T> {
     if (this.#value != null) {
       return this.#value
     }
-    return this.#queue.add(async () => {
+    const value = await this.#queue.add(async () => {
+      console.debug('object store getting current value...')
       const current = await Name.resolve(this.#name)
       const link = parseLink<string, T, number, number, 0|1>(current.value.replace('/ipfs/', ''))
       const file = await this.#remoteStore.retrieveFile(link)
       const value = await decryptAndDecode(this.#cipher, this.#codec, new Uint8Array(await file.arrayBuffer()))
       this.#value = value
+      console.debug(`object store got current value: ${current.value}`)
       return value
     }, { throwOnTimeout: true })
+    return value
   }
 
   async set (value: T): Promise<void> {
-    return this.#queue.add(async () => {
+    await this.#queue.add(async () => {
+      console.debug('object store setting current value...')
       let root: UnknownBlock|null = null
       const blocks: UnknownBlock[] = []
       for await (const b of toAsyncIterable(createEncodeAndEncryptStream(this.#codec, this.#cipher, value))) {
@@ -86,6 +100,7 @@ class Store<T> implements ObjectStorage<T> {
       await this.#remoteStore.uploadBlocks(blocks)
       await Name.publish(this.#name, rev)
       this.#value = value
+      console.debug(`object store set current value: ${rev.value}`)
     }, { throwOnTimeout: true })
   }
 }

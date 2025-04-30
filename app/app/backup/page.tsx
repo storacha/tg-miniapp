@@ -27,6 +27,7 @@ export default function Page() {
 	const [{ user }] = useTelegram()
 	const [{ client }] = useStoracha()
 	const [, { addBackupJob }] = useBackups()
+	const [starting, setStarting] = useState(false)
 
 	const handleConnectSubmit = async () => {
 		try {
@@ -37,10 +38,12 @@ export default function Page() {
 			const account = await client.login(parseEmail(email))
 			const space = client.spaces().find(s => s.name === spaceName)
 			if (space) {
+				await client.setCurrentSpace(space.did())
 				setSpace(space.did())
 			} else {
 				await account.plan.wait()
 				const space = await client.createSpace(spaceName, { account })
+				await client.setCurrentSpace(space.did())
 				setSpace(space.did())
 			}
 			setIsStorachaAuthorized(true)
@@ -61,8 +64,10 @@ export default function Page() {
 
 	const handleSummarySubmit = async () => {
 		if (!space) return
+		setStarting(true)
 		const id = await addBackupJob(space, chats, period)
 		console.log('backup job added with ID', id)
+		setStarting(false)
 		router.push('/')
 	}
 

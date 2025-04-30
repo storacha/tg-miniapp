@@ -9,6 +9,7 @@ import { Provider as TelegramProvider, useTelegram } from '@/providers/telegram'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import { Provider as StorachaProvider, useW3 as useStoracha } from '@storacha/ui-react'
 import { uploadServiceConnection, defaultHeaders } from '@storacha/client/service'
+import { Name } from '@storacha/ucn'
 import { parse as parseDID } from '@ipld/dag-ucan/did'
 import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
@@ -93,22 +94,20 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 				console.log('found existing encryption password')
 			}
 
-			const proofs = storacha.proofs([{ can: 'clock/*', with: space }])
-			if (!proofs.length) {
-				console.warn('No proofs found ')
-			}
+			await storacha.setCurrentSpace(space)
 
-			console.log('proofs', proofs)
+			const proofs = storacha.proofs([
+				{ can: 'clock/head', with: space },
+				{ can: 'clock/advance', with: space }
+			])
+			if (!proofs.length) {
+				throw new Error('merkle clock proofs not found')
+			}
 
 			const cipher = createCipher(encryptionPassword)
 			const remoteStore = createRemoteStorage(storacha)
-
-			const store = createObjectStorage<Record<JobID, Job>>({
-				remoteStore,
-				agent: storacha.agent.issuer,
-				proof: proofs[0],
-				cipher
-			})
+			const name = Name.from(storacha.agent.issuer, proofs, { id: space })
+			const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
 
 			const jobs = await createJobStorage({ store })
 			const jobManager = await createJobManager({ storacha, telegram, jobs, cipher })
