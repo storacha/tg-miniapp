@@ -78,7 +78,7 @@ export default function Page() {
 			<Connect open={step === 2 && !connErr} email={email} onEmailChange={setEmail} onSubmit={handleConnectSubmit} onDismiss={() => setStep(1)} />
 			<Verify open={step === 3 && !connErr} email={email} onDismiss={() => setStep(1)} />
 			<ConnectError open={step === 4} error={connErr} onDismiss={() => { setConnErr(undefined); setStep(1) }} />
-			{step === 5 && space && <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit}/>}
+			{step === 5 && space && <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit} starting={starting} />}
 		</Layouts>
 	)
 }
