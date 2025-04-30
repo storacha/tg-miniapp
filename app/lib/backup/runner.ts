@@ -1,4 +1,5 @@
-import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedTaggedByteView, Encrypter, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, UnknownBlock, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData } from '@/api'
+import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedByteView, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData, MediaData } from '@/api'
+import * as Type from '@/api'
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
@@ -138,21 +139,18 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
        
         entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
 
-        // let mediaCid
-        // if (message.media) {
-        //   try {
-        //     TODO: download the media in the next app iteration
-        //     const mediaBuffer = await message.downloadMedia()
+        let mediaRoot
+        if (message.media){
+          const mediaBytes = new Uint8Array((await message.downloadMedia()) as Buffer)
+          for await (const b of toAsyncIterable(encrypt(ctx, mediaBytes))){
+            mediaRoot = b.cid
+            controller.enqueue(b)
+          }
 
-        //     const mediaCid = await uploadToStoracha(mediaBuffer)
+          if (!mediaRoot) throw new Error('missing media root')
+        }
 
-        //     formatted.media.mediaUrl = `${STORACHA_GATEWAY}/${mediaCid}`
-        //   } catch (err) {
-        //     console.error(`Error downloading media for message ${message.id}:`, err)
-        //   }
-        // }
-
-        messages.push(toMessageData(message))
+        messages.push(toMessageData(message, mediaRoot))
         if (messages.length === maxMessages) {
           break
         }
@@ -179,25 +177,9 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   return root
 }
 
-// TODO: reinstate when we add media to backups
-// function getMediaType(media?: Api.TypeMessageMedia) {
-//     if (!media) return null
-//     if (!('_' in media)) return 'file'
-//     switch (media._) {
-//         case 'messageMediaPhoto':
-//             return 'photo'
-//         case 'messageMediaDocument':
-//             return 'document'
-//         case 'messageMediaWebPage':
-//             return 'webpage'
-//         case 'messageMediaGeo':
-//             return 'location'
-//         default:
-//             return 'file'
-//     }
-// }
 
-const toMessageData = (message: Api.Message | Api.MessageService): MessageData | ServiceMessageData => {
+
+const toMessageData = (message: Api.Message | Api.MessageService, mediaRoot?: Link<EncryptedByteView<Uint8Array>>): MessageData | ServiceMessageData => {
   const from = message.fromId && toPeerID(message.fromId)
 
   if (message.className === 'MessageService') {
@@ -212,7 +194,7 @@ const toMessageData = (message: Api.Message | Api.MessageService): MessageData |
     }
   }
 
-  return {
+  const messageData: MessageData = {
     id: message.id,
     type: 'message',
     from,
@@ -220,6 +202,18 @@ const toMessageData = (message: Api.Message | Api.MessageService): MessageData |
     date: message.date,
     message: message.message ?? ''
   }
+
+  if(message.media && mediaRoot) {
+    const data = toMediaData(message.media)
+    if(data) {
+      messageData['media'] = {
+        file: mediaRoot,
+        data
+      }
+    }
+  }
+
+  return messageData 
 }
 
 const toPeerID = (peer: Api.TypePeer): ToString<EntityID> => {
@@ -1167,5 +1161,245 @@ const toStarGiftData = withCleanUndef((gift: Api.StarGift): StarGiftData => {
     convertStars: String(gift.convertStars),
     firstSaleDate: gift.firstSaleDate,
     lastSaleDate: gift.lastSaleDate
+  }
+})
+
+const ToGeoPointData = withCleanUndef((geo: Api.TypeGeoPoint): Type.GeoPointData | undefined => {
+  if (geo.className === 'GeoPointEmpty') {
+    return
+  }
+
+  return {
+    lat: geo.lat,
+    long: geo.long,
+    accessHash: String(geo.accessHash),
+    accuracyRadius: geo.accuracyRadius
+  }
+})
+
+// const ToBlockData = withCleanUndef((blocks: Api.TypePageBlock[]): Type.PageBlockData[] => {
+  
+// })
+
+const ToPageData = withCleanUndef((page: Api.TypePage): Type.PageData => {
+  return {
+    part: page.part,
+    rtl: page.rtl,
+    v2: page.v2,
+    url: page.url,
+    blocks: [], // TODO: implement blocks: ToBlockData(page.blocks),
+    photos: page.photos.map((p) => toPhotoData(p)).filter((p): p is PhotoData => p !== undefined),
+    documents: page.documents.map((d) => toDocumentData(d)).filter((d): d is DocumentData => d !== undefined),
+    views: page.views
+  }
+})
+
+const toWebPageData = withCleanUndef((webPage: Api.TypeWebPage): Type.WebPageData | undefined => {
+  switch (webPage.className) {
+    case 'WebPageEmpty': {
+      return
+    }
+    case 'WebPagePending': {
+      return {
+        type: 'pending',
+        id: String(webPage.id),
+        date: webPage.date,
+        url: webPage.url,
+      } as Type.WebPagePendingData
+    }
+    case 'WebPageNotModified': {
+      return {
+        type: 'not-modified',
+        cachedPageViews: webPage.cachedPageViews,
+      }
+    }
+    case 'WebPage': {
+      return {
+        type: 'default',
+        id: String(webPage.id),
+        url: webPage.url,
+        displayUrl: webPage.displayUrl,
+        hash: webPage.hash,
+        hasLargeMedia: webPage.hasLargeMedia,
+        tg_type: webPage.type,
+        siteName: webPage.siteName,
+        title: webPage.title,
+        description: webPage.description,
+        photo: webPage.photo && toPhotoData(webPage.photo),
+        embedUrl: webPage.embedUrl,
+        embedType: webPage.embedType,
+        embedWidth: webPage.embedWidth,
+        embedHeight: webPage.embedHeight,
+        duration: webPage.duration,
+        author: webPage.author,
+        document: webPage.document && toDocumentData(webPage.document),
+        cachedPage: webPage.cachedPage && ToPageData(webPage.cachedPage ),
+      } as Type.DefaultWebPageData
+    }
+  }
+})
+
+const ToGameData = withCleanUndef((game: Api.TypeGame): Type.GameData => {
+  return {
+    id: String(game.id),
+    title: game.title,
+    description: game.description,
+    shortName: game.shortName,
+    accessHash: String(game.accessHash),
+    photo: toPhotoData(game.photo)!,
+    document: game.document && toDocumentData(game.document)
+  }
+})
+
+const ToWebDocumentData = withCleanUndef((document: Api.TypeWebDocument): Type.WebDocumentData => {
+  switch (document.className) {
+    case 'WebDocumentNoProxy': {
+      return {
+        type: 'proxy',
+        url: document.url,
+        size: document.size,
+        mimeType: document.mimeType,
+        attributes: document.attributes.map(d => toDocumentAttributeData(d))
+      }
+    }
+    case 'WebDocument': {
+      return {
+        type: 'default',
+        url: document.url,
+        size: document.size,
+        mimeType: document.mimeType,
+        accessHash: String(document.accessHash),
+        attributes: document.attributes.map(d => toDocumentAttributeData(d))
+      }
+    }
+    default:
+      return {
+        type: 'unknown'
+      }
+  }   
+})
+
+// const ToPollData = withCleanUndef((poll: Api.TypePoll): Type.PoolData => {
+//   return {
+//     id: String(poll.id),
+//     question: poll.question && toTextWithEntitiesData(poll.question),
+//     answers: [],
+//     closed: poll.closed,
+//     publicVoters: poll.publicVoters,
+//     multipleChoice: poll.multipleChoice,
+//     quiz: poll.quiz,
+//     closePeriod: poll.closePeriod,
+//     closeDate: poll.closeDate,
+//   }
+// })
+
+const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | undefined => {
+  switch (media.className) {
+    case 'MessageMediaEmpty':
+      return
+    case 'MessageMediaPhoto': {
+      return {
+        type: 'photo',
+        photo: media.photo ? toPhotoData(media.photo): undefined,
+        spoiler: media.spoiler,
+        ttlSeconds: media.ttlSeconds,
+      } as Type.PhotoMediaData
+    }
+    case 'MessageMediaGeo': {
+      return {
+        type: 'geo',
+        geo: ToGeoPointData(media.geo),
+      } as Type.GeoMediaData
+    }
+    case 'MessageMediaContact': {
+      return {
+        type: 'contact',
+        phoneNumber: media.phoneNumber,
+        firstName: media.firstName,
+        lastName: media.lastName,
+        vcard: media.vcard,
+        user: String(media.userId)
+      } as Type.ContactMediaData
+    }
+    case 'MessageMediaUnsupported':{
+      return {
+        type: 'unsupported'
+      } as Type.UnsupportedMediaData
+    } 
+    case 'MessageMediaDocument': {
+      return {
+        type: 'document',
+        document: media.document ? toDocumentData(media.document) : undefined,
+        altDocuments: media.altDocuments?.map(d => toDocumentData(d)),
+        nopremium: media.nopremium,
+        spoiler: media.spoiler,
+        video: media.video,
+        round: media.round,
+        voice: media.voice,
+        ttlSeconds: media.ttlSeconds,
+      } as Type.DocumentMediaData
+    }
+    case 'MessageMediaWebPage': {
+      return {
+        type: 'webpage',
+        forceLargeMedia: media.forceLargeMedia,
+        forceSmallMedia: media.forceSmallMedia,
+        manual: media.manual,
+        safe: media.safe,
+        webpage: toWebPageData(media.webpage)
+      } as Type.WebPageMediaData
+    }
+    case 'MessageMediaVenue': {
+      return {
+        type: 'venue',
+        geo: ToGeoPointData(media.geo),
+        title: media.title,
+        address: media.address,
+        provider: media.provider,
+        venue: media.venueId,
+        venueType: media.venueType
+      } as Type.VenueMediaData
+    }
+    case 'MessageMediaGame': {
+      return {
+        type: 'game',
+        game: ToGameData(media.game),
+      } as Type.GameMediaData
+    }
+    case 'MessageMediaInvoice': {
+      return {
+        type: 'invoice',
+        title: media.title,
+        description: media.description,
+        startParam: media.startParam,
+        currency: media.currency,
+        totalAmount: String(media.totalAmount),
+        test: media.test,
+        receiptMsg: media.receiptMsgId,
+        shippingAddressRequested: media.shippingAddressRequested,
+        photo: media.photo && ToWebDocumentData(media.photo),
+      }
+    }
+    case 'MessageMediaGeoLive': {
+      return {
+        type: 'geo-live',
+        geo: ToGeoPointData(media.geo),
+        period: media.period,
+        heading: media.heading,
+        proximityNotificationRadius: media.proximityNotificationRadius,
+      } as Type.GeoLiveMediaData
+    }
+    // case 'MessageMediaPoll': {
+    //   return {
+    //     type: 'poll',
+    //     poll: ToPollData(media.poll),
+    //     results: ToPollResultsData(media.results),
+    //   } as Type.PoolData
+    // }
+    default: {
+      return {
+        type: 'unknown'
+      }
+    }
   }
 })
