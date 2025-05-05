@@ -38,7 +38,7 @@ function DialogItem({ dialog, selected, onClick, latestBackup }: { dialog: Dialo
 
 	let latestBackupDate
 	if (latestBackup) {
-		latestBackupDate = new Date(latestBackup.period[1] * 1000)
+		latestBackupDate = new Date(latestBackup.params.period[1] * 1000)
 	}
 
 	return (
@@ -76,7 +76,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 
 	const items = dialogs.filter(and(typeFilter, searchFilter))
 
-	const sortedBackups = backups.items.sort((a, b) => b.period[1] - a.period[1])
+	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
 
 	useEffect(() => {
 		let cancel = false
@@ -143,7 +143,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 				</div>
 				<div className="flex flex-col min-h-screen">
 					{items.map(d => {
-						const latestBackup = sortedBackups.find(b => d.id && b.dialogs.has(d.id.value))
+						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id.toString()))
 						return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
 					})}
 					{loading && <p className='text-center'>Loading chats...</p>}

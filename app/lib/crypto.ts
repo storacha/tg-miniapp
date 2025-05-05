@@ -1,5 +1,9 @@
-import { ByteView } from "multiformats"
-import { EncryptedByteView } from "@/api"
+import { BlockDecoder, BlockEncoder, ByteView } from 'multiformats'
+import { create as createLink, decode as decodeLink } from 'multiformats/link'
+import { identity } from 'multiformats/hashes/identity'
+import * as Digest from 'multiformats/hashes/digest'
+import { Decrypter, EncryptedByteView, EncryptedTaggedByteView, Encrypter } from '@/api'
+import { createFileEncoderStream } from '@storacha/upload-client/unixfs'
 
 // Centralized encryption parameters
 const ENCRYPTION_CONFIG = {
@@ -98,4 +102,31 @@ export function generateRandomPassword(length: number = 16): string {
         .map((value) => charset[value % charset.length])
         .join('')
     return password
+}
+
+export const encodeAndEncrypt = async <Code extends number, T>(codec: BlockEncoder<Code, T>, cipher: Encrypter, value: T): Promise<EncryptedTaggedByteView<T>> => {
+  const bytes = codec.encode(value)
+  const link = createLink<T, number, typeof identity.code>(codec.code, Digest.create(identity.code, bytes))
+  return cipher.encrypt(link.bytes)
+}
+
+export const createEncodeAndEncryptStream = <Code extends number, T>(codec: BlockEncoder<Code, T>, cipher: Encrypter, data: T) =>
+  createFileEncoderStream({
+    stream: () => new ReadableStream<EncryptedTaggedByteView<T>>({
+      async pull (controller) {
+        controller.enqueue(await encodeAndEncrypt<Code, T>(codec, cipher, data))
+        controller.close()
+      }
+    })
+  })
+
+export const decryptAndDecode = async <Code extends number, T>(cipher: Decrypter, codec: BlockDecoder<Code, T>, bytes: EncryptedTaggedByteView<T>): Promise<T> => {
+  const link = decodeLink(await cipher.decrypt(bytes))
+  if (link.code !== codec.code) {
+    throw new Error(`invalid codec: ${link.code} != ${codec.code}`)
+  }
+  if (link.multihash.code !== identity.code) {
+    throw new Error(`invalid hasher: ${link.multihash.code} != ${identity.code}`)
+  }
+  return codec.decode(link.multihash.digest)
 }

@@ -1,10 +1,12 @@
 import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect, useCallback } from 'react'
 import { cloudStorage} from '@telegram-apps/sdk-react'
-import { Backup, BackupStorage, Job, JobID, JobManager, JobStorage, Period, RestoredBackup } from '@/api'
+import { Backup, JobID, JobManager, JobStorage, PendingJob, Period, RestoredBackup } from '@/api'
 import { SpaceDID } from '@storacha/ui-react'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
 import { restoreBackup as restoreBackupAction, fetchMoreMessages as fetchMoreMessagesAction} from '@/lib/backup/recoverer'
+import { create as createCipher } from '@/lib/aes-cbc-cipher'
+
 export interface Result<T> {
   items: T[]
   item?: T
@@ -19,7 +21,7 @@ export interface BackupJobContext {
 
 export interface ContextState {
   /** Backups that are in progress. */
-  jobs: Result<Job>
+  jobs: Result<PendingJob>
   /** Backups that have completed successfully. */
   backups: Result<Backup>
   // /** The current backup item. */
@@ -61,16 +63,15 @@ export const ContextDefaultValue: ContextValue = [
 export const Context = createContext<ContextValue>(ContextDefaultValue)
 
 export interface ProviderProps extends PropsWithChildren {
-  jobManager: JobManager
-  jobs: JobStorage
-  backups: BackupStorage
+  jobManager?: JobManager
+  jobs?: JobStorage
 }
 
 /**
  * Provider that enables initiating and tracking current and exiting backups.
  */
-export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, children }: ProviderProps): ReactNode => {
-  const [jobs, setJobs] = useState<Job[]>([])
+export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps): ReactNode => {
+  const [jobs, setJobs] = useState<PendingJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(false)
   const [jobsError, setJobsError] = useState<Error>()
   const jobsResult = {
@@ -112,7 +113,8 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
         throw new Error('Encryption password not found in cloud storage')
       }
 
-      const result = await restoreBackupAction(backupCid, dialogId, encryptionPassword, limit)
+      const cipher = createCipher(encryptionPassword)
+      const result = await restoreBackupAction(backupCid, dialogId, cipher, limit)
       setRestoredBackup(result)
     } catch (err: any) {
       console.error('Error: restoring backup', err)
@@ -139,7 +141,8 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
         throw new Error('Encryption password not found in cloud storage')
       }
 
-      const newMessages = await fetchMoreMessagesAction(restoredBackup.dialogData, encryptionPassword, offset, limit)
+      const cipher = createCipher(encryptionPassword)
+      const newMessages = await fetchMoreMessagesAction(restoredBackup.dialogData, cipher, offset, limit)
       setRestoredBackup((prev) => ({
         ...prev!,
         messages: [...prev!.messages, ...newMessages],
@@ -150,70 +153,73 @@ export const Provider = ({ jobManager, jobs: jobStore, backups: backupStore, chi
     }
   }
 
-  const addBackupJob = (space: SpaceDID, dialogs: Set<bigint>, period: Period) =>
-    jobManager.add(space, dialogs, period)
+  const addBackupJob = useCallback(
+    (space: SpaceDID, dialogs: Set<bigint>, period: Period) => {
+      if (!jobManager) throw new Error('missing job manager')
+      return jobManager.add(space, dialogs, period)
+    },
+    [jobManager]
+  )
 
-  const removeBackupJob = (id: JobID) => jobManager.remove(id)
+  const removeBackupJob = useCallback(
+    (id: JobID) => {
+      if (!jobManager) throw new Error('missing job manager')
+      return jobManager.remove(id)
+    },
+    [jobManager]
+  )
 
   useEffect(() => {
+    if (!jobStore) return
+
     const handleJobChange = async () => {
+      console.debug('handling job change event...')
+
       try {
         setJobsError(undefined)
-        const jobs = await jobStore.list()
+        console.debug('listing pending jobs...')
+        const jobs = await jobStore.listPending()
+        console.debug(`found ${jobs.items.length} pending jobs`)
         setJobs(jobs.items)
       } catch (err: any) {
         console.error('Error: handling job change event', err)
         setJobsError(err)
       }
-    }
 
-    ;(async () => {
-      setJobsLoading(true)
-      try {
-        await handleJobChange()
-      } finally {
-        setJobsLoading(false)
-      }
-    })()
-
-    jobStore.addEventListener('add', handleJobChange)
-    jobStore.addEventListener('update', handleJobChange)
-    jobStore.addEventListener('remove', handleJobChange)
-
-    return () => {
-      jobStore.removeEventListener('add', handleJobChange)
-      jobStore.removeEventListener('update', handleJobChange)
-      jobStore.removeEventListener('remove', handleJobChange)
-    }
-  }, [jobStore])
-
-  useEffect(() => {
-    const handleBackupChange = async () => {
       try {
         setBackupsError(undefined)
-        const backups = await backupStore.list()
+        console.debug('listing completed jobs...')
+        const backups = await jobStore.listCompleted()
+        console.debug(`found ${backups.items.length} completed jobs`)
         setBackups(backups.items)
       } catch (err: any) {
-        console.error('Error: handling backup change event', err)
+        console.error('Error: handling job change event', err)
         setBackupsError(err)
       }
     }
 
     ;(async () => {
       setBackupsLoading(true)
+      setJobsLoading(true)
       try {
-        await handleBackupChange()
+        console.debug('manually triggering job change to populate jobs and backups...')
+        await handleJobChange()
       } finally {
         setBackupsLoading(false)
+        setJobsLoading(false)
       }
     })()
 
-    backupStore.addEventListener('add', handleBackupChange)
+    jobStore.addEventListener('add', handleJobChange)
+    jobStore.addEventListener('replace', handleJobChange)
+    jobStore.addEventListener('remove', handleJobChange)
 
     return () => {
-      backupStore.removeEventListener('add', handleBackupChange)
+      jobStore.removeEventListener('add', handleJobChange)
+      jobStore.removeEventListener('replace', handleJobChange)
+      jobStore.removeEventListener('remove', handleJobChange)
     }
-  }, [backupStore])
+  }, [jobStore])
 
   return (
     <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, restoredBackup: restoreBackupResult }, { addBackupJob, removeBackupJob, restoreBackup, fetchMoreMessages}]}>

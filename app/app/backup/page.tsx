@@ -27,6 +27,7 @@ export default function Page() {
 	const [{ user }] = useTelegram()
 	const [{ client }] = useStoracha()
 	const [, { addBackupJob }] = useBackups()
+	const [starting, setStarting] = useState(false)
 
 	const handleConnectSubmit = async () => {
 		try {
@@ -37,10 +38,12 @@ export default function Page() {
 			const account = await client.login(parseEmail(email))
 			const space = client.spaces().find(s => s.name === spaceName)
 			if (space) {
+				await client.setCurrentSpace(space.did())
 				setSpace(space.did())
 			} else {
 				await account.plan.wait()
 				const space = await client.createSpace(spaceName, { account })
+				await client.setCurrentSpace(space.did())
 				setSpace(space.did())
 			}
 			setIsStorachaAuthorized(true)
@@ -61,8 +64,10 @@ export default function Page() {
 
 	const handleSummarySubmit = async () => {
 		if (!space) return
+		setStarting(true)
 		const id = await addBackupJob(space, chats, period)
 		console.log('backup job added with ID', id)
+		setStarting(false)
 		router.push('/')
 	}
 
@@ -73,7 +78,7 @@ export default function Page() {
 			<Connect open={step === 2 && !connErr} email={email} onEmailChange={setEmail} onSubmit={handleConnectSubmit} onDismiss={() => setStep(1)} />
 			<Verify open={step === 3 && !connErr} email={email} onDismiss={() => setStep(1)} />
 			<ConnectError open={step === 4} error={connErr} onDismiss={() => { setConnErr(undefined); setStep(1) }} />
-			{step === 5 && space && <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit}/>}
+			{step === 5 && space && <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit} starting={starting} />}
 		</Layouts>
 	)
 }

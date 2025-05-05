@@ -1,6 +1,9 @@
-import { ByteView, Link, SpaceDID, ToString, UnknownLink, Variant } from '@storacha/ui-react'
+import { Block, ByteView, Link, SpaceDID, ToString, UnknownLink, Variant } from '@storacha/ui-react'
+import { identity } from 'multiformats/hashes/identity'
 
-export type { ByteView, Link, SpaceDID, ToString, UnknownLink, Variant }
+export type { Block, ByteView, Link, SpaceDID, ToString, UnknownLink, Variant }
+
+export type UnknownBlock = Block<unknown, number, number, 0|1>
 
 export type AbsolutePeriod = [from: number, to: number]
 
@@ -12,50 +15,109 @@ export type Period = AbsolutePeriod | [from: number]
 
 export type JobID = string
 
-/** A pending backup job. */
-export interface Job {
-  id: JobID
-  /** Run state of the backup. */
-  state: 'queued' | 'running' | 'failed'
-  /** Indication of completion progress - a number between 0 and 1. */
-  progress: number
-  /** Error message in case of failed state. */
-  error?: string
+export interface JobParams {
   /** The space the data is being saved to. */
   space: SpaceDID
-  /** The dialogs that were backed up. */
-  dialogs: Set<bigint>
+  /** The dialogs that will be backed up. */
+  dialogs: Array<ToString<EntityID>>
   /** Time period this backup covers. */
   period: AbsolutePeriod
 }
 
-/** A completed backup. */
-export interface Backup {
-  /** Link to the actual backup data. */
-  data: UnknownLink
-  /** The dialogs that were backed up. */
-  dialogs: Set<bigint>
-  /** Time period this backup covers. */
-  period: AbsolutePeriod
-  /** Timestamp of when this backup was taken. */
+export type JobStatus = 'waiting' | 'queued' | 'running' | 'failed' | 'completed'
+
+/** A backup job. */
+export type Job = 
+  | WaitingJob
+  | QueuedJob
+  | RunningJob
+  | FailedJob
+  | CompletedJob
+
+/** A backup job with fields common to jobs in all statuses. */
+export interface BaseJob {
+  /** Unique identifier for the job. */
+  id: JobID
+  status: JobStatus
+  /** Parameters for the job. */
+  params: JobParams
+  /** Timestamp of when this backup job was created. */
   created: number
 }
+
+/** A backup job that is waiting to be queued and run. */
+export interface WaitingJob extends BaseJob {
+  status: 'waiting'
+}
+
+/** A backup job that has been queued for running. */
+export interface QueuedJob extends BaseJob {
+  status: 'queued'
+}
+
+/** A running backup job. */
+export interface RunningJob extends BaseJob {
+  status: 'running'
+  /** Indication of completion progress - a number between 0 and 1. */
+  progress: number
+  /** Timestamp of when this backup was started. */
+  started: number
+}
+
+/** A backup job that failed before successful completion. */
+export interface FailedJob extends BaseJob {
+  status: 'failed'
+  /** Indication of completion progress - a number between 0 and 1. */
+  progress: number
+  /** Cause of the failure. */
+  cause: string
+  /** Timestamp of when this backup was started (set if it started). */
+  started?: number
+  /** Timestamp of when this backup failed. */
+  finished: number
+}
+
+/** A completed backup. */
+export interface CompletedJob extends BaseJob {
+  status: 'completed'
+  /** Link to the actual backup data. */
+  data: UnknownLink
+  /** Timestamp of when this backup was started. */
+  started: number
+  /** Timestamp of when this backup completed successfully. */
+  finished: number
+}
+
+/** Backups are backup jobs that have completed successfully. */
+export type Backup = CompletedJob
+
+export type PendingJob = WaitingJob|QueuedJob|RunningJob|FailedJob
 
 export interface Page<T> {
   items: T[]
 }
 
-export interface JobStorage extends EventTarget {
-  find: (id: JobID) => Promise<Job|null>
-  list: () => Promise<Page<Job>>
-  add: (job: Job) => Promise<void>
-  update: (id: JobID, data: Partial<Omit<Job, 'id'>>) => Promise<void>
-  remove: (id: JobID) => Promise<void>
+/** Interface for remote storage, like Storacha! */
+export interface RemoteStorage {
+  uploadBlocks: (blocks: UnknownBlock[]) => Promise<void>
+  retrieveFile: (cid: UnknownLink) => Promise<File>
 }
 
-export interface BackupStorage extends EventTarget {
-  list: () => Promise<Page<Backup>>
-  add: (backup: Backup) => Promise<void>
+/** Generic storage for a particular object. */
+export interface ObjectStorage<T> {
+  /** Initialize the object store if not already initialized. */
+  init: (value: T) => Promise<void>
+  set: (value: T) => Promise<void>
+  get: () => Promise<T>
+}
+
+export interface JobStorage extends EventTarget {
+  find: (id: JobID) => Promise<Job|null>
+  listPending: () => Promise<Page<WaitingJob|QueuedJob|RunningJob|FailedJob>>
+  listCompleted: () => Promise<Page<CompletedJob>>
+  add: (job: Job) => Promise<void>
+  replace: (job: Job) => Promise<void>
+  remove: (id: JobID) => Promise<void>
 }
 
 export interface JobManager {
@@ -68,6 +130,16 @@ export interface JobManager {
   remove: (id: JobID) => Promise<void>
 }
 
+export interface Encrypter {
+  encrypt: <T>(data: ByteView<T>) => Promise<EncryptedByteView<T>>
+}
+
+export interface Decrypter {
+  decrypt: <T>(data: EncryptedByteView<T>) => Promise<ByteView<T>>
+}
+
+export interface Cipher extends Encrypter, Decrypter {}
+
 export type BackupModel = Variant<{
   'tg-miniapp-backup@0.0.1': BackupData
 }>
@@ -77,18 +149,33 @@ export type EntityID = bigint
 export type PhotoID = bigint
 export type MessageID = number
 
-export type EncryptedByteView<T> = ByteView<T>
+/**
+ * Some encrypted data.
+ * 
+ * Note: encrypted data is encoded as a UnixFS DAG.
+ */
+export interface EncryptedByteView<T> extends ByteView<T> {}
+
+/** Some data tagged with an IPLD codec and encoded as a V1 CID. */
+export interface TaggedByteView<T> extends ByteView<Link<T, number, typeof identity.code, 1>> {}
+
+/**
+ * Some encrypted data tagged with an IPLD codec and encoded as a V1 CID.
+ *
+ * Note: encrypted data is encoded as a UnixFS DAG.
+ */
+export interface EncryptedTaggedByteView<T> extends TaggedByteView<T> {}
 
 export interface BackupData {
   /** The dialogs available in this backup. */
-  dialogs: Record<ToString<EntityID>, Link<EncryptedByteView<DialogData>>>
+  dialogs: Record<ToString<EntityID>, Link<EncryptedTaggedByteView<DialogData>>>
   /** The period this backup covers. */
   period: AbsolutePeriod
 }
 
 export interface DialogData extends EntityData {
   /** A link to the entities that participated in this dialog. */
-  entities: Link<EncryptedByteView<EntityRecordData>>
+  entities: Link<EncryptedTaggedByteView<EntityRecordData>>
   /**
    * An array of links to lists of ordered messages sent by entities
    * participating in this dialog.
@@ -97,7 +184,7 @@ export interface DialogData extends EntityData {
    *
    * Each list has a maximum of 1,000 messages.
    */
-  messages: Array<Link<EncryptedByteView<Array<MessageData|ServiceMessageData>>>>
+  messages: Array<Link<EncryptedTaggedByteView<Array<MessageData|ServiceMessageData>>>>
 }
 
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>
