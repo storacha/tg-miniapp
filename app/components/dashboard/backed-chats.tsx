@@ -7,6 +7,7 @@ import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
 import { Backup } from '@/api'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import { getEntityType } from '@/lib/backup/utils'
 
 interface DialogItemProps {
 	dialog: Dialog
@@ -31,8 +32,13 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 		latestBackupDate = new Date(latestBackup.params.period[1] * 1000)
 	}
 
+	const isClickable = !!latestBackup // Check if the dialog has a backup
+
 	return (
-		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={String(dialog.id)} onClick={onClick}>
+		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" 
+			data-id={String(dialog.id)} 
+			onClick={isClickable ? onClick : undefined}
+		>
 			<div className="flex gap-4 items-center w-full">
 				<Avatar className="flex-none">
 					<AvatarImage src={thumbSrc} />
@@ -77,12 +83,10 @@ export default function BackedChats() {
 	const handleDialogItemClick: MouseEventHandler = e => {
 		e.preventDefault()
 		const id = BigInt(e.currentTarget.getAttribute('data-id') ?? 0)
-		const backupWithDialog = sortedBackups.find(b => id && b.params.dialogs.includes(id.toString()))
 		const dialog = dialogs.find(d => d.id.toString() == id.toString())
-		if (!backupWithDialog || !dialog) return
-		const backupData = backupWithDialog.data.toString()
-		const pageId = dialog.entity ? dialog.entity.id : id
-		router.push(`/dialog/${pageId}?backupData=${encodeURIComponent(backupData)}`)
+		if (!dialog) return
+		const type =  dialog.entity ? getEntityType(dialog.entity) : 'unknown'
+		router.push(`/dialog/${id}?type=${type}`)
 	}
 
 	return (

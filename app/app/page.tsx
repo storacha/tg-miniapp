@@ -5,7 +5,7 @@ import { Layouts } from '@/components/layouts'
 
 export default function Page() {
 	return (
-		<Layouts>
+		<Layouts isBackgroundBlue>
 			<Dashboard />
 		</Layouts>
 	)
