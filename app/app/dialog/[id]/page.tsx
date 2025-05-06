@@ -14,7 +14,7 @@ export default function BackupSelectionPage() {
   const searchParams = useSearchParams()
   const type = searchParams.get('type') 
 
-  const dialogBackups = backups.items.filter((b) => b.dialogs.has(BigInt(id)))
+  const dialogBackups = backups.items.filter((b) => b.params.dialogs.includes(id))
 
   const handleBackupClick = (e: React.MouseEvent, backupCid: string) => {
     e.preventDefault()
@@ -35,7 +35,7 @@ export default function BackupSelectionPage() {
                 <div>
                 <p className="text-sm text-foreground/60">Backup Date:</p>
                 <p className="text-lg font-semibold text-foreground">
-                    {new Date(backup.period[1] * 1000).toLocaleString()}
+                    {new Date(backup.params.period[1] * 1000).toLocaleString()}
                 </p>
                 </div>
                 <ChevronRight />
