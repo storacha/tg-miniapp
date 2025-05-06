@@ -230,7 +230,7 @@ export interface MessageData {
   /** The string text of the message. */
   message: string
   media?: {
-    content: Link<EncryptedByteView<Uint8Array>>
+    content?: Link<EncryptedTaggedByteView<Uint8Array>>
     metadata: MediaData
   }
 }

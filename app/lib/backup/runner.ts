@@ -1,12 +1,14 @@
-import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedByteView, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData, MediaData } from '@/api'
+import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedTaggedByteView, Encrypter, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, UnknownBlock, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData, MediaData } from '@/api'
 import * as Type from '@/api'
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
+import * as raw from 'multiformats/codecs/raw'	  
 import { CARWriterStream } from 'carstream'
 import { Entity } from '@/vendor/telegram/define'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
 import { createEncodeAndEncryptStream } from '@/lib/crypto'
+import { isDownloadableMedia } from './utils'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
@@ -140,10 +142,12 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
         entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
 
         let mediaRoot
-        if (message.media){
+        if (message.media && isDownloadableMedia(message.media)) {
+          console.log(`getting media for message: ${message.id}`)
           const mediaBytes = new Uint8Array((await message.downloadMedia()) as Buffer)
-          for await (const b of toAsyncIterable(encrypt(ctx, mediaBytes))){
-            mediaRoot = b.cid
+          if (mediaBytes.length === 0) throw new Error('missing media bytes')
+          for await (const b of toAsyncIterable(createEncodeAndEncryptStream(raw, ctx.cipher, mediaBytes))) {
+            mediaRoot = b.cid as Link<EncryptedTaggedByteView<Uint8Array>>
             controller.enqueue(b)
           }
 
@@ -179,7 +183,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 
 
 
-const toMessageData = (message: Api.Message | Api.MessageService, mediaRoot?: Link<EncryptedByteView<Uint8Array>>): MessageData | ServiceMessageData => {
+const toMessageData = (message: Api.Message | Api.MessageService, mediaRoot?: Link<EncryptedTaggedByteView<Uint8Array>>): MessageData | ServiceMessageData => {
   const from = message.fromId && toPeerID(message.fromId)
 
   if (message.className === 'MessageService') {
@@ -203,13 +207,16 @@ const toMessageData = (message: Api.Message | Api.MessageService, mediaRoot?: Li
     message: message.message ?? ''
   }
 
-  if(message.media && mediaRoot) {
+  if(message.media) {
     const metadata = toMediaData(message.media)
-    if(metadata) {
-      messageData['media'] = {
-        content: mediaRoot,
-        metadata
-      }
+    if (!metadata) throw new Error('missing media metadata')
+   
+    messageData['media'] = {
+      metadata
+    }
+
+    if (mediaRoot) {
+      messageData['media'].content = mediaRoot
     }
   }
 
@@ -758,7 +765,7 @@ const toBotAppData = withCleanUndef((app: Api.TypeBotApp): BotAppData => {
   }
 })
 
-const toDocumentData = cleanUndef((document: Api.TypeDocument): DocumentData | undefined => {
+const toDocumentData = withCleanUndef((document: Api.TypeDocument): DocumentData | undefined => {
   if (document.className === 'DocumentEmpty') {
     return
   }
@@ -769,10 +776,10 @@ const toDocumentData = cleanUndef((document: Api.TypeDocument): DocumentData | u
     date: document.date,
     mimeType: document.mimeType,
     size: document.size,
-    thumbs: document.thumbs?.map(s => toPhotoSize(s)).filter(Boolean) as PhotoSizeData[],
-    videoThumbs: document.videoThumbs?.map(s => toVideoSize(s)),
+    thumbs: document.thumbs?.map(s => toPhotoSize(s)).filter(t => t !== undefined) as Type.PhotoSizeData[],
+    videoThumbs: document.videoThumbs?.map(s => toVideoSize(s)).filter(v => v!== undefined) as Type.VideoSizeData[],
     dc: String(document.dcId),
-    attributes: document.attributes.map(attr => toDocumentAttributeData(attr))
+    attributes: document.attributes.map(attr => toDocumentAttributeData(attr)).filter(a => a !== undefined) as Type.DocumentAttributeData[],
   }
 })
 
@@ -937,7 +944,7 @@ const toInputGroupCallData = (call: Api.InputGroupCall): InputGroupCallData => {
 const toTextWithEntitiesData = withCleanUndef((message: Api.TextWithEntities): TextWithEntitiesData => {
   return {
     text: message.text,
-    entities: message.entities?.map(entity => toMessageEntityData(entity))
+    entities: message.entities?.map(entity => toMessageEntityData(entity)).filter((e): e is Type.MessageEntityData => e !== undefined)
   }
 })
 
@@ -1259,7 +1266,7 @@ const ToWebDocumentData = withCleanUndef((document: Api.TypeWebDocument): Type.W
         url: document.url,
         size: document.size,
         mimeType: document.mimeType,
-        attributes: document.attributes.map(d => toDocumentAttributeData(d))
+        attributes: document.attributes.map(d => toDocumentAttributeData(d)).filter((d): d is Type.DocumentAttributeData => d !== undefined)
       }
     }
     case 'WebDocument': {
@@ -1269,7 +1276,7 @@ const ToWebDocumentData = withCleanUndef((document: Api.TypeWebDocument): Type.W
         size: document.size,
         mimeType: document.mimeType,
         accessHash: String(document.accessHash),
-        attributes: document.attributes.map(d => toDocumentAttributeData(d))
+        attributes: document.attributes.map(d => toDocumentAttributeData(d)).filter((d): d is Type.DocumentAttributeData => d !== undefined)
       }
     }
     default:
@@ -1335,7 +1342,7 @@ const toPollAnswerVotersData = withCleanUndef((answer: Api.TypePollAnswerVoters)
 const toPollResultsData = withCleanUndef((results: Api.TypePollResults): Type.PollResultsData => {
   return {
     min: results.min,
-    results: results.results?.map(r => toPollAnswerVotersData(r)),
+    results: results.results?.map(r => toPollAnswerVotersData(r)).filter((r): r is Type.PollAnswerVotersData => r !== undefined),
     totalVoters: results.totalVoters,
     recentVoters: results.recentVoters?.map(peer => toPeerData(peer)),
     solution: results.solution,
@@ -1388,7 +1395,7 @@ const toStoryItemData = withCleanUndef((story: Api.TypeStoryItem): Type.StoryIte
         caption: story.caption,
         from: story.fromId ? toPeerData(story.fromId) : undefined,
         media: toMediaData(story.media),
-        entities: story.entities?.map(entity => toMessageEntityData(entity)),
+        entities: story.entities?.map(entity => toMessageEntityData(entity)).filter((e): e is Type.MessageEntityData => e !== undefined),
         views: story.views ? toStoryViewData(story.views) : undefined,
       } as Type.StoryItemDefaultData
     }
@@ -1462,7 +1469,7 @@ const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | un
       return {
         type: 'document',
         document: media.document ? toDocumentData(media.document) : undefined,
-        altDocuments: media.altDocuments?.map(d => toDocumentData(d)),
+        altDocuments: media.altDocuments?.map(d => toDocumentData(d)).filter((d): d is DocumentData => d !== undefined),
         nopremium: media.nopremium,
         spoiler: media.spoiler,
         video: media.video,
@@ -1549,7 +1556,7 @@ const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | un
         type: 'giveaway',
         onlyNewSubscribers: media.onlyNewSubscribers,
         winnersAreVisible: media.winnersAreVisible,
-        channels: media.channels?.map(c => String(c)),
+        channels: media.channels?.map(c => String(c)).filter(c => c !== undefined),
         countriesIso2: media.countriesIso2,
         prizeDescription: media.prizeDescription,
         quantity: media.quantity,
@@ -1565,7 +1572,7 @@ const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | un
         launchMsg: media.launchMsgId,
         winnersCount: media.winnersCount,
         unclaimedCount: media.unclaimedCount,
-        winners: media.winners?.map(w => String(w)),
+        winners: media.winners?.map(w => String(w)).filter(w => w !== undefined),
         untilDate: media.untilDate,
         onlyNewSubscribers: media.onlyNewSubscribers,
         refunded: media.refunded,
@@ -1579,7 +1586,7 @@ const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | un
       return {
         type: 'paid-media',
         starsAmount: String(media.starsAmount),
-        extendedMedia: media.extendedMedia?.map(m =>toExtendedMediaData(m)),
+        extendedMedia: media.extendedMedia?.map(m => toExtendedMediaData(m)).filter((m): m is Type.ExtendedMediaData => m !== undefined),
       } as Type.PaidMediaData
     }
     default: {
