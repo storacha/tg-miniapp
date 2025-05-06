@@ -204,11 +204,11 @@ const toMessageData = (message: Api.Message | Api.MessageService, mediaRoot?: Li
   }
 
   if(message.media && mediaRoot) {
-    const data = toMediaData(message.media)
-    if(data) {
+    const metadata = toMediaData(message.media)
+    if(metadata) {
       messageData['media'] = {
-        file: mediaRoot,
-        data
+        content: mediaRoot,
+        metadata
       }
     }
   }
@@ -934,7 +934,7 @@ const toInputGroupCallData = (call: Api.InputGroupCall): InputGroupCallData => {
   }
 }
 
-const toTextWithEntitiesData = withCleanUndef((message: Api.TextWithEntities): TextWithEntitiesData | undefined => {
+const toTextWithEntitiesData = withCleanUndef((message: Api.TextWithEntities): TextWithEntitiesData => {
   return {
     text: message.text,
     entities: message.entities?.map(entity => toMessageEntityData(entity))
@@ -1279,19 +1279,151 @@ const ToWebDocumentData = withCleanUndef((document: Api.TypeWebDocument): Type.W
   }   
 })
 
-// const ToPollData = withCleanUndef((poll: Api.TypePoll): Type.PoolData => {
-//   return {
-//     id: String(poll.id),
-//     question: poll.question && toTextWithEntitiesData(poll.question),
-//     answers: [],
-//     closed: poll.closed,
-//     publicVoters: poll.publicVoters,
-//     multipleChoice: poll.multipleChoice,
-//     quiz: poll.quiz,
-//     closePeriod: poll.closePeriod,
-//     closeDate: poll.closeDate,
-//   }
-// })
+const toPollAnswerData = withCleanUndef((answer: Api.TypePollAnswer): Type.PollAnswerData => {
+  return {
+    text: toTextWithEntitiesData(answer.text),
+    option: new Uint8Array(answer.option),
+  }
+})
+
+const toPollData = withCleanUndef((poll: Api.TypePoll): Type.PoolData => {
+  return {
+    id: String(poll.id),
+    question: toTextWithEntitiesData(poll.question),
+    answers: poll.answers.map(answer => toPollAnswerData(answer)),
+    closed: poll.closed,
+    publicVoters: poll.publicVoters,
+    multipleChoice: poll.multipleChoice,
+    quiz: poll.quiz,
+    closePeriod: poll.closePeriod,
+    closeDate: poll.closeDate,
+  }
+})
+
+const toPeerData = withCleanUndef((peer: Api.TypePeer): Type.PeerData => {
+  switch (peer.className) {
+    case 'PeerUser': {
+      return {
+        type: 'user',
+        id: String(peer.userId),
+      }
+    }
+    case 'PeerChat': {
+      return {
+        type: 'chat',
+        id: String(peer.chatId),
+      }
+    }
+    case 'PeerChannel': {
+      return {
+        type: 'channel',
+        id: String(peer.channelId),
+      } 
+    }
+  }
+})
+
+const toPollAnswerVotersData = withCleanUndef((answer: Api.TypePollAnswerVoters): Type.PollAnswerVotersData => {
+  return {
+    chosen: answer.chosen,
+    correct: answer.correct,
+    option: new Uint8Array(answer.option),
+    voters: answer.voters
+  }
+})
+
+const toPollResultsData = withCleanUndef((results: Api.TypePollResults): Type.PollResultsData => {
+  return {
+    min: results.min,
+    results: results.results?.map(r => toPollAnswerVotersData(r)),
+    totalVoters: results.totalVoters,
+    recentVoters: results.recentVoters?.map(peer => toPeerData(peer)),
+    solution: results.solution,
+    solutionEntities: results.solutionEntities?.map(entity => toMessageEntityData(entity)),
+  }
+})
+
+const toStoryViewData = withCleanUndef((views: Api.TypeStoryViews): Type.StoryViewsData | undefined => {
+  return {
+    hasViewers: views.hasViewers,
+    viewsCount: views.viewsCount,
+    forwardsCount: views.forwardsCount,
+    reactionsCount: views.reactionsCount,
+    recentViewers: views.recentViewers?.map(peer => String(peer)),
+  }
+})
+
+const toStoryItemData = withCleanUndef((story: Api.TypeStoryItem): Type.StoryItemData => {
+  switch (story.className) {
+    case 'StoryItemDeleted': {
+      return {
+        type: 'deleted',
+        id: story.id,
+      } as Type.StoryItemDeletedData
+    }
+    case 'StoryItemSkipped': {
+      return {
+        type: 'skipped',
+        id: story.id,
+        date: story.date,
+        expireDate: story.expireDate,
+        closeFriends: story.closeFriends,
+      } as Type.StoryItemSkippedData
+    } 
+    case 'StoryItem': {
+      return {
+        type: 'default',
+        id: story.id,
+        date: story.date,
+        expireDate: story.expireDate,
+        pinned: story.pinned,
+        public: story.public,
+        closeFriends: story.closeFriends,
+        min: story.min,
+        noforwards: story.noforwards,
+        edited: story.edited,
+        contacts: story.contacts,
+        selectedContacts: story.selectedContacts,
+        out: story.out,
+        caption: story.caption,
+        from: story.fromId ? toPeerData(story.fromId) : undefined,
+        media: toMediaData(story.media),
+        entities: story.entities?.map(entity => toMessageEntityData(entity)),
+        views: story.views ? toStoryViewData(story.views) : undefined,
+      } as Type.StoryItemDefaultData
+    }
+    default: {
+      return {
+        type: 'unknown'
+      } as Type.StoryItemUnknownData
+    }
+  }
+})
+
+const toExtendedMediaData = withCleanUndef((media: Api.TypeMessageExtendedMedia): Type.ExtendedMediaData => {
+  switch (media.className) {
+    case 'MessageExtendedMedia': {
+      return {
+        type: 'default',
+        media: toMediaData(media.media),
+      } as Type.ExtendedMediaDefaultData
+    }
+    case 'MessageExtendedMediaPreview': {
+      return {
+        type: 'preview',
+        w: media.w,
+        h: media.h,
+        thumb: media.thumb && toPhotoSize(media.thumb),
+        videoDuration: media.videoDuration,
+      } as Type.ExtendedMediaPreviewData
+    }
+    default: {
+      return {
+        type: 'unknown'   
+      } as Type.ExtendedMediaUnknownData
+    }
+  }
+})
 
 const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | undefined => {
   switch (media.className) {
@@ -1389,13 +1521,67 @@ const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | un
         proximityNotificationRadius: media.proximityNotificationRadius,
       } as Type.GeoLiveMediaData
     }
-    // case 'MessageMediaPoll': {
-    //   return {
-    //     type: 'poll',
-    //     poll: ToPollData(media.poll),
-    //     results: ToPollResultsData(media.results),
-    //   } as Type.PoolData
-    // }
+    case 'MessageMediaPoll': {
+      return {
+        type: 'poll',
+        poll: toPollData(media.poll),
+        results: toPollResultsData(media.results),
+      } as Type.PollMediaData
+    }
+    case 'MessageMediaDice': {
+      return {
+        type: 'dice',
+        value: media.value,
+        emoticon: media.emoticon,
+      } as Type.DiceMediaData
+    }
+    case 'MessageMediaStory': {
+      return {
+        type: 'story',
+        id: media.id,
+        peer: toPeerData(media.peer),
+        viaMention: media.viaMention,
+        story: media.story ? toStoryItemData(media.story): undefined,
+      } as Type.StoryMediaData
+    }
+    case 'MessageMediaGiveaway': {
+      return {
+        type: 'giveaway',
+        onlyNewSubscribers: media.onlyNewSubscribers,
+        winnersAreVisible: media.winnersAreVisible,
+        channels: media.channels?.map(c => String(c)),
+        countriesIso2: media.countriesIso2,
+        prizeDescription: media.prizeDescription,
+        quantity: media.quantity,
+        months: media.months,
+        stars: String(media.stars),
+        untilDate: media.untilDate,
+      } as Type.GiveawayMediaData
+    }
+    case 'MessageMediaGiveawayResults': {
+      return {
+        type: 'giveaway-results',
+        channel: String(media.channelId),
+        launchMsg: media.launchMsgId,
+        winnersCount: media.winnersCount,
+        unclaimedCount: media.unclaimedCount,
+        winners: media.winners?.map(w => String(w)),
+        untilDate: media.untilDate,
+        onlyNewSubscribers: media.onlyNewSubscribers,
+        refunded: media.refunded,
+        additionalPeersCount: media.additionalPeersCount,
+        months: media.months,
+        stars: String(media.stars),
+        prizeDescription: media.prizeDescription,
+      } as Type.GiveawayResultsMediaData
+    }
+    case 'MessageMediaPaidMedia': {
+      return {
+        type: 'paid-media',
+        starsAmount: String(media.starsAmount),
+        extendedMedia: media.extendedMedia?.map(m =>toExtendedMediaData(m)),
+      } as Type.PaidMediaData
+    }
     default: {
       return {
         type: 'unknown'

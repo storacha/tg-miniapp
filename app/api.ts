@@ -230,8 +230,8 @@ export interface MessageData {
   /** The string text of the message. */
   message: string
   media?: {
-    file: Link<EncryptedByteView<Uint8Array>>
-    data: MediaData
+    content: Link<EncryptedByteView<Uint8Array>>
+    metadata: MediaData
   }
 }
 
@@ -1855,12 +1855,12 @@ export interface UnknownWebDocumentData {
 
 export type ExtendedMediaData = 
   | ExtendedMediaPreviewData
-  | DefaultExtendedMediaData
-  | UnknownExtendedMediaData
+  | ExtendedMediaDefaultData
+  | ExtendedMediaUnknownData
 
-export interface DefaultExtendedMediaData {
+export interface ExtendedMediaDefaultData {
   type: 'default'
-  media: MediaData
+  media?: MediaData
 }
 
 export interface ExtendedMediaPreviewData {
@@ -1871,7 +1871,7 @@ export interface ExtendedMediaPreviewData {
   videoDuration?: number
 }
 
-export interface UnknownExtendedMediaData {
+export interface ExtendedMediaUnknownData {
   type: 'unknown'
 }
 
@@ -1924,7 +1924,7 @@ export interface PollResultsData {
   totalVoters?: number
   recentVoters?: PeerData[]
   solution?: string
-  solutionEntities?: MessageData[]
+  solutionEntities?: MessageEntityData[]
 }
 
 export interface PollMediaData {
@@ -1951,22 +1951,22 @@ export interface StoryViewsData {
 export type StoryItemData = 
   | StoryItemDeletedData
   | StoryItemSkippedData
-  | DefaultStoryItemData
-  | UnknownStoryItemData
+  | StoryItemDefaultData
+  | StoryItemUnknownData
 
-export interface StoryItemSkippedData {
+export interface StoryItemDeletedData {
   type: 'deleted'
   id: number
 }
 
-export interface StoryItemDeletedData {
+export interface StoryItemSkippedData {
   type: 'skipped'
   id: number
   date: number
   expireDate: number
   closeFriends?: boolean
 }
-export interface DefaultStoryItemData {
+export interface StoryItemDefaultData {
   type: 'default'
   id: number
   date: number
@@ -1981,17 +1981,17 @@ export interface DefaultStoryItemData {
   selectedContacts?: boolean
   out?: boolean
   caption?: string
-  fromId?: PeerData
+  from?: PeerData
   media?: MediaData
   views?: StoryViewsData
+  entities?: MessageEntityData[]
   // fwdFrom?: Api.TypeStoryFwdHeader
-  // entities?: Api.TypeMessageEntity[]
   // mediaAreas?: Api.TypeMediaArea[]
   // privacy?: Api.TypePrivacyRule[]
   // sentReaction?: Api.TypeReaction
 }
 
-export interface UnknownStoryItemData {
+export interface StoryItemUnknownData {
   type: 'unknown'
 }
 
@@ -2000,7 +2000,7 @@ export interface StoryMediaData {
   id: number
   peer: PeerData
   viaMention?: boolean
-  story: StoryItemData
+  story?: StoryItemData
 }
 
 export interface GiveawayMediaData {
@@ -2035,7 +2035,7 @@ export interface GiveawayResultsMediaData {
 export interface PaidMediaData {
   type: 'paid-media'
   starsAmount: ToString<bigint>
-  extendedMedia: ExtendedMediaData
+  extendedMedia: ExtendedMediaData[]
 }
 
 export interface UnknownMediaData {
