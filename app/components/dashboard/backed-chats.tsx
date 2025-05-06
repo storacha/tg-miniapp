@@ -32,8 +32,13 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 		latestBackupDate = new Date(latestBackup.params.period[1] * 1000)
 	}
 
+	const isClickable = !!latestBackup // Check if the dialog has a backup
+
 	return (
-		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={String(dialog.id)} onClick={onClick}>
+		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" 
+			data-id={String(dialog.id)} 
+			onClick={isClickable ? onClick : undefined}
+		>
 			<div className="flex gap-4 items-center w-full">
 				<Avatar className="flex-none">
 					<AvatarImage src={thumbSrc} />

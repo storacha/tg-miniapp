@@ -6,12 +6,13 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 import { Media } from '@/components/ui/media'
 import { Layouts } from '@/components/layouts'
-import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
+import { decodeStrippedThumb, getInitials, toJPGDataURL } from '@/lib/utils'
 import { DialogData, EntityData, EntityType, MessageData, ServiceMessageData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConnectError } from '@/components/backup/connect'
 import { useBackups } from '@/providers/backup'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
+import { ChatHeader } from '@/components/layouts/chat-header'
 
 export const runtime = 'edge'
 
@@ -25,11 +26,6 @@ type BackupDialogProps = {
 
 const formatDate = (timestamp: number) => (new Date(timestamp * 1000)).toLocaleString()
 
-const getInitials = (name: string) => {
-  const title = name.trim() || 'Unknown'
-	const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
-	return parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-}
 
 function BackupDialog({
   userId,
@@ -65,18 +61,9 @@ function BackupDialog({
   }, [onScrollTop])
   
   return (
-    <div className="flex flex-col h-screen bg-background">
-      {/* Header */}
-      <div className="flex items-center gap-4 px-5 py-4 border-b border-border bg-muted">
-            <Avatar>
-            <AvatarImage src={dialogThumbSrc} />
-            <AvatarFallback className='bg-gray-300'>{getInitials(dialog.name)}</AvatarFallback>
-          </Avatar>
-        <div>
-          <h1 className="text-lg font-semibold text-foreground">{dialog.name}</h1>
-          <p className="text-sm text-muted-foreground capitalize">{dialog.type}</p>
-        </div>
-      </div>
+    <div className="flex flex-col bg-background">
+
+      <ChatHeader image={dialogThumbSrc} name={dialog.name} type={dialog.type}/>
 
       {/* Messages */}
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
@@ -175,29 +162,36 @@ export default function Page () {
   }
 
   return (
-    <Layouts isSinglePage isBackgroundBlue>
+    <Layouts isSinglePage withHeader={false}>
        {restoredBackup.error && (
-        <ConnectError
-          open={!!restoredBackup.error}
-          error={restoredBackup.error}
-          onDismiss={() => router.back()}
-        />
-      )}
-      {restoredBackup.loading && <p className="text-center">Loading...</p>}
-      {!restoredBackup.loading && !restoredBackup.item && (
-        <div className="flex flex-col items-center justify-center h-screen">
-          <p className="text-lg font-semibold text-red-500">Dialog not found</p>
-        </div>
-      )}
-      {userId && restoredBackup.item && (
-        <BackupDialog
-          userId={userId}
-          dialog={restoredBackup.item.dialogData}
-          messages={restoredBackup.item.messages}
-          participants={restoredBackup.item.participants}
-          onScrollTop={handleFetchMoreMessages}
-        />
-      )}
+          <ConnectError
+            open={!!restoredBackup.error}
+            error={restoredBackup.error}
+            onDismiss={() => router.back()}
+          />
+        )}
+
+        {restoredBackup.loading ? (
+          <div className="flex flex-col items-center justify-center h-screen">
+            <p className="text-lg font-semibold text-center">Loading...</p>
+          </div>
+        ) : (
+          !restoredBackup.item ? (
+            <div className="flex flex-col items-center justify-center h-screen">
+              <p className="text-lg font-semibold text-red-500">Dialog not found</p>
+            </div>
+          ) : (
+            userId && restoredBackup.item && (
+              <BackupDialog
+                userId={userId}
+                dialog={restoredBackup.item.dialogData}
+                messages={restoredBackup.item.messages}
+                participants={restoredBackup.item.participants}
+                onScrollTop={handleFetchMoreMessages}
+              />
+            )
+          )
+        )}
     </Layouts>
   )
 }
