@@ -239,6 +239,10 @@ export interface PeerData {
   type: EntityType
   id: ToString<EntityID>
 }
+export interface MessageMedia {
+  content?: Link<EncryptedTaggedByteView<Uint8Array>>
+  metadata: MediaData
+}
 export interface MessageData {
   id: MessageID
   type: 'message'
@@ -261,12 +265,8 @@ export interface MessageData {
   date: number
   /** The string text of the message. */
   message: string
-  media?: {
-    content?: Link<EncryptedTaggedByteView<Uint8Array>>
-    metadata: MediaData
-  }
+  media?: MessageMedia
 }
-
 export interface ServiceMessageData {
   id: MessageID
   type: 'service'
@@ -1309,6 +1309,7 @@ export interface UnknownActionData {
 export interface RestoredBackup {
   dialogData: DialogData
   messages: MessageData[]
+  mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
   hasMoreMessages: boolean
 }
