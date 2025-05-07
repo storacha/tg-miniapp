@@ -1,27 +1,42 @@
 "use client"
 
+import { DocumentMediaData, MediaData, MessageMedia } from "@/api"
 import * as React from "react"
 
 interface MediaProps {
-  mediaType?: 'image' | 'audio' | 'video' | 'file'
   mediaUrl?: string
-  altText?: string
+  metadata: MediaData
 }
 
-export const Media: React.FC<MediaProps> = ({ mediaType, mediaUrl, altText }) => {
-  switch (mediaType) {
-    case 'image':
-      return <Bubble><ImageMedia mediaUrl={mediaUrl} altText={altText} /></Bubble>
-    case 'audio':
-      return <Bubble><AudioMedia mediaUrl={mediaUrl} /></Bubble>
-    case 'video':
-      return <Bubble><VideoMedia mediaUrl={mediaUrl} /></Bubble>
-    case 'file':
-      return <Bubble><FileMedia mediaUrl={mediaUrl} /></Bubble>
+// const getDocumentType = (media: DocumentMediaData) => {
+
+// }
+
+export const Media: React.FC<MediaProps> = ({mediaUrl, metadata}) => {
+  
+  switch (metadata.type){
+    case 'photo': {
+      return <Bubble><ImageMedia mediaUrl={mediaUrl} /></Bubble>
+    }
     default:
       return <Bubble><UnknownMedia /></Bubble>
   }
 }
+
+// export const Media: React.FC<MediaProps> = ({ mediaType, mediaUrl, altText }) => {
+//   switch (mediaType) {
+//     case 'image':
+//       return <Bubble><ImageMedia mediaUrl={mediaUrl} altText={altText} /></Bubble>
+//     case 'audio':
+//       return <Bubble><AudioMedia mediaUrl={mediaUrl} /></Bubble>
+//     case 'video':
+//       return <Bubble><VideoMedia mediaUrl={mediaUrl} /></Bubble>
+//     case 'file':
+//       return <Bubble><FileMedia mediaUrl={mediaUrl} /></Bubble>
+//     default:
+//       return <Bubble><UnknownMedia /></Bubble>
+//   }
+// }
 
 const Bubble: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="p-3 bg-muted rounded-xl max-w-sm">

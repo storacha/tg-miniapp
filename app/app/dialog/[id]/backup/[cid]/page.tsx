@@ -20,17 +20,18 @@ type BackupDialogProps = {
   userId: string
   dialog: DialogData
   messages: (MessageData | ServiceMessageData)[]
+  mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
   onScrollTop: () => void 
 }
 
 const formatDate = (timestamp: number) => (new Date(timestamp * 1000)).toLocaleString()
 
-
 function BackupDialog({
   userId,
   dialog,
   messages,
+  mediaMap,
   participants,
   onScrollTop,
 }: BackupDialogProps) {
@@ -85,6 +86,12 @@ function BackupDialog({
            thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb as Uint8Array))
           }
 
+          let mediaUrl: string | undefined
+          if (msg.media?.content) {
+            const rawContent = mediaMap[msg.media.content.toString()]
+            mediaUrl = URL.createObjectURL(new Blob([rawContent]))
+          }
+
           return (
             <div key={msg.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
               <div className="flex flex-col max-w-[75%]">
@@ -106,10 +113,15 @@ function BackupDialog({
                       : 'bg-gray-100 text-foreground rounded-bl-none'
                   }`}
                 >
-                  {msg.message ? 
-                    (<p>{msg.message}</p>) :
-                    (<Media  />)
+                  {msg.message &&
+                    (<p>{msg.message}</p>) 
                   }
+                  {msg.media && (
+                    <div className="mt-2">
+                      <Media mediaUrl={mediaUrl} metadata={msg.media.metadata} />
+                    </div>
+                  )}
+
                   <div className={`text-xs text-right mt-1 ${
                     isOutgoing
                       ? 'text-gray-300'
@@ -186,6 +198,7 @@ export default function Page () {
                 userId={userId}
                 dialog={restoredBackup.item.dialogData}
                 messages={restoredBackup.item.messages}
+                mediaMap={restoredBackup.item.mediaMap}
                 participants={restoredBackup.item.participants}
                 onScrollTop={handleFetchMoreMessages}
               />
