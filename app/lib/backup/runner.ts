@@ -144,8 +144,10 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
         let mediaRoot
         if (message.media && isDownloadableMedia(message.media)) {
           console.log(`getting media for message: ${message.id}`)
+          
           const mediaBytes = new Uint8Array((await message.downloadMedia()) as Buffer)
           if (mediaBytes.length === 0) throw new Error('missing media bytes')
+
           for await (const b of toAsyncIterable(createEncodeAndEncryptStream(raw, ctx.cipher, mediaBytes))) {
             mediaRoot = b.cid as Link<EncryptedTaggedByteView<Uint8Array>>
             controller.enqueue(b)

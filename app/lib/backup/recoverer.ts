@@ -1,5 +1,6 @@
-import * as dagCBOR from '@ipld/dag-cbor'
 import * as Crypto from '@/lib/crypto'
+import * as dagCBOR from '@ipld/dag-cbor'
+import * as raw from 'multiformats/codecs/raw'
 import { BackupModel, Decrypter, DialogData, EntityData, MessageData, RestoredBackup } from '@/api'
 
 const gatewayURL = process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'
@@ -32,6 +33,8 @@ export const restoreBackup = async (
   const messagesToFetch = decryptedDialogData.messages.slice(0, limit)
   const hasMoreMessages = decryptedDialogData.messages.length > limit
 
+  const mediaMap: Record<string, Uint8Array> = {}
+
   const [restoredMessages, restoredEntities] = await Promise.all([
     // Fetch and decrypt messages
     (async () => {
@@ -40,7 +43,19 @@ export const restoreBackup = async (
         const messagesResult = await getFromStoracha(messageLink.toString())
         const encryptedMessageData = new Uint8Array(await messagesResult.arrayBuffer())
         const decryptedMessageData = await Crypto.decryptAndDecode(cipher, dagCBOR, encryptedMessageData) as MessageData[]
-        messages.push(...decryptedMessageData)
+        
+        for (const message of decryptedMessageData) {
+          if (message.media?.content) {
+            const mediaCid = message.media.content.toString()
+            if (!mediaMap[mediaCid]) {
+              const mediaResult = await getFromStoracha(mediaCid)
+              const encryptedRawMedia = new Uint8Array(await mediaResult.arrayBuffer())
+              const rawMedia = await Crypto.decryptAndDecode(cipher, raw, encryptedRawMedia)
+              mediaMap[mediaCid] = rawMedia
+            }
+          }
+          messages.push(message)
+        }
       }
       return messages
     })(),
@@ -57,6 +72,7 @@ export const restoreBackup = async (
     dialogData: decryptedDialogData,
     messages: restoredMessages,
     participants: restoredEntities,
+    mediaMap,
     hasMoreMessages
   }
 }
