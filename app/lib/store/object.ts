@@ -21,7 +21,6 @@ class Store<T> implements ObjectStorage<T> {
   #name
   #cipher
   #codec: BlockCodec<number, T>
-  #value: T | undefined
 
   constructor ({ remoteStore, name, cipher, codec }: Init<T>) {
     this.#queue = new Queue({ concurrency: 1 })
@@ -59,22 +58,18 @@ class Store<T> implements ObjectStorage<T> {
       }
       await this.#remoteStore.uploadBlocks(blocks)
       await Name.publish(this.#name, rev)
-      this.#value = value
       console.debug(`object store initialized with value: ${value}`)
     })
   }
 
   async get (): Promise<T> {
-    if (this.#value != null) {
-      return this.#value
-    }
+
     const value = await this.#queue.add(async () => {
       console.debug('object store getting current value...')
       const current = await Name.resolve(this.#name)
       const link = parseLink<string, T, number, number, 0|1>(current.value.replace('/ipfs/', ''))
       const file = await this.#remoteStore.retrieveFile(link)
       const value = await decryptAndDecode(this.#cipher, this.#codec, new Uint8Array(await file.arrayBuffer()))
-      this.#value = value
       console.debug(`object store got current value: ${current.value}`)
       return value
     }, { throwOnTimeout: true })
@@ -99,7 +94,6 @@ class Store<T> implements ObjectStorage<T> {
       }
       await this.#remoteStore.uploadBlocks(blocks)
       await Name.publish(this.#name, rev)
-      this.#value = value
       console.debug(`object store set current value: ${rev.value}`)
     }, { throwOnTimeout: true })
   }

@@ -14,18 +14,21 @@ import { parse as parseDID } from '@ipld/dag-ucan/did'
 import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
 import { create as createJobManager } from '@/lib/backup/manager'
+import { create as createJobSender } from '@/lib/backup/sender'
+import { create as createJobServer } from '@/lib/server/server'
 import { create as createObjectStorage } from '@/lib/store/object'
 import { create as createJobStorage } from '@/lib/store/jobs'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { create as createRemoteStorage } from '@/lib/store/remote'
-import { JobStorage, JobManager, JobID, Job } from '@/api'
+import { JobStorage, JobManager, JobID, Job, JobRequest } from '@/api'
 import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
-
+import Queue from 'p-queue'
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
+const serverDID = parseDID(process.env.NEXT_PUBLIC_STORACHA_SERVICE_DID ?? '')
 
 // TODO: Temporary, until service respects `did:web:up.storacha.network`
 const serviceID = parseDID('did:web:web3.storage')
@@ -74,8 +77,9 @@ export function Root(props: PropsWithChildren) {
 }
 
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
+
 	const [{ client: storacha }] = useStoracha()
-	const [{ client: telegram }] = useTelegram()
+	const [{ client: telegram, launchParams }] = useTelegram()
 	const { isStorachaAuthorized, space } = useGlobal()
 	const [jobManager, setJobManager] = useState<JobManager>()
 	const [jobs, setJobs] = useState<JobStorage>()
@@ -110,7 +114,31 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 			const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
 
 			const jobs = await createJobStorage({ store })
-			const jobManager = await createJobManager({ storacha, telegram, jobs, cipher })
+
+			// # TODO replace with actual server action
+		  const queue = new Queue({concurrency: 1})
+			const server = await createJobServer({
+				queueFn: (jr: JobRequest) => {
+					return queue.add(async () => {
+						await server.handleJob(jr)
+					})
+				}
+			})
+			const sendRequest = (jr: JobRequest) => server.queueJob(jr)
+			// end TODO
+			
+			const jobSender = await createJobSender({
+				spaceDID: space,
+				servicePrincipal: serverDID,
+				storacha,
+				launchParams,
+				name,
+				encryptionPassword,
+				session: telegram.session,
+				sendRequest
+			})
+
+			const jobManager = await createJobManager({ jobs, jobSender })
 
 			setJobs(jobs)
 			setJobManager(jobManager)

@@ -1,6 +1,6 @@
-import { Block, ByteView, Link, SpaceDID, ToString, UnknownLink, Variant } from '@storacha/ui-react'
+import { Block, ByteView, Link, SpaceDID, ToString, UnknownLink, Variant, Delegation } from '@storacha/ui-react'
 import { identity } from 'multiformats/hashes/identity'
-
+import { AuthKey } from './vendor/telegram/crypto/AuthKey'
 export type { Block, ByteView, Link, SpaceDID, ToString, UnknownLink, Variant }
 
 export type UnknownBlock = Block<unknown, number, number, 0|1>
@@ -130,6 +130,28 @@ export interface JobManager {
   remove: (id: JobID) => Promise<void>
 }
 
+export interface JobSender {
+  sendJob: (id: JobID) => Promise<void>
+}
+
+export interface TelegramAuth {
+  session: string
+  initData: string
+}
+
+export interface JobRequest {
+  spaceDID: SpaceDID
+  spaceDelegation: Delegation
+  nameDelegation: Delegation
+  telegramAuth: TelegramAuth
+  jobID: JobID
+  encryptionPassword: string
+}
+
+export interface JobServer {
+  queueJob: (request: JobRequest) => Promise<void>
+  handleJob: (request: JobRequest) => Promise<void>
+}
 export interface Encrypter {
   encrypt: <T>(data: ByteView<T>) => Promise<EncryptedByteView<T>>
 }
