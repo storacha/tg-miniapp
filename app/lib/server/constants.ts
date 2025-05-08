@@ -1,0 +1,85 @@
+import * as DID from '@ipld/dag-ucan/did'
+import { connect } from '@ucanto/client'
+import { CAR, HTTP } from '@ucanto/transport'
+import { ed25519 } from '@ucanto/principal'
+import type { Service } from '@storacha/ui-react'
+
+let cachedServerConstants: {
+  SERVER_IDENTITY_PRIVATE_KEY: string
+  TELEGRAM_BOT_TOKEN: string
+}
+
+
+
+export const getServerConstants = () => {
+  if (cachedServerConstants) {
+    return cachedServerConstants
+  }
+  if (!process.env.SERVER_IDENTITY_PRIVATE_KEY)
+    throw new Error('SERVER_IDENTITY_PRIVATE_KEY must be set')
+  const SERVER_IDENTITY_PRIVATE_KEY = process.env.SERVER_IDENTITY_PRIVATE_KEY
+
+  if (!process.env.TELEGRAM_BOT_TOKEN)
+    throw new Error('TELEGRAM_BOT_TOKEN must be set')
+  const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+
+  cachedServerConstants = {
+    SERVER_IDENTITY_PRIVATE_KEY,
+    TELEGRAM_BOT_TOKEN
+  }
+  return cachedServerConstants
+}
+
+let cachedServerIdentity: ed25519.Signer.Signer
+
+export const getServerIdentity = () => {
+  if (cachedServerIdentity) {
+    return cachedServerIdentity
+  }
+  const envConstants = getServerConstants()
+  cachedServerIdentity = ed25519.Signer.parse(
+    envConstants.SERVER_IDENTITY_PRIVATE_KEY
+  ).withDID(servicePrincipal.did())
+  return cachedServerIdentity
+}
+
+let cachedBotToken: string
+export const getBotToken = () => {
+  if (cachedBotToken) {
+    return cachedBotToken
+  }
+  const envConstants = getServerConstants()
+  cachedBotToken = envConstants.TELEGRAM_BOT_TOKEN
+  return cachedBotToken
+}
+
+const die = (name: string) => {
+  throw new Error(`Environment variable ${name} is required and not set.`)
+}
+
+const serviceURL = new URL(
+  process.env.NEXT_PUBLIC_STORACHA_SERVICE_URL ??
+    die('NEXT_PUBLIC_STORACHA_SERVICE_URL')
+)
+
+export const servicePrincipal = DID.parse(
+  process.env.NEXT_PUBLIC_STORACHA_SERVICE_DID ??
+    die('NEXT_PUBLIC_STORACHA_SERVICE_DID')
+)
+
+export const receiptsEndpoint = new URL(
+  process.env.NEXT_PUBLIC_STORACHA_RECEIPTS_URL ??
+    die('NEXT_PUBLIC_STORACHA_RECEIPTS_URL')
+)
+
+export const serviceConnection = connect<Service>({
+  id: servicePrincipal,
+  codec: CAR.outbound,
+  channel: HTTP.open({
+    url: serviceURL,
+    method: 'POST',
+  }),
+})
+
+export const telegramAPIID = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? die('NEXT_PUBLIC_TELEGRAM_API_ID'))
+export const telegramAPIHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? die('NEXT_PUBLIC_TELEGRAM_API_HASH')
