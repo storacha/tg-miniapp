@@ -57,6 +57,14 @@ Example:
     from: 'entity ID', // find in `entities`
     date: 98765,
     message: 'Hello World!'
+    media?: {
+      content: { '/': bafy...file}
+      metadata: {
+        type: 'photo'
+        photo?: {}
+        spoiler?: false
+      }
+    }
   },
   // more messages
 ]

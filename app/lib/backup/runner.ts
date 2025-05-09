@@ -1,11 +1,14 @@
-import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedTaggedByteView, Encrypter, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, UnknownBlock, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData } from '@/api'
+import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedTaggedByteView, Encrypter, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, UnknownBlock, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData, MediaData } from '@/api'
+import * as Type from '@/api'
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
+import * as raw from 'multiformats/codecs/raw'	  
 import { CARWriterStream } from 'carstream'
 import { Entity } from '@/vendor/telegram/define'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
 import { createEncodeAndEncryptStream } from '@/lib/crypto'
+import { isDownloadableMedia } from './utils'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
@@ -138,21 +141,20 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
        
         entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
 
-        // let mediaCid
-        // if (message.media) {
-        //   try {
-        //     TODO: download the media in the next app iteration
-        //     const mediaBuffer = await message.downloadMedia()
+        let mediaRoot
+        if (message.media && isDownloadableMedia(message.media)) {
+          console.log(`getting media for message: ${message.id}`)
+          const mediaBytes = new Uint8Array((await message.downloadMedia()) as Buffer)
+          if (mediaBytes.length === 0) throw new Error('missing media bytes')
+          for await (const b of toAsyncIterable(createEncodeAndEncryptStream(raw, ctx.cipher, mediaBytes))) {
+            mediaRoot = b.cid as Link<EncryptedTaggedByteView<Uint8Array>>
+            controller.enqueue(b)
+          }
 
-        //     const mediaCid = await uploadToStoracha(mediaBuffer)
+          if (!mediaRoot) throw new Error('missing media root')
+        }
 
-        //     formatted.media.mediaUrl = `${STORACHA_GATEWAY}/${mediaCid}`
-        //   } catch (err) {
-        //     console.error(`Error downloading media for message ${message.id}:`, err)
-        //   }
-        // }
-
-        messages.push(toMessageData(message))
+        messages.push(toMessageData(message, mediaRoot))
         if (messages.length === maxMessages) {
           break
         }
@@ -179,25 +181,9 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
   return root
 }
 
-// TODO: reinstate when we add media to backups
-// function getMediaType(media?: Api.TypeMessageMedia) {
-//     if (!media) return null
-//     if (!('_' in media)) return 'file'
-//     switch (media._) {
-//         case 'messageMediaPhoto':
-//             return 'photo'
-//         case 'messageMediaDocument':
-//             return 'document'
-//         case 'messageMediaWebPage':
-//             return 'webpage'
-//         case 'messageMediaGeo':
-//             return 'location'
-//         default:
-//             return 'file'
-//     }
-// }
 
-const toMessageData = (message: Api.Message | Api.MessageService): MessageData | ServiceMessageData => {
+
+const toMessageData = (message: Api.Message | Api.MessageService, mediaRoot?: Link<EncryptedTaggedByteView<Uint8Array>>): MessageData | ServiceMessageData => {
   const from = message.fromId && toPeerID(message.fromId)
 
   if (message.className === 'MessageService') {
@@ -212,7 +198,7 @@ const toMessageData = (message: Api.Message | Api.MessageService): MessageData |
     }
   }
 
-  return {
+  const messageData: MessageData = {
     id: message.id,
     type: 'message',
     from,
@@ -220,6 +206,21 @@ const toMessageData = (message: Api.Message | Api.MessageService): MessageData |
     date: message.date,
     message: message.message ?? ''
   }
+
+  if(message.media) {
+    const metadata = toMediaData(message.media)
+    if (!metadata) throw new Error('missing media metadata')
+   
+    messageData['media'] = {
+      metadata
+    }
+
+    if (mediaRoot) {
+      messageData['media'].content = mediaRoot
+    }
+  }
+
+  return messageData 
 }
 
 const toPeerID = (peer: Api.TypePeer): ToString<EntityID> => {
@@ -764,7 +765,7 @@ const toBotAppData = withCleanUndef((app: Api.TypeBotApp): BotAppData => {
   }
 })
 
-const toDocumentData = cleanUndef((document: Api.TypeDocument): DocumentData | undefined => {
+const toDocumentData = withCleanUndef((document: Api.TypeDocument): DocumentData | undefined => {
   if (document.className === 'DocumentEmpty') {
     return
   }
@@ -775,10 +776,10 @@ const toDocumentData = cleanUndef((document: Api.TypeDocument): DocumentData | u
     date: document.date,
     mimeType: document.mimeType,
     size: document.size,
-    thumbs: document.thumbs?.map(s => toPhotoSize(s)).filter(Boolean) as PhotoSizeData[],
-    videoThumbs: document.videoThumbs?.map(s => toVideoSize(s)),
+    thumbs: document.thumbs?.map(s => toPhotoSize(s)).filter(t => t !== undefined) as Type.PhotoSizeData[],
+    videoThumbs: document.videoThumbs?.map(s => toVideoSize(s)).filter(v => v!== undefined) as Type.VideoSizeData[],
     dc: String(document.dcId),
-    attributes: document.attributes.map(attr => toDocumentAttributeData(attr))
+    attributes: document.attributes.map(attr => toDocumentAttributeData(attr)).filter(a => a !== undefined) as Type.DocumentAttributeData[],
   }
 })
 
@@ -940,10 +941,10 @@ const toInputGroupCallData = (call: Api.InputGroupCall): InputGroupCallData => {
   }
 }
 
-const toTextWithEntitiesData = withCleanUndef((message: Api.TextWithEntities): TextWithEntitiesData | undefined => {
+const toTextWithEntitiesData = withCleanUndef((message: Api.TextWithEntities): TextWithEntitiesData => {
   return {
     text: message.text,
-    entities: message.entities?.map(entity => toMessageEntityData(entity))
+    entities: message.entities?.map(entity => toMessageEntityData(entity)).filter((e): e is Type.MessageEntityData => e !== undefined)
   }
 })
 
@@ -1167,5 +1168,431 @@ const toStarGiftData = withCleanUndef((gift: Api.StarGift): StarGiftData => {
     convertStars: String(gift.convertStars),
     firstSaleDate: gift.firstSaleDate,
     lastSaleDate: gift.lastSaleDate
+  }
+})
+
+const ToGeoPointData = withCleanUndef((geo: Api.TypeGeoPoint): Type.GeoPointData | undefined => {
+  if (geo.className === 'GeoPointEmpty') {
+    return
+  }
+
+  return {
+    lat: geo.lat,
+    long: geo.long,
+    accessHash: String(geo.accessHash),
+    accuracyRadius: geo.accuracyRadius
+  }
+})
+
+// const ToBlockData = withCleanUndef((blocks: Api.TypePageBlock[]): Type.PageBlockData[] => {
+  
+// })
+
+const ToPageData = withCleanUndef((page: Api.TypePage): Type.PageData => {
+  return {
+    part: page.part,
+    rtl: page.rtl,
+    v2: page.v2,
+    url: page.url,
+    blocks: [], // TODO: implement blocks: ToBlockData(page.blocks),
+    photos: page.photos.map((p) => toPhotoData(p)).filter((p): p is PhotoData => p !== undefined),
+    documents: page.documents.map((d) => toDocumentData(d)).filter((d): d is DocumentData => d !== undefined),
+    views: page.views
+  }
+})
+
+const toWebPageData = withCleanUndef((webPage: Api.TypeWebPage): Type.WebPageData | undefined => {
+  switch (webPage.className) {
+    case 'WebPageEmpty': {
+      return
+    }
+    case 'WebPagePending': {
+      return {
+        type: 'pending',
+        id: String(webPage.id),
+        date: webPage.date,
+        url: webPage.url,
+      } as Type.WebPagePendingData
+    }
+    case 'WebPageNotModified': {
+      return {
+        type: 'not-modified',
+        cachedPageViews: webPage.cachedPageViews,
+      }
+    }
+    case 'WebPage': {
+      return {
+        type: 'default',
+        id: String(webPage.id),
+        url: webPage.url,
+        displayUrl: webPage.displayUrl,
+        hash: webPage.hash,
+        hasLargeMedia: webPage.hasLargeMedia,
+        tg_type: webPage.type,
+        siteName: webPage.siteName,
+        title: webPage.title,
+        description: webPage.description,
+        photo: webPage.photo && toPhotoData(webPage.photo),
+        embedUrl: webPage.embedUrl,
+        embedType: webPage.embedType,
+        embedWidth: webPage.embedWidth,
+        embedHeight: webPage.embedHeight,
+        duration: webPage.duration,
+        author: webPage.author,
+        document: webPage.document && toDocumentData(webPage.document),
+        cachedPage: webPage.cachedPage && ToPageData(webPage.cachedPage ),
+      } as Type.DefaultWebPageData
+    }
+  }
+})
+
+const ToGameData = withCleanUndef((game: Api.TypeGame): Type.GameData => {
+  return {
+    id: String(game.id),
+    title: game.title,
+    description: game.description,
+    shortName: game.shortName,
+    accessHash: String(game.accessHash),
+    photo: toPhotoData(game.photo)!,
+    document: game.document && toDocumentData(game.document)
+  }
+})
+
+const ToWebDocumentData = withCleanUndef((document: Api.TypeWebDocument): Type.WebDocumentData => {
+  switch (document.className) {
+    case 'WebDocumentNoProxy': {
+      return {
+        type: 'proxy',
+        url: document.url,
+        size: document.size,
+        mimeType: document.mimeType,
+        attributes: document.attributes.map(d => toDocumentAttributeData(d)).filter((d): d is Type.DocumentAttributeData => d !== undefined)
+      }
+    }
+    case 'WebDocument': {
+      return {
+        type: 'default',
+        url: document.url,
+        size: document.size,
+        mimeType: document.mimeType,
+        accessHash: String(document.accessHash),
+        attributes: document.attributes.map(d => toDocumentAttributeData(d)).filter((d): d is Type.DocumentAttributeData => d !== undefined)
+      }
+    }
+    default:
+      return {
+        type: 'unknown'
+      }
+  }   
+})
+
+const toPollAnswerData = withCleanUndef((answer: Api.TypePollAnswer): Type.PollAnswerData => {
+  return {
+    text: toTextWithEntitiesData(answer.text),
+    option: new Uint8Array(answer.option),
+  }
+})
+
+const toPollData = withCleanUndef((poll: Api.TypePoll): Type.PoolData => {
+  return {
+    id: String(poll.id),
+    question: toTextWithEntitiesData(poll.question),
+    answers: poll.answers.map(answer => toPollAnswerData(answer)),
+    closed: poll.closed,
+    publicVoters: poll.publicVoters,
+    multipleChoice: poll.multipleChoice,
+    quiz: poll.quiz,
+    closePeriod: poll.closePeriod,
+    closeDate: poll.closeDate,
+  }
+})
+
+const toPeerData = withCleanUndef((peer: Api.TypePeer): Type.PeerData => {
+  switch (peer.className) {
+    case 'PeerUser': {
+      return {
+        type: 'user',
+        id: String(peer.userId),
+      }
+    }
+    case 'PeerChat': {
+      return {
+        type: 'chat',
+        id: String(peer.chatId),
+      }
+    }
+    case 'PeerChannel': {
+      return {
+        type: 'channel',
+        id: String(peer.channelId),
+      } 
+    }
+  }
+})
+
+const toPollAnswerVotersData = withCleanUndef((answer: Api.TypePollAnswerVoters): Type.PollAnswerVotersData => {
+  return {
+    chosen: answer.chosen,
+    correct: answer.correct,
+    option: new Uint8Array(answer.option),
+    voters: answer.voters
+  }
+})
+
+const toPollResultsData = withCleanUndef((results: Api.TypePollResults): Type.PollResultsData => {
+  return {
+    min: results.min,
+    results: results.results?.map(r => toPollAnswerVotersData(r)).filter((r): r is Type.PollAnswerVotersData => r !== undefined),
+    totalVoters: results.totalVoters,
+    recentVoters: results.recentVoters?.map(peer => toPeerData(peer)),
+    solution: results.solution,
+    solutionEntities: results.solutionEntities?.map(entity => toMessageEntityData(entity)),
+  }
+})
+
+const toStoryViewData = withCleanUndef((views: Api.TypeStoryViews): Type.StoryViewsData | undefined => {
+  return {
+    hasViewers: views.hasViewers,
+    viewsCount: views.viewsCount,
+    forwardsCount: views.forwardsCount,
+    reactionsCount: views.reactionsCount,
+    recentViewers: views.recentViewers?.map(peer => String(peer)),
+  }
+})
+
+const toStoryItemData = withCleanUndef((story: Api.TypeStoryItem): Type.StoryItemData => {
+  switch (story.className) {
+    case 'StoryItemDeleted': {
+      return {
+        type: 'deleted',
+        id: story.id,
+      } as Type.StoryItemDeletedData
+    }
+    case 'StoryItemSkipped': {
+      return {
+        type: 'skipped',
+        id: story.id,
+        date: story.date,
+        expireDate: story.expireDate,
+        closeFriends: story.closeFriends,
+      } as Type.StoryItemSkippedData
+    } 
+    case 'StoryItem': {
+      return {
+        type: 'default',
+        id: story.id,
+        date: story.date,
+        expireDate: story.expireDate,
+        pinned: story.pinned,
+        public: story.public,
+        closeFriends: story.closeFriends,
+        min: story.min,
+        noforwards: story.noforwards,
+        edited: story.edited,
+        contacts: story.contacts,
+        selectedContacts: story.selectedContacts,
+        out: story.out,
+        caption: story.caption,
+        from: story.fromId ? toPeerData(story.fromId) : undefined,
+        media: toMediaData(story.media),
+        entities: story.entities?.map(entity => toMessageEntityData(entity)).filter((e): e is Type.MessageEntityData => e !== undefined),
+        views: story.views ? toStoryViewData(story.views) : undefined,
+      } as Type.StoryItemDefaultData
+    }
+    default: {
+      return {
+        type: 'unknown'
+      } as Type.StoryItemUnknownData
+    }
+  }
+})
+
+const toExtendedMediaData = withCleanUndef((media: Api.TypeMessageExtendedMedia): Type.ExtendedMediaData => {
+  switch (media.className) {
+    case 'MessageExtendedMedia': {
+      return {
+        type: 'default',
+        media: toMediaData(media.media),
+      } as Type.ExtendedMediaDefaultData
+    }
+    case 'MessageExtendedMediaPreview': {
+      return {
+        type: 'preview',
+        w: media.w,
+        h: media.h,
+        thumb: media.thumb && toPhotoSize(media.thumb),
+        videoDuration: media.videoDuration,
+      } as Type.ExtendedMediaPreviewData
+    }
+    default: {
+      return {
+        type: 'unknown'   
+      } as Type.ExtendedMediaUnknownData
+    }
+  }
+})
+
+const toMediaData = withCleanUndef((media: Api.TypeMessageMedia): MediaData | undefined => {
+  switch (media.className) {
+    case 'MessageMediaEmpty':
+      return
+    case 'MessageMediaPhoto': {
+      return {
+        type: 'photo',
+        photo: media.photo ? toPhotoData(media.photo): undefined,
+        spoiler: media.spoiler,
+        ttlSeconds: media.ttlSeconds,
+      } as Type.PhotoMediaData
+    }
+    case 'MessageMediaGeo': {
+      return {
+        type: 'geo',
+        geo: ToGeoPointData(media.geo),
+      } as Type.GeoMediaData
+    }
+    case 'MessageMediaContact': {
+      return {
+        type: 'contact',
+        phoneNumber: media.phoneNumber,
+        firstName: media.firstName,
+        lastName: media.lastName,
+        vcard: media.vcard,
+        user: String(media.userId)
+      } as Type.ContactMediaData
+    }
+    case 'MessageMediaUnsupported':{
+      return {
+        type: 'unsupported'
+      } as Type.UnsupportedMediaData
+    } 
+    case 'MessageMediaDocument': {
+      return {
+        type: 'document',
+        document: media.document ? toDocumentData(media.document) : undefined,
+        altDocuments: media.altDocuments?.map(d => toDocumentData(d)).filter((d): d is DocumentData => d !== undefined),
+        nopremium: media.nopremium,
+        spoiler: media.spoiler,
+        video: media.video,
+        round: media.round,
+        voice: media.voice,
+        ttlSeconds: media.ttlSeconds,
+      } as Type.DocumentMediaData
+    }
+    case 'MessageMediaWebPage': {
+      return {
+        type: 'webpage',
+        forceLargeMedia: media.forceLargeMedia,
+        forceSmallMedia: media.forceSmallMedia,
+        manual: media.manual,
+        safe: media.safe,
+        webpage: toWebPageData(media.webpage)
+      } as Type.WebPageMediaData
+    }
+    case 'MessageMediaVenue': {
+      return {
+        type: 'venue',
+        geo: ToGeoPointData(media.geo),
+        title: media.title,
+        address: media.address,
+        provider: media.provider,
+        venue: media.venueId,
+        venueType: media.venueType
+      } as Type.VenueMediaData
+    }
+    case 'MessageMediaGame': {
+      return {
+        type: 'game',
+        game: ToGameData(media.game),
+      } as Type.GameMediaData
+    }
+    case 'MessageMediaInvoice': {
+      return {
+        type: 'invoice',
+        title: media.title,
+        description: media.description,
+        startParam: media.startParam,
+        currency: media.currency,
+        totalAmount: String(media.totalAmount),
+        test: media.test,
+        receiptMsg: media.receiptMsgId,
+        shippingAddressRequested: media.shippingAddressRequested,
+        photo: media.photo && ToWebDocumentData(media.photo),
+      }
+    }
+    case 'MessageMediaGeoLive': {
+      return {
+        type: 'geo-live',
+        geo: ToGeoPointData(media.geo),
+        period: media.period,
+        heading: media.heading,
+        proximityNotificationRadius: media.proximityNotificationRadius,
+      } as Type.GeoLiveMediaData
+    }
+    case 'MessageMediaPoll': {
+      return {
+        type: 'poll',
+        poll: toPollData(media.poll),
+        results: toPollResultsData(media.results),
+      } as Type.PollMediaData
+    }
+    case 'MessageMediaDice': {
+      return {
+        type: 'dice',
+        value: media.value,
+        emoticon: media.emoticon,
+      } as Type.DiceMediaData
+    }
+    case 'MessageMediaStory': {
+      return {
+        type: 'story',
+        id: media.id,
+        peer: toPeerData(media.peer),
+        viaMention: media.viaMention,
+        story: media.story ? toStoryItemData(media.story): undefined,
+      } as Type.StoryMediaData
+    }
+    case 'MessageMediaGiveaway': {
+      return {
+        type: 'giveaway',
+        onlyNewSubscribers: media.onlyNewSubscribers,
+        winnersAreVisible: media.winnersAreVisible,
+        channels: media.channels?.map(c => String(c)).filter(c => c !== undefined),
+        countriesIso2: media.countriesIso2,
+        prizeDescription: media.prizeDescription,
+        quantity: media.quantity,
+        months: media.months,
+        stars: String(media.stars),
+        untilDate: media.untilDate,
+      } as Type.GiveawayMediaData
+    }
+    case 'MessageMediaGiveawayResults': {
+      return {
+        type: 'giveaway-results',
+        channel: String(media.channelId),
+        launchMsg: media.launchMsgId,
+        winnersCount: media.winnersCount,
+        unclaimedCount: media.unclaimedCount,
+        winners: media.winners?.map(w => String(w)).filter(w => w !== undefined),
+        untilDate: media.untilDate,
+        onlyNewSubscribers: media.onlyNewSubscribers,
+        refunded: media.refunded,
+        additionalPeersCount: media.additionalPeersCount,
+        months: media.months,
+        stars: String(media.stars),
+        prizeDescription: media.prizeDescription,
+      } as Type.GiveawayResultsMediaData
+    }
+    case 'MessageMediaPaidMedia': {
+      return {
+        type: 'paid-media',
+        starsAmount: String(media.starsAmount),
+        extendedMedia: media.extendedMedia?.map(m => toExtendedMediaData(m)).filter((m): m is Type.ExtendedMediaData => m !== undefined),
+      } as Type.PaidMediaData
+    }
+    default: {
+      return {
+        type: 'unknown'
+      }
+    }
   }
 })

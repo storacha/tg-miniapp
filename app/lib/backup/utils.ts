@@ -1,5 +1,13 @@
 import { Entity } from '@/vendor/telegram/define'
 import { EntityID, EntityType, ToString } from "@/api";
+import { Api } from '@/vendor/telegram'
+
+export const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
+  return (
+    media.className === 'MessageMediaPhoto' ||
+    media.className === 'MessageMediaDocument' // this can represent a video, audio or other document types
+  )
+}
 
 export const getEntityType = (entity: Entity): EntityType => {
    switch (entity.className) {

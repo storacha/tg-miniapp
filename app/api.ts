@@ -229,6 +229,10 @@ export interface MessageData {
   date: number
   /** The string text of the message. */
   message: string
+  media?: {
+    content?: Link<EncryptedTaggedByteView<Uint8Array>>
+    metadata: MediaData
+  }
 }
 
 export interface ServiceMessageData {
@@ -1427,9 +1431,344 @@ export interface WebPageNotModifiedData {
   type: 'not-modified'
   cachedPageViews?: number
 }
+
+export type RichTextData =
+  | RichTextPlainData
+  | RichTextBoldData
+  | RichTextItalicData
+  | RichTextUnderlineData
+  | RichTextStrikeData
+  | RichTextFixedData
+  | RichTextUrlData
+  | RichTextEmailData
+  | RichTextConcatData
+  | RichTextSubscriptData
+  | RichTextSuperscriptData
+  | RichTextMarkedData
+  | RichTextPhoneData
+  | RichTextImageData
+  | RichTextAnchorData
+
+export interface RichTextPlainData {
+  type: 'plain'
+  text: string
+}
+
+export interface RichTextBoldData {
+  type: 'bold'
+  text: RichTextData
+}
+
+export interface RichTextItalicData {
+  type: 'italic'
+  text: RichTextData
+}
+
+export interface RichTextUnderlineData {
+  type: 'underline'
+  text: RichTextData
+}
+
+export interface RichTextStrikeData {
+  type: 'strike'
+  text: RichTextData
+}
+
+export interface RichTextFixedData {
+  type: 'fixed'
+  text: RichTextData
+}
+
+export interface RichTextUrlData {
+  type: 'url'
+  text: RichTextData
+  url: string
+  webpage: ToString<bigint>
+}
+
+export interface RichTextEmailData {
+  type: 'email'
+  text: RichTextData
+  email: string
+}
+
+export interface RichTextConcatData {
+  type: 'concat'
+  texts: RichTextData[]
+}
+
+export interface RichTextSubscriptData {
+  type: 'subscript'
+  text: RichTextData
+}
+
+export interface RichTextSuperscriptData {
+  type: 'superscript'
+  text: RichTextData
+}
+
+export interface RichTextMarkedData {
+  type: 'marked'
+  text: RichTextData
+}
+
+export interface RichTextPhoneData {
+  type: 'phone'
+  text: RichTextData
+  phone: string
+}
+
+export interface RichTextImageData {
+  type: 'image'
+  document: ToString<bigint>
+  w: number
+  h: number
+}
+
+export interface RichTextAnchorData {
+  type: 'anchor'
+  text: RichTextData
+  name: string
+}
+
+export interface PageCaptionData {
+  text: RichTextData
+  credit: RichTextData
+}
+
+export type PageBlockData =
+  | PageBlockUnsupportedData
+  | PageBlockTitleData
+  | PageBlockSubtitleData
+  | PageBlockAuthorDateData
+  | PageBlockHeaderData
+  | PageBlockSubheaderData
+  | PageBlockParagraphData
+  | PageBlockPreformattedData
+  | PageBlockFooterData
+  | PageBlockDividerData
+  | PageBlockAnchorData
+  | PageBlockListData
+  | PageBlockBlockquoteData
+  | PageBlockPullquoteData
+  | PageBlockPhotoData
+  | PageBlockVideoData
+  | PageBlockCoverData
+  | PageBlockEmbedData
+  | PageBlockEmbedPostData
+  | PageBlockCollageData
+  | PageBlockSlideshowData
+  | PageBlockChannelData
+  | PageBlockAudioData
+  | PageBlockKickerData
+  | PageBlockTableData
+  | PageBlockOrderedListData
+  | PageBlockDetailsData
+  | PageBlockRelatedArticlesData
+  | PageBlockMapData
+
+export interface PageBlockUnsupportedData {
+  type: 'unsupported'
+}
+
+export interface PageBlockTitleData {
+  type: 'title'
+  text: RichTextData
+}
+
+export interface PageBlockSubtitleData {
+  type: 'subtitle'
+  text: RichTextData
+}
+
+export interface PageBlockAuthorDateData {
+  type: 'author-date'
+  author: RichTextData
+  publishedDate: number
+}
+
+export interface PageBlockHeaderData {
+  type: 'header'
+  text: RichTextData
+}
+
+export interface PageBlockSubheaderData {
+  type: 'subheader'
+  text: RichTextData
+}
+
+export interface PageBlockParagraphData {
+  type: 'paragraph'
+  text: RichTextData
+}
+
+export interface PageBlockPreformattedData {
+  type: 'preformatted'
+  text: RichTextData
+  language: string
+}
+
+export interface PageBlockFooterData {
+  type: 'footer'
+  text: RichTextData
+}
+
+export interface PageBlockDividerData {
+  type: 'divider'
+}
+
+export interface PageBlockAnchorData {
+  type: 'anchor'
+  name: string
+}
+
+export interface PageBlockListData {
+  type: 'list'
+  items: string[] // NOTE: could improve (Api.TypePageListItem)
+}
+
+export interface PageBlockBlockquoteData {
+  type: 'blockquote'
+  text: RichTextData
+  caption: RichTextData
+}
+
+export interface PageBlockPullquoteData {
+  type: 'pullquote'
+  text: RichTextData
+  caption: RichTextData
+}
+
+export interface PageBlockPhotoData {
+  type: 'photo'
+  photo: ToString<bigint>
+  caption: PageCaptionData
+  url?: string
+  webpage?: ToString<bigint>
+}
+
+export interface PageBlockVideoData {
+  type: 'video'
+  video: ToString<bigint>
+  caption: PageCaptionData
+  autoplay?: boolean
+  loop?: boolean
+}
+
+export interface PageBlockCoverData {
+  type: 'cover'
+  block: PageBlockData
+}
+
+export interface PageBlockEmbedData {
+  type: 'embed'
+  fullWidth?: boolean
+  allowScrolling?: boolean
+  url?: string
+  html?: string
+  posterPhoto?: ToString<bigint>
+  caption: PageCaptionData
+  w?: number
+  h?: number
+}
+
+export interface PageBlockEmbedPostData {
+  type: 'embed-post'
+  url: string
+  webpage: ToString<bigint>
+  author: string
+  authorPhoto: ToString<bigint>
+  date: number
+  blocks: PageBlockData[]
+  caption: PageCaptionData
+}
+
+export interface PageBlockCollageData {
+  type: 'collage'
+  items: PageBlockData[]
+  caption: PageCaptionData
+}
+
+export interface PageBlockSlideshowData {
+  type: 'slideshow'
+  items: PageBlockData[]
+  caption: PageCaptionData
+}
+
+export interface PageBlockChannelData {
+  type: 'channel'
+  channel: ToString<bigint> // NOTE: could improve (Api.TypeChat)
+}
+
+export interface PageBlockAudioData {
+  type: 'audio'
+  audio: ToString<bigint>
+  caption: PageCaptionData
+}
+
+export interface PageBlockKickerData {
+  type: 'kicker'
+  text: RichTextData
+}
+
+export interface PageBlockTableData {
+  type: 'table'
+  bordered?: boolean
+  striped?: boolean
+  title: RichTextMarkedData
+  rows: Array<Array<string>> // NOTE: could improve (Api.TypePageTableRow[)
+}
+
+export interface PageBlockOrderedListData {
+  type: 'ordered-list'
+  items: string[] // NOTE: could improve (Api.TypePageListOrderedItem)
+}
+
+export interface PageBlockDetailsData {
+  type: 'details'
+  open?: boolean
+  blocks: PageBlockData[]
+  title: RichTextData
+}
+
+export interface PageRelatedArticleData {
+  url: string
+  webpage: ToString<bigint>
+  title?: string
+  description?: string
+  photo?: ToString<bigint>
+  author?: string
+  publishedDate?: number
+}
+
+export interface PageBlockRelatedArticlesData {
+  type: 'related-articles'
+  title: RichTextMarkedData
+  articles: PageRelatedArticleData[]
+}
+
+export interface PageBlockMapData {
+  type: 'map'
+  geo: GeoPointData
+  zoom: number
+  w: number
+  h: number
+  caption: PageCaptionData
+}
+
+export interface PageData {
+  part?: boolean
+  rtl?: boolean
+  v2?: boolean
+  url: string
+  blocks: PageBlockData[]
+  photos?: PhotoData[]
+  documents?: DocumentData[]
+  views?: number
+}
 export interface DefaultWebPageData {
   type: 'default'
-  id: bigint
+  id: ToString<bigint>
   url: string
   displayUrl: string
   hash: number
@@ -1446,6 +1785,7 @@ export interface DefaultWebPageData {
   duration?: number
   author?: string
   document?: DocumentData
+  cachedPage?: PageData
   // attributes?: WebPageAttributeData[]
 }
 
@@ -1454,17 +1794,17 @@ export interface UnknownWebPageData {
 }
 
 export interface WebPageMediaData {
-  type: 'web-page'
+  type: 'webpage'
   forceLargeMedia?: boolean
   forceSmallMedia?: boolean
   manual?: boolean
   safe?: boolean
-  webpage: WebPageData
+  webpage?: WebPageData
 }
 
 export interface VenueMediaData {
   type: 'venue'
-  geo: GeoPointData
+  geo?: GeoPointData
   title: string
   address: string
   provider: string
@@ -1515,12 +1855,12 @@ export interface UnknownWebDocumentData {
 
 export type ExtendedMediaData = 
   | ExtendedMediaPreviewData
-  | DefaultExtendedMediaData
-  | UnknownExtendedMediaData
+  | ExtendedMediaDefaultData
+  | ExtendedMediaUnknownData
 
-export interface DefaultExtendedMediaData {
+export interface ExtendedMediaDefaultData {
   type: 'default'
-  media: MediaData
+  media?: MediaData
 }
 
 export interface ExtendedMediaPreviewData {
@@ -1531,7 +1871,7 @@ export interface ExtendedMediaPreviewData {
   videoDuration?: number
 }
 
-export interface UnknownExtendedMediaData {
+export interface ExtendedMediaUnknownData {
   type: 'unknown'
 }
 
@@ -1547,11 +1887,10 @@ export interface InvoiceMediaData {
   shippingAddressRequested?: boolean
   photo?: WebDocumentData
   extendedMedia?: ExtendedMediaData
-  
 }
 export interface GeoLiveMediaData {
   type: 'geo-live'
-  geo: GeoPointData
+  geo?: GeoPointData
   period: number
   heading?: number
   proximityNotificationRadius?: number
@@ -1564,7 +1903,7 @@ export interface PollAnswerData {
 export interface PoolData {
   id: ToString<bigint>
   question: TextWithEntitiesData
-  answers: Array<PollAnswerData>
+  answers: PollAnswerData[]
   closed?: boolean
   publicVoters?: boolean
   multipleChoice?: boolean
@@ -1585,7 +1924,7 @@ export interface PollResultsData {
   totalVoters?: number
   recentVoters?: PeerData[]
   solution?: string
-  solutionEntities?: MessageData[]
+  solutionEntities?: MessageEntityData[]
 }
 
 export interface PollMediaData {
@@ -1612,22 +1951,22 @@ export interface StoryViewsData {
 export type StoryItemData = 
   | StoryItemDeletedData
   | StoryItemSkippedData
-  | DefaultStoryItemData
-  | UnknownStoryItemData
+  | StoryItemDefaultData
+  | StoryItemUnknownData
 
-export interface StoryItemSkippedData {
+export interface StoryItemDeletedData {
   type: 'deleted'
   id: number
 }
 
-export interface StoryItemDeletedData {
+export interface StoryItemSkippedData {
   type: 'skipped'
   id: number
   date: number
   expireDate: number
   closeFriends?: boolean
 }
-export interface DefaultStoryItemData {
+export interface StoryItemDefaultData {
   type: 'default'
   id: number
   date: number
@@ -1642,17 +1981,17 @@ export interface DefaultStoryItemData {
   selectedContacts?: boolean
   out?: boolean
   caption?: string
-  fromId?: PeerData
+  from?: PeerData
   media?: MediaData
   views?: StoryViewsData
+  entities?: MessageEntityData[]
   // fwdFrom?: Api.TypeStoryFwdHeader
-  // entities?: Api.TypeMessageEntity[]
   // mediaAreas?: Api.TypeMediaArea[]
   // privacy?: Api.TypePrivacyRule[]
   // sentReaction?: Api.TypeReaction
 }
 
-export interface UnknownStoryItemData {
+export interface StoryItemUnknownData {
   type: 'unknown'
 }
 
@@ -1661,7 +2000,7 @@ export interface StoryMediaData {
   id: number
   peer: PeerData
   viaMention?: boolean
-  story: StoryItemData
+  story?: StoryItemData
 }
 
 export interface GiveawayMediaData {
@@ -1696,7 +2035,7 @@ export interface GiveawayResultsMediaData {
 export interface PaidMediaData {
   type: 'paid-media'
   starsAmount: ToString<bigint>
-  extendedMedia: ExtendedMediaData
+  extendedMedia: ExtendedMediaData[]
 }
 
 export interface UnknownMediaData {
