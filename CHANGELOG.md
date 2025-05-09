@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.5.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.4.0...tg-mini-app-v1.5.0) (2025-05-09)
+
+
+### Features
+
+* add remaining media types ([f62158c](https://github.com/storacha/tg-miniapp/commit/f62158c32e00df46f03b959388c00a9629932818))
+* add select backup screen ([12ee6b6](https://github.com/storacha/tg-miniapp/commit/12ee6b66a71f02eca908137564dd509e09ff5045))
+* backup encrypted media file with some metadata ([7359975](https://github.com/storacha/tg-miniapp/commit/73599754e892887e748252354afa610f46be5fcf))
+* mostly implemented many bugs ([14ace0a](https://github.com/storacha/tg-miniapp/commit/14ace0a79e0941d8e4a47a85fd12a356e20eae53))
+
+
+### Bug Fixes
+
+* encrypt root block ([11050fb](https://github.com/storacha/tg-miniapp/commit/11050fba85f02d21a45a7367175bcb7bae0b5aff))
+* encrypt root block ([#70](https://github.com/storacha/tg-miniapp/issues/70)) ([7fd2a08](https://github.com/storacha/tg-miniapp/commit/7fd2a08ec40b05f8a21b752f118354023768a186))
+* make it work ([e1d0475](https://github.com/storacha/tg-miniapp/commit/e1d04759972d1ab1f6261381d142bee9a73023d6))
+* starting feedback ([26d182b](https://github.com/storacha/tg-miniapp/commit/26d182b9603d9aff53413d049be71e4e7796923d))
+
+
+### Other Changes
+
+* appease linter ([3894ee6](https://github.com/storacha/tg-miniapp/commit/3894ee6050e0f9d3eda91eecd704f3e8fe3e1ae7))
+* appease linter ([d450ca2](https://github.com/storacha/tg-miniapp/commit/d450ca2bb1330db191eb1186940fa62cf3fbc51e))
+* fix issues after rebase ([89f2e31](https://github.com/storacha/tg-miniapp/commit/89f2e3162b4ca1b3f7104086bd008769effadece))
+* fix issues after rebase ([b454cfd](https://github.com/storacha/tg-miniapp/commit/b454cfda89e537e06e598be638569deb37fa6633))
+* fix ui issues ([5617469](https://github.com/storacha/tg-miniapp/commit/56174697d03bfdb2f79c51642943e6862a391339))
+* improve select backup screen ([0edf78b](https://github.com/storacha/tg-miniapp/commit/0edf78b0e8996989fcfb914937e1d4a280e025ec))
+
 ## [1.4.0](https://github.com/storacha/tg-miniapp/compare/tg-mini-app-v1.3.3...tg-mini-app-v1.4.0) (2025-04-24)
 
 
