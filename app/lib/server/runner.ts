@@ -1,17 +1,24 @@
 import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedTaggedByteView, Encrypter, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, UnknownBlock, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData, MediaData } from '@/api'
 import * as Type from '@/api'
 import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
-import { Api, TelegramClient } from '@/vendor/telegram'
+import { Api, TelegramClient } from 'telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
 import * as raw from 'multiformats/codecs/raw'	  
 import { CARWriterStream } from 'carstream'
-import { Entity } from '@/vendor/telegram/define'
+import { Entity } from 'telegram/define'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
 import { createEncodeAndEncryptStream } from '@/lib/crypto'
-import { isDownloadableMedia } from './utils'
+import bigInt from 'big-integer'
 
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
+
+const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
+  return (
+    media.className === 'MessageMediaPhoto' ||
+    media.className === 'MessageMediaDocument' // this can represent a video, audio or other document types
+  )
+}
 
 export interface Context {
   storacha: StorachaClient
@@ -65,20 +72,20 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
           return
         }
 
-        dialogEntity = await ctx.telegram.getEntity(dialogID)
+        dialogEntity = await ctx.telegram.getEntity(bigInt(dialogID))
 
         let minId
         if (period[0] > 0) {
           // if start date is not the beginning of time get the first message
           // before the start date (if there is one), and then iterate from end
           // date to first message (exclusive).
-          const [firstMessage] = await ctx.telegram.getMessages(dialogID, {
+          const [firstMessage] = await ctx.telegram.getMessages(bigInt(dialogID), {
             limit: 1,
             offsetDate: period[0],
           })
           minId = firstMessage?.id
         }
-        messageIterator = ctx.telegram.iterMessages(dialogID, {
+        messageIterator = ctx.telegram.iterMessages(bigInt(dialogID), {
           offsetDate: period[1],
           minId
         })[Symbol.asyncIterator]()
@@ -110,7 +117,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
         if (!dialogRoot) throw new Error('missing dialog root')
         messageLinks = []
 
-        dialogDatas[dialogEntity.id] = dialogRoot
+        dialogDatas[dialogEntity.id.toString()] = dialogRoot
         dialogEntity = null // move onto the next dialog
         return
       }
@@ -119,7 +126,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
         const { value: message, done } = await messageIterator.next()
         if (done) {
           messageIterator = null
-          await options?.onDialogRetrieved?.(dialogEntity.id.value)
+          await options?.onDialogRetrieved?.(BigInt(dialogEntity.id.toString()))
           break
         }
 
@@ -235,7 +242,7 @@ const toPeerID = (peer: Api.TypePeer): ToString<EntityID> => {
 }
 
 const toEntityData = (entity: Entity): EntityData => {
-  const id = entity.id?.value ?? '0' // TODO: this should be the dialog.id, dialog.entity.id is different
+  const id = entity.id.toString() ?? '0' // TODO: this should be the dialog.id, dialog.entity.id is different
   let type: EntityType = 'unknown'
   let name = ''
   let photo: EntityData['photo']
@@ -775,7 +782,7 @@ const toDocumentData = withCleanUndef((document: Api.TypeDocument): DocumentData
     fileReference: new Uint8Array(document.fileReference),
     date: document.date,
     mimeType: document.mimeType,
-    size: document.size,
+    size: document.size.toString(),
     thumbs: document.thumbs?.map(s => toPhotoSize(s)).filter(t => t !== undefined) as Type.PhotoSizeData[],
     videoThumbs: document.videoThumbs?.map(s => toVideoSize(s)).filter(v => v!== undefined) as Type.VideoSizeData[],
     dc: String(document.dcId),

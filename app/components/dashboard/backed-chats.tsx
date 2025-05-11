@@ -83,7 +83,7 @@ export default function BackedChats() {
 	const handleDialogItemClick: MouseEventHandler = e => {
 		e.preventDefault()
 		const id = BigInt(e.currentTarget.getAttribute('data-id') ?? 0)
-		const dialog = dialogs.find(d => d.id.toString() == id.toString())
+		const dialog = dialogs.find(d => d.id?.toString() == id.toString())
 		if (!dialog) return
 		const type =  dialog.entity ? getEntityType(dialog.entity) : 'unknown'
 		router.push(`/dialog/${id}?type=${type}`)
