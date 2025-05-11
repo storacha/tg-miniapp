@@ -14,8 +14,6 @@ import { useBackups } from '@/providers/backup'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { ChatHeader } from '@/components/layouts/chat-header'
 
-export const runtime = 'edge'
-
 type BackupDialogProps = {
   userId: string
   dialog: DialogData

@@ -1,7 +1,7 @@
 import { JobID, JobRequest, TelegramAuth, Job } from '@/api'
 import { Delegation, SpaceDID } from '@storacha/ui-react'
 import { Client as StorachaClient, DID, Signer } from '@storacha/ui-react'
-import { TelegramClient } from '@/vendor/telegram'
+import { TelegramClient } from 'telegram'
 import { create as createObjectStorage } from '@/lib/store/object'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { create as createRemoteStorage } from '@/lib/store/remote'
@@ -10,10 +10,10 @@ import { create as createJobStorage } from '@/lib/store/jobs'
 import { AgentData } from '@storacha/access/agent'
 import { serviceConnection, getServerIdentity, receiptsEndpoint, getBotToken, telegramAPIID, telegramAPIHash } from './constants'
 import { validate as validateInitData, parse as parseInitData } from '@telegram-apps/init-data-node';
-import { StringSession } from '@/vendor/telegram/sessions'
-import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
+import { StringSession } from 'telegram/sessions'
+import { TelegramClientParams } from 'telegram/client/telegramBaseClient'
 import { Name } from '@storacha/ucn'
-
+import { extract } from '@ucanto/core/delegation'
 const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
 
 export interface Context {
@@ -43,11 +43,21 @@ class JobServer {
     return await handler.handleJob(request)
   }
 
+  async #extractDelegation(serialized: Uint8Array) {
+    const result = await extract(serialized)
+    if (result.error) {
+      throw result.error
+    }
+    return result.ok
+  }
+
   async #initializeHandler(request: JobRequest) {
-    const storacha = this.#initializeStoracha(request.spaceDID, request.spaceDelegation)
+    const spaceDelegation = await this.#extractDelegation(request.spaceDelegation)
+    const nameDelegation = await this.#extractDelegation(request.nameDelegation)
+    const storacha = this.#initializeStoracha(request.spaceDID, spaceDelegation)
     const telegram = await this.#initializeTelegram(request.telegramAuth)
     const cipher = createCipher(request.encryptionPassword)
-    const name = Name.from(getServerIdentity(), [request.nameDelegation])
+    const name = Name.from(getServerIdentity(), [nameDelegation])
     const remoteStore = createRemoteStorage(storacha)
     const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
     const jobs = await createJobStorage({ store })
@@ -68,7 +78,7 @@ class JobServer {
       throw new Error("client authorization failed")
     }
     const user = await client.getMe()
-    if (user.id !== BigInt(initData.user?.id || 0)) {
+    if (user.id.toString() !== (initData.user?.id.toString() || '0')) {
        throw new Error("authorized user does not match telegram mini-app user")
     }
     return client

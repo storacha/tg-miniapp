@@ -1,0 +1,26 @@
+{
+  "app": "telegram",
+  "privateKeyEnvVar": "SERVER_IDENTITY_PRIVATE_KEY",
+  "didEnvVar": "NEXT_PUBLIC_SERVER_DID",
+  "port": 3000,
+  "js": {
+    "next": true,
+    "entryPoint": "",
+    "scripts": null
+  },
+  "domainBase": "",
+  "cloudflare": true,
+  "createDB": false,
+  "caches": null,
+  "topics": null,
+  "queues": null,
+  "buckets": null,
+  "secrets": [
+    {
+      "name": "SECRET_BOT_TOKEN",
+      "variable": true
+    }
+  ],
+  "tables": null,
+  "writeToContainer": true
+}

@@ -5,8 +5,6 @@ import { useBackups } from '@/providers/backup'
 import { ChevronRight } from 'lucide-react'
 import { Layouts } from '@/components/layouts'
 
-export const runtime = 'edge'
-
 export default function BackupSelectionPage() {
   const { id } = useParams<{ id: string }>()
   const [{ backups }] = useBackups()
