@@ -1,6 +1,5 @@
 import { AbsolutePeriod, ActionData, BackupData, BackupModel, BotAppData, DialogData, DocumentAttributeData, DocumentData, EncryptedTaggedByteView, Encrypter, EntityData, EntityID, EntityRecordData, EntityType, InputGroupCallData, MaskCoordsData, MessageData, MessageEntityData, PaymentChargeData, PaymentRequestedInfoData, PhotoData, PhotoSizeData, PostAddressData, RequestedPeerData, RGB24Color, SecureCredentialsEncryptedData, SecureDataData, SecureFileData, SecureValueData, SecureValueType, ServiceMessageData, StarGiftData, StickerSetData, TextWithEntitiesData, ThumbType, ToString, UnknownBlock, VideoSizeData, VideoType, WallPaperData, WallPaperSettingsData, MediaData } from '@/api'
 import * as Type from '@/api'
-import { Link, SpaceDID, Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
 import { Api, TelegramClient } from 'telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
 import * as raw from 'multiformats/codecs/raw'	  
@@ -9,7 +8,10 @@ import { Entity } from 'telegram/define'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
 import { createEncodeAndEncryptStream } from '@/lib/crypto'
 import bigInt from 'big-integer'
+import { DID, Link, UnknownLink} from '@ucanto/client'
+import { Client as StorachaClient} from '@storacha/client'
 
+type SpaceDID = DID<'key'>
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
 
