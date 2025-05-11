@@ -32,6 +32,24 @@ export const getServerConstants = () => {
 
 let cachedServerIdentity: ed25519.Signer.Signer
 
+type DidWeb = `did:web:${string}`
+type DidKey = `did:key:${string}`
+function isDidWeb(s?: string): s is DidWeb {
+  return Boolean(s && s.startsWith('did:web'))
+}
+function isDidKey(s?: string): s is DidKey {
+  return Boolean(s && s.startsWith('did:key'))
+}
+
+if (
+  !(
+    isDidWeb(process.env.NEXT_PUBLIC_SERVER_DID) ||
+    isDidKey(process.env.NEXT_PUBLIC_SERVER_DID)
+  )
+)
+  throw new Error('NEXT_PUBLIC_SERVER_DID must be set')
+export const SERVER_DID = process.env.NEXT_PUBLIC_SERVER_DID
+
 export const getServerIdentity = () => {
   if (cachedServerIdentity) {
     return cachedServerIdentity
@@ -39,7 +57,7 @@ export const getServerIdentity = () => {
   const envConstants = getServerConstants()
   cachedServerIdentity = ed25519.Signer.parse(
     envConstants.SERVER_IDENTITY_PRIVATE_KEY
-  ).withDID(servicePrincipal.did())
+  ).withDID(SERVER_DID)
   return cachedServerIdentity
 }
 

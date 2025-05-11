@@ -15,20 +15,19 @@ import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
 import { create as createJobManager } from '@/lib/backup/manager'
 import { create as createJobSender } from '@/lib/backup/sender'
-import { create as createJobServer } from '@/lib/server/server'
 import { create as createObjectStorage } from '@/lib/store/object'
 import { create as createJobStorage } from '@/lib/store/jobs'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { create as createRemoteStorage } from '@/lib/store/remote'
-import { JobStorage, JobManager, JobID, Job, JobRequest } from '@/api'
+import { JobStorage, JobManager, JobID, Job } from '@/api'
 import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
-import Queue from 'p-queue'
+import { sendRequest  } from './server'
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
-const serverDID = parseDID(process.env.NEXT_PUBLIC_STORACHA_SERVICE_DID ?? '')
+const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
 
 // TODO: Temporary, until service respects `did:web:up.storacha.network`
 const serviceID = parseDID('did:web:web3.storage')
@@ -115,21 +114,9 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			const jobs = await createJobStorage({ store })
 
-			// # TODO replace with actual server action
-		  const queue = new Queue({concurrency: 1})
-			const server = await createJobServer({
-				queueFn: (jr: JobRequest) => {
-					return queue.add(async () => {
-						await server.handleJob(jr)
-					})
-				}
-			})
-			const sendRequest = (jr: JobRequest) => server.queueJob(jr)
-			// end TODO
-			
 			const jobSender = await createJobSender({
 				spaceDID: space,
-				servicePrincipal: serverDID,
+				serverDID: serverDID,
 				storacha,
 				launchParams,
 				name,

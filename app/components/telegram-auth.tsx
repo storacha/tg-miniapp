@@ -167,7 +167,7 @@ export default function TelegramAuth() {
 				throw new Error('user needs to sign up')
 			}
 			if (process.env.NODE_ENV === 'production') {
-				if (result.user.id.value !== BigInt(user?.id ?? 0)) {
+				if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
 					throw new Error('login user and user using the app must match')
 				}
 			}
@@ -211,7 +211,7 @@ export default function TelegramAuth() {
 				throw new Error('user needs to sign up')
 			}
 			if (process.env.NODE_ENV === 'production') {
-				if (result.user.id.value !== BigInt(user?.id ?? 0)) {
+				if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
 					throw new Error('login user and user using the app must match')
 				}
 			}
