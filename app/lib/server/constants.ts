@@ -2,7 +2,7 @@ import * as DID from '@ipld/dag-ucan/did'
 import { connect } from '@ucanto/client'
 import { CAR, HTTP } from '@ucanto/transport'
 import { ed25519 } from '@ucanto/principal'
-import type { Service } from '@storacha/ui-react'
+import type { Service } from '@storacha/client/types'
 
 let cachedServerConstants: {
   SERVER_IDENTITY_PRIVATE_KEY: string
