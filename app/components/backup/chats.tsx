@@ -144,7 +144,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 				<div className="flex flex-col min-h-screen">
 					{items.map(d => {
 						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id.toString()))
-						return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
+						return <DialogItem key={d.id?.toString()} dialog={d} selected={selections.has(BigInt(d.id?.toString() || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
 					})}
 					{loading && <p className='text-center'>Loading chats...</p>}
 					{!loading && !items.length && <p className='text-center'>No chats found!</p>}

@@ -7,7 +7,7 @@ import * as SpaceBlob from '@storacha/capabilities/space/blob'
 import * as SpaceIndex from '@storacha/capabilities/space/index'
 import * as Upload from '@storacha/capabilities/upload'
 import { NameView } from "@storacha/ucn/api"
-
+import { Buffer } from "buffer/"
 
 // default to 1 hour
 const defaultDuration = 1000 * 60 * 60
@@ -16,7 +16,7 @@ const CURRENT_VERSION = "1";
 
 export interface Context {
   storacha: StorachaClient
-  servicePrincipal: Principal,
+  serverDID: Principal,
   name: NameView
   spaceDID: SpaceDID
   encryptionPassword: string
@@ -36,17 +36,17 @@ class JobSender {
   #session
   #launchParams
   #storacha
-  #servicePrincipal
+  #serverDID
   #sendRequest
 
-  constructor({ spaceDID, name, encryptionPassword, session, launchParams, storacha, servicePrincipal, sendRequest} : Context) {
+  constructor({ spaceDID, name, encryptionPassword, session, launchParams, storacha, serverDID, sendRequest} : Context) {
     this.#spaceDID = spaceDID
     this.#name = name
     this.#encryptionPassword = encryptionPassword
     this.#session = session
     this.#launchParams = launchParams
     this.#storacha = storacha
-    this.#servicePrincipal = servicePrincipal
+    this.#serverDID = serverDID
     this.#sendRequest = sendRequest
   }
 
@@ -80,12 +80,25 @@ class JobSender {
     );
   }
 
-  #nameDelegation() {
-    return this.#name.grant(this.#servicePrincipal.did(), { expiration: defaultDuration})
+  async #nameDelegation() {
+    const delegation = await this.#name.grant(this.#serverDID.did(), { expiration: defaultDuration})
+
+    const result = await delegation.archive()
+
+    if (result.error) {
+      throw result.error
+    }
+    return result.ok
   }
 
-  #spaceDelegation() {
-    return this.#storacha.createDelegation(this.#servicePrincipal, [SpaceBlob.add.can, SpaceIndex.add.can, Upload.add.can], {expiration: new Date(Date.now() + defaultDuration).getTime()})
+  async #spaceDelegation() {
+    const delegation = await this.#storacha.createDelegation(this.#serverDID, [SpaceBlob.add.can, SpaceIndex.add.can, Upload.add.can], {expiration: new Date(Date.now() + defaultDuration).getTime()})
+    const result = await delegation.archive()
+
+    if (result.error) {
+      throw result.error
+    }
+    return result.ok
   }
 
   async sendJob(jobID: JobID) {
