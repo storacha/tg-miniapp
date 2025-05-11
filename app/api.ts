@@ -1,7 +1,8 @@
-import { Block, ByteView, Link, SpaceDID, ToString, UnknownLink, Variant } from '@storacha/ui-react'
+import { Block, ByteView, Link, ToString, UnknownLink, Variant, DID, Result } from '@ucanto/client'
 import { identity } from 'multiformats/hashes/identity'
-export type { Block, ByteView, Link, SpaceDID, ToString, UnknownLink, Variant }
+export type { Block, ByteView, Link, ToString, UnknownLink, Variant }
 
+export type SpaceDID = DID<'key'>
 export type UnknownBlock = Block<unknown, number, number, 0|1>
 
 export type AbsolutePeriod = [from: number, to: number]
