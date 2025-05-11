@@ -1,6 +1,6 @@
-import { JobID, JobRequest, TelegramAuth, Job } from '@/api'
-import { Delegation, SpaceDID } from '@storacha/ui-react'
-import { Client as StorachaClient, DID, Signer } from '@storacha/ui-react'
+import { JobID, JobRequest, TelegramAuth, Job, SpaceDID } from '@/api'
+import { Delegation, DID, Signer } from '@ucanto/client'
+import { Client as StorachaClient } from '@storacha/client'
 import { TelegramClient } from 'telegram'
 import { create as createObjectStorage } from '@/lib/store/object'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
@@ -64,24 +64,6 @@ class JobServer {
     return createHandler({
       storacha, telegram, cipher, jobs, queueFn: this.#queueFn
     })
-  }
-
-  async #initializeTelegram(telegramAuth: TelegramAuth) {
-    validateInitData(telegramAuth.initData, getBotToken())
-    const initData = parseInitData(telegramAuth.initData)
-    const session = new StringSession(telegramAuth.session) 
-    const client = new TelegramClient(session, telegramAPIID, telegramAPIHash, defaultClientParams)
-    if (!(await client.connect())) {
-      throw new Error("failed to connect to telegram")
-    }
-    if (!(await client.checkAuthorization())) {
-      throw new Error("client authorization failed")
-    }
-    const user = await client.getMe()
-    if (user.id.toString() !== (initData.user?.id.toString() || '0')) {
-       throw new Error("authorized user does not match telegram mini-app user")
-    }
-    return client
   }
 
   #initializeStoracha(space: SpaceDID, delegation: Delegation) {

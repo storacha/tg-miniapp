@@ -8,6 +8,9 @@ import { Api } from '@/vendor/telegram'
 import { computeCheck } from '@/vendor/telegram/Password'
 import { Input } from './ui/input'
 import { useTelegram } from '@/providers/telegram'
+import * as TelegramProxy from '@/lib/server/telegram-proxy'
+import { fromResultFn } from '@/lib/utils'
+
 
 function CountDown({ onResend }: { onResend: () => unknown }) {
 	const [count, setCount] = useState(59)
@@ -113,26 +116,31 @@ export default function TelegramAuth() {
 	const [codeHash, setCodeHash] = useState('')
 	const [code, setCode] = useState('')
 	const { setIsTgAuthorized, phoneNumber, setPhoneNumber } = useGlobal()
-	const [{ client, user }] = useTelegram()
+	const [{ initData }, { recordSession }] = useTelegram()
 	const [is2FARequired, set2FARequired] = useState(false)
 	const [password, setPassword] = useState('')
 	const [srp, setSRP] = useState<Api.account.Password>()
-
 	const handlePhoneSubmit: FormEventHandler<HTMLFormElement> = async e => {
 		e.preventDefault()
 		try {
 			setLoading(true)
 			setError(undefined)
 
-			if (!client.connected) {
-				await client.connect()
-			}
-			const { phoneCodeHash } = await client.sendCode(client, phoneNumber)
+			
+			const { phoneCodeHash } = await fromResultFn(TelegramProxy.sendCode, { initData, phoneNumber })
 			setCodeHash(phoneCodeHash)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		} catch (err: any) {
-			console.error('requesting OTP:', err)
-			setError(err)
+		} catch (err) {
+			if (err instanceof Api.RpcError) {
+				err = new Error(err.errorMessage)
+			}
+			if (err instanceof Error) {
+				console.error('requesting OTP:', err)
+				setError(err)
+			} else {
+				// throw unrecognized error types
+				throw err
+			}
 		} finally {
 			setLoading(false)
 		}
@@ -140,8 +148,8 @@ export default function TelegramAuth() {
 
 	const getSRP = async () => {
 		try {
-			const srp = await client.invoke(new Api.account.GetPassword())
-			setSRP(srp)
+			const srp = await fromResultFn(TelegramProxy.getPassword, { initData })
+			setSRP(new Api.account.Password(srp))
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
 			setError(err)
@@ -153,42 +161,38 @@ export default function TelegramAuth() {
 			setLoading(true)
 			setError(undefined)
 
-			if (!client.connected) {
-				await client.connect()
-			}
-			const result = await client.invoke(
-				new Api.auth.SignIn({
+			const result = await fromResultFn(TelegramProxy.signIn, { 
+					initData,
 					phoneNumber,
 					phoneCode: code,
 					phoneCodeHash: codeHash,
-				}),
-			)
-			if (result instanceof Api.auth.AuthorizationSignUpRequired) {
-				throw new Error('user needs to sign up')
-			}
-			if (process.env.NODE_ENV === 'production') {
-				if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
-					throw new Error('login user and user using the app must match')
-				}
-			}
-
+			})
+			await recordSession(result.session)
 			setIsTgAuthorized(true)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		} catch (err: any) {
-			if (err.errorMessage === 'SESSION_PASSWORD_NEEDED') {
-				await getSRP()
-				set2FARequired(true)
-				return
+		} catch (err: unknown) {
+			if (err instanceof Api.RpcError) {
+				if (err.errorMessage === 'SESSION_PASSWORD_NEEDED') {
+				 	await getSRP()
+				 	set2FARequired(true)
+				 	return
+			 	}
+				err = new Error(err.errorMessage)
 			}
-			console.error('signing in:', err)
-			setError(err)
+			if (err instanceof Error) {
+				console.error('signing in:', err)
+				setError(err)
+			} else {
+				// throw unrecognized error types
+				throw err
+			}
 		} finally {
 			setLoading(false)
 		}
 	}
 
 	const handleResend = async () => {
-		const { phoneCodeHash } = await client.sendCode(client, phoneNumber)
+		const { phoneCodeHash } = await fromResultFn(TelegramProxy.sendCode, { initData, phoneNumber })
 		setCodeHash(phoneCodeHash)
 	}
 
@@ -200,28 +204,30 @@ export default function TelegramAuth() {
 			if (!srp) {
 				throw new Error('missing secure remote password')
 			}
-
-			if (!client.connected) {
-				await client.connect()
-			}
-			const result = await client.invoke(new Api.auth.CheckPassword({
-				password: await computeCheck(srp, password)
-			}))
-			if (result instanceof Api.auth.AuthorizationSignUpRequired) {
-				throw new Error('user needs to sign up')
-			}
-			if (process.env.NODE_ENV === 'production') {
-				if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
-					throw new Error('login user and user using the app must match')
+			const passwordCheck = await computeCheck(srp, password)
+			const result = await fromResultFn(TelegramProxy.checkPassword, {
+				initData,
+				password: {
+					A: new Uint8Array(passwordCheck.A.buffer),
+					srpId: passwordCheck.srpId.toString(),
+					M1: new Uint8Array(passwordCheck.M1.buffer),
 				}
-			}
-
+			})
+			await recordSession(result.session)
 			setIsTgAuthorized(true)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
-			console.error('checking password:', err)
-			await getSRP()
-			setError(err)
+			if (err instanceof Api.RpcError) {
+				err = new Error(err.errorMessage)
+			}
+			if (err instanceof Error) {
+				console.error('checking password:', err)
+				await getSRP()
+				setError(err)
+			} else {
+				// throw unrecognized error types
+				throw err
+			}
 		} finally {
 			setLoading(false)
 		}

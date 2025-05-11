@@ -148,6 +148,40 @@ export interface JobRequest {
   encryptionPassword: string
 }
 
+export type TelegramError = {
+  errorCode: number;
+  errorMessage: string;
+}
+
+export type WithInitData<T> = T & {initData : string}
+
+export type WithTelegramAuth<T> = T & { telegramAuth: TelegramAuth }
+
+export interface SendCodeRequest {
+  phoneNumber: string
+}
+
+export type SendCodeResponse = { phoneCodeHash: string }
+
+export interface SignInRequest {
+  phoneNumber: string
+  phoneCode: string,
+  phoneCodeHash: string,
+}
+
+export type SignInResponse = { userID: ToString<BigInt>, session: string }
+
+export interface InputCheckPasswordSRP {
+  srpId: string;
+  A: Uint8Array;
+  M1: Uint8Array;
+}
+
+export interface CheckPasswordRequest  {
+  password: InputCheckPasswordSRP
+}
+
+
 export interface JobServer {
   queueJob: (request: JobRequest) => Promise<void>
   handleJob: (request: JobRequest) => Promise<void>

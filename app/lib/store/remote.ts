@@ -1,5 +1,6 @@
 import { RemoteStorage, UnknownBlock } from '@/api'
-import { Client as StorachaClient, UnknownLink } from '@storacha/ui-react'
+import { Client as StorachaClient } from '@storacha/client'
+import { UnknownLink } from '@ucanto/client'
 import { CARWriterStream } from 'carstream'
 
 const gatewayURL = process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'

@@ -6,13 +6,14 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 import { Media } from '@/components/ui/media'
 import { Layouts } from '@/components/layouts'
-import { decodeStrippedThumb, getInitials, toJPGDataURL } from '@/lib/utils'
+import { decodeStrippedThumb, fromResultFn, getInitials, toJPGDataURL } from '@/lib/utils'
 import { DialogData, EntityData, EntityType, MessageData, ServiceMessageData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConnectError } from '@/components/backup/connect'
 import { useBackups } from '@/providers/backup'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { ChatHeader } from '@/components/layouts/chat-header'
+import * as TelegramProxy from '@/lib/server/telegram-proxy'
 
 type BackupDialogProps = {
   userId: string
@@ -128,7 +129,7 @@ function BackupDialog({
 
 export default function Page () {
   const router = useRouter()
-  const [{ client }] = useTelegram()
+  const [{ initData, sessionState }] = useTelegram()
   const [{ restoredBackup }, { restoreBackup, fetchMoreMessages }] = useBackups()
   const {id, cid: backupCid} = useParams<{ id: string, cid: string }>()
   const searchParams = useSearchParams()
@@ -140,9 +141,12 @@ export default function Page () {
 
     const fetchBackup = async () => {
       try {
-        if (!client.connected) await client.connect()
-          
-        const userId = (await client.getMe()).id.toString()
+
+        if (!sessionState.loaded) {
+          throw new Error("session state no loaded cannot restore backup")
+        }
+        
+        const userId = (await fromResultFn(TelegramProxy.getMe, { telegramAuth: { initData, session: sessionState.session }})).id
         setUserId(userId)
 
         await restoreBackup(backupCid!, normalizedId, 50)
@@ -153,7 +157,7 @@ export default function Page () {
     }
 
     fetchBackup()
-  }, [client, backupCid, id, restoreBackup])
+  }, [sessionState, backupCid, id, restoreBackup])
 
   const handleFetchMoreMessages = async () => {
     return fetchMoreMessages(restoredBackup.item?.messages.length || 0, 50)

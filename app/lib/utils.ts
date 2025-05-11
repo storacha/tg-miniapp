@@ -1,3 +1,5 @@
+import { TelegramError } from '@/api'
+import { Result } from '@ucanto/client'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -103,3 +105,11 @@ export const getInitials = (name: string) => {
 		const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
 		return parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 	}
+
+export const fromResultFn =async <Request, Response>(fn: (r: Request) => Promise<Result<Response, TelegramError>>, r: Request) : Promise<Response> => {
+	const result = await fn(r)
+	if (result.error) {
+		throw new Api.RpcError(result.error)
+	}
+	return result.ok
+}

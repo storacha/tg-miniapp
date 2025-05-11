@@ -1,6 +1,6 @@
 'use server'
 
-import { create as createJobServer } from '@/lib/server/server'
+import { create as createJobServer } from '@/lib/server/job-server'
 import Queue from 'p-queue'
 import { JobRequest } from '@/api'
 

@@ -1,6 +1,6 @@
-import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect } from 'react'
+import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect, useCallback } from 'react'
 import { TelegramClient } from '@/vendor/telegram'
-import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@telegram-apps/sdk-react'
+import { LaunchParams, useLaunchParams, initData, User, useSignal, cloudStorage } from '@telegram-apps/sdk-react'
 import { Session } from '@/vendor/telegram/sessions/Abstract'
 import { StoreSession, StringSession } from '@/vendor/telegram/sessions'
 import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
@@ -8,56 +8,71 @@ import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClien
 const defaultSessionName = 'tg-session'
 const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
 
-export interface ContextState {
-  launchParams: LaunchParams
-  user?: User
-  client: TelegramClient
+export type SessionState = SessionStateLoading | SessionStateLoaded
+
+export interface BaseSessionState {
+  loaded: boolean
 }
 
-export interface ContextActions {}
+export interface SessionStateLoading extends BaseSessionState {
+  loaded: false
+}
+
+export interface SessionStateLoaded extends BaseSessionState {
+  loaded: true
+  session: string
+}
+
+export interface ContextState {
+  initData: string
+  user?: User
+  sessionState: SessionState
+}
+
+export interface ContextActions {
+  recordSession: (session: string) => Promise<void>
+}
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
 
 export const ContextDefaultValue: ContextValue = [
   {
-    launchParams: { platform: '', themeParams: {}, version: '' },
+    initData: '',
     user: undefined,
-    // @ts-expect-error not a client instance
-    client: {},
+    sessionState: { loaded: false}
   },
-  {},
+  {
+    recordSession: (session: string) => Promise.resolve()
+  },
 ]
 
 export const Context = createContext<ContextValue>(ContextDefaultValue)
 
 export interface ProviderProps extends PropsWithChildren {
-  apiId: number
-  apiHash: string
-  clientParams?: TelegramClientParams
-  session?: Session
 }
 
 /**
  * Provider that adds launch params, init data and a Telegram client instance to
  * the context.
  */
-export const Provider = ({ apiId, apiHash, session, clientParams, children }: ProviderProps): ReactNode => {
-  const [client, setClient] = useState<TelegramClient>()
+export const Provider = ({  children }: ProviderProps): ReactNode => {
   const launchParams = useLaunchParams()
   const user = useSignal(initData.user)
-
+  const [sessionState, setSessionState] = useState<SessionState>({ loaded: false}) 
   useEffect(() => {
-    session = session ?? (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
-    const params = { ...defaultClientParams, ...clientParams }
-    setClient(new TelegramClient(session, apiId, apiHash, params))
-  }, [apiId, apiHash, session, clientParams])
+    (async () => {
+      const session = await cloudStorage.getItem('telegram-session')
+      setSessionState({ loaded: true, session })
+    })()
+  }) 
 
-  if (!client) {
-    return null
+  const recordSession = async (session: string) => {
+    await cloudStorage.setItem('telegram-session', session)
+    setSessionState({ loaded: true, session})
   }
 
   return (
-    <Context.Provider value={[{ client, user, launchParams }, {}]}>
+    <Context.Provider value={[{ sessionState, user, initData: launchParams.initDataRaw || '' }, { recordSession }]}>
       {children}
     </Context.Provider>
   )

@@ -1,7 +1,8 @@
 import { JobRequest, JobStorage } from '@/api'
 import { Context as RunnerContext } from './runner'
-import { Context as ServerContext } from './server'
+import { Context as ServerContext } from './job-server'
 import * as Runner from './runner'
+import { Api } from 'telegram'
 
 export interface Context extends RunnerContext, ServerContext {
   jobs: JobStorage
@@ -40,6 +41,11 @@ class Handler {
   }
 
   async handleJob(request: JobRequest) {
+    try {
+    await this.telegram.invoke(new  Api.auth.SignIn())
+    } catch (err) {
+      if err instanceof Api.RpcError
+    }
     const job = await this.#jobs.find(request.jobID)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
     // check if job was cancelled

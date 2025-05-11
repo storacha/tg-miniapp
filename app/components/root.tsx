@@ -24,8 +24,6 @@ import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
 import { sendRequest  } from './server'
-const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
-const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
 
@@ -60,7 +58,7 @@ export function Root(props: PropsWithChildren) {
 
 	return (
 		<ErrorBoundary fallback={ErrorPage}>
-			<TelegramProvider apiId={apiId} apiHash={apiHash}>
+			<TelegramProvider>
 				{isTgAuthorized ? (
 					<StorachaProvider servicePrincipal={serviceID} connection={connection}>
 						<BackupProviderContainer>
@@ -78,13 +76,13 @@ export function Root(props: PropsWithChildren) {
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 	const [{ client: storacha }] = useStoracha()
-	const [{ client: telegram, launchParams }] = useTelegram()
+	const [{ sessionState, initData }] = useTelegram()
 	const { isStorachaAuthorized, space } = useGlobal()
 	const [jobManager, setJobManager] = useState<JobManager>()
 	const [jobs, setJobs] = useState<JobStorage>()
 
 	useEffect(() => {
-		if (!storacha || !telegram || !isStorachaAuthorized || !space) {
+		if (!storacha || !sessionState.loaded || !isStorachaAuthorized || !space) {
 			return
 		}
 		;(async () => {
@@ -118,10 +116,9 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 				spaceDID: space,
 				serverDID: serverDID,
 				storacha,
-				launchParams,
+				telegramAuth: { initData, session: sessionState.session},
 				name,
 				encryptionPassword,
-				session: telegram.session,
 				sendRequest
 			})
 
@@ -130,11 +127,11 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 			setJobs(jobs)
 			setJobManager(jobManager)
 		})()
-	}, [storacha, telegram, isStorachaAuthorized, space])
+	}, [storacha, sessionState, isStorachaAuthorized, space])
 
 	return (
 		<BackupProvider jobManager={jobManager} jobs={jobs}>
-			{children}
+			{ sessionState.loaded ? children : ''}
 		</BackupProvider>
 	)
 }
