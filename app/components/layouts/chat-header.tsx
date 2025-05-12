@@ -7,7 +7,7 @@ import { getInitials } from '@/lib/utils';
 export function ChatHeader({ back, image, name, type }: { back?: () => void; image?: string; name: string; type: string }) {
 	const { back: goBack } = useRouter()
 	return (
-		<header className="flex justify-between items-center p-5 sticky top-0 border-b border-border bg-muted">
+		<header className="flex justify-between items-center p-5 z-10 sticky top-0 border-b border-border bg-muted">
 			<div className="flex items-center gap-4 flex-grow">
                 <button type="button" onClick={back || goBack}>
                     <MoveLeft />
