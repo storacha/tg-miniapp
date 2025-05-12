@@ -27,7 +27,6 @@ class JobManager {
       dialogs: [...dialogs].map(d => d.toString()),
       period: absPeriod
     }
-
     await this.#jobs.add({
       id,
       status: 'waiting',
@@ -35,7 +34,7 @@ class JobManager {
       created: Date.now(),
     })
 
-    await this.#jobSender.sendJob(id)
+    this.#jobSender.sendJob(id)
 
     return id
   }
