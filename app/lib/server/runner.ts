@@ -182,7 +182,6 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
     }
   })
 
-  await ctx.storacha.setCurrentSpace(space)
   const root = await ctx.storacha.uploadCAR({
     stream: () => blockStream.pipeThrough(new CARWriterStream())
   })

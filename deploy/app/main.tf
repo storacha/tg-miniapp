@@ -40,7 +40,7 @@ provider "aws" {
 
 
 module "app" {
-  source = "github.com/storacha/storoku//app?ref=v0.2.19"
+  source = "github.com/storacha/storoku//app?ref=v0.2.20"
   private_key = var.private_key
   private_key_env_var = "SERVER_IDENTITY_PRIVATE_KEY"
   httpport = 3000
@@ -60,7 +60,9 @@ module "app" {
   # enter secret values your app will use here -- these will be available
   # as env vars in the container at runtime
   secrets = { 
-    "SECRET_BOT_TOKEN" = var.secret_bot_token
+    "TELEGRAM_BOT_TOKEN" = var.telegram_bot_token
+    "NEXT_PUBLIC_TELEGRAM_API_ID" = var.next_public_telegram_api_id
+    "NEXT_PUBLIC_TELEGRAM_API_HASH" = var.next_public_telegram_api_hash
   }
   # enter any sqs queues you want to create here
   queues = []

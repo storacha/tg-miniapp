@@ -70,7 +70,19 @@ class JobServer {
     validateInitData(telegramAuth.initData, getBotToken())
     const initData = parseInitData(telegramAuth.initData)
     const session = new StringSession(telegramAuth.session) 
+    // DC ip servers need to be set to IP addresses on node
+    // see https://github.com/gram-js/gramjs/issues/344#issuecomment-1405518285
+    // and further discussion in @gramjschat on Telegram
+    const dcServers : Record<number, string> = {
+      1: "149.154.175.54",
+      2: "149.154.167.50",
+      3: "149.154.175.100",
+      4: "149.154.167.91",
+      5: "91.108.56.103",
+    }; 
+    session.setDC(session.dcId, dcServers[session.dcId], session.port)
     const client = new TelegramClient(session, telegramAPIID, telegramAPIHash, defaultClientParams)
+
     if (!(await client.connect())) {
       throw new Error("failed to connect to telegram")
     }

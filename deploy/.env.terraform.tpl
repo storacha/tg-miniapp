@@ -7,4 +7,6 @@ TF_VAR_allowed_account_id=505595374361
 TF_VAR_region=us-west-2
 TF_VAR_cloudflare_zone_id=37783d6f032b78cd97ce37ab6fd42848
 CLOUDFLARE_API_TOKEN= # enter a cloudflare api token
-TF_VAR_secret_bot_token= # enter a value for SECRET_BOT_TOKEN secret
+TF_VAR_telegram_bot_token= # enter a value for TELEGRAM_BOT_TOKEN secret
+TF_VAR_next_public_telegram_api_id= # enter a value for NEXT_PUBLIC_TELEGRAM_API_ID secret
+TF_VAR_next_public_telegram_api_hash= # enter a value for NEXT_PUBLIC_TELEGRAM_API_HASH secret

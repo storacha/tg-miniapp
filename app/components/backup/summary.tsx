@@ -2,6 +2,7 @@ import { SpaceDID } from '@storacha/ui-react'
 import { Period } from '@/api'
 import { Button } from '../ui/button'
 import { FormEventHandler } from 'react'
+import { useBackups } from '@/providers/backup'
 
 export interface SummaryProps {
 	chats: Set<bigint>
@@ -16,6 +17,8 @@ export const Summary = ({ chats, period, starting, onSubmit }: SummaryProps) => 
     e.preventDefault()
     onSubmit()
   }
+  const [{jobManagerReady}, {}] = useBackups()
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="w-full pt-0 px-5 flex flex-col text-center justify-center gap-2 pb-5">
@@ -37,7 +40,7 @@ export const Summary = ({ chats, period, starting, onSubmit }: SummaryProps) => 
           )}
         </div>
         <div className="sticky bottom-0 w-full p-5">
-          <Button type="submit" className="w-full" disabled={starting}>{starting ? 'Starting...' : 'Start Backup'}</Button>
+          <Button type="submit" className="w-full" disabled={starting || !jobManagerReady}>{starting ? 'Starting...' : 'Start Backup'}</Button>
         </div>
       </div>
 		</form>
