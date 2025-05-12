@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useTelegram } from '@/providers/telegram'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
@@ -122,6 +122,8 @@ function BackupDialog({
 }: BackupDialogProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const sortedMessages = [...messages].sort((a, b) => a.date - b.date)
+  let lastRenderedDate: string | null = null
+  let lastSenderId: string | null = null
   
   let dialogThumbSrc = ''
   if(dialog.photo?.strippedThumb){
@@ -154,7 +156,8 @@ function BackupDialog({
           .filter((msg) => msg.type !== "service") // TODO: handle this 
           .map((msg, index) => {
           const date = formatDate(msg.date)
-          const showDate = (index === 0 || formatDate(sortedMessages[index - 1].date) !== formatDate(msg.date))
+          const showDate = lastRenderedDate !== date
+          if (showDate) lastRenderedDate = date
 
           const isOutgoing = msg.from === userId
   
@@ -162,9 +165,9 @@ function BackupDialog({
             ? participants[msg.from]?.name ?? 'Unknown'
             : 'Anonymous'
 
-          const showSenderHeader = !isOutgoing &&
-            (index === 0 || sortedMessages[index - 1].from !== msg.from)
-
+          const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
+          lastSenderId = msg.from ?? null
+            
           let thumbSrc = ''
           if(msg.from && participants[msg.from].photo?.strippedThumb){
             thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb as Uint8Array))
@@ -175,14 +178,13 @@ function BackupDialog({
             const rawContent = mediaMap[msg.media.content.toString()]
             mediaUrl = URL.createObjectURL(new Blob([rawContent]))
           }
-          // console.log(`showSenderHeader: ${showSenderHeader}, user: ${sender}`)
 
           return (
-            <>
+            <Fragment key={msg.id}>
             { showDate && <ServiceMessage text={date} />}
             {/* { msg.type === 'service' && <ServiceMessage text={msg.action.description} /> } // TODO: would be nice to have a description for each action */} 
             { msg.type === 'message' &&
-                <div key={msg.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
                   <div className="flex flex-col max-w-[75%]">
                     {showSenderHeader && (<UserInfo thumbSrc={thumbSrc} userName={sender} />)}
                     { msg.media 
@@ -198,7 +200,7 @@ function BackupDialog({
                   </div>
                 </div>
               }
-            </>
+            </Fragment>
           )
         })}
       </div>
