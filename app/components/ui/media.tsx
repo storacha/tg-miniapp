@@ -4,7 +4,7 @@ import React from "react"
 import { File, MapPin, CheckCircle, ExternalLink} from 'lucide-react'
 import { openLink } from '@telegram-apps/sdk-react'
 import { decodeStrippedThumb, toJPGDataURL, cn } from "@/lib/utils"
-import { AudioDocumentAttributeData, DocumentMediaData, MediaData, GeoLiveMediaData, VenueMediaData, PollMediaData, WebPageMediaData, DefaultWebPageData } from "@/api"
+import { AudioDocumentAttributeData, DocumentMediaData, MediaData, GeoLiveMediaData, VenueMediaData, PollMediaData, WebPageMediaData, DefaultWebPageData, DocumentData } from "@/api"
 interface MediaProps {
   mediaUrl?: string
   metadata: MediaData
@@ -13,6 +13,17 @@ interface MediaProps {
 
 // TODO:
 // [] - File Document bug, I can't allow users to download it
+
+const getThumbURL = (document: DocumentData) => {
+  try {
+    // @ts-ignore already handling undefined 'thumbBytes'
+    const thumbBytes = document.thumbs?.[0]?.bytes
+    return thumbBytes ? toJPGDataURL(decodeStrippedThumb(thumbBytes as Uint8Array)) : undefined
+  } catch (err) {
+    console.error("Failed to decode thumbnail", err)
+    return undefined
+  }
+}
 
 const getDocumentType = (media: DocumentMediaData) => {
   if (media.video) return 'video'
@@ -57,7 +68,7 @@ export const Media: React.FC<MediaProps> = ({mediaUrl, metadata, time}) => {
 
       switch (docType) {
         case 'gif': {
-          mediaContent = <GifMedia mediaUrl={mediaUrl} />
+          mediaContent = <GifMedia mediaUrl={mediaUrl} metadata={metadata} />
           break
         }
         case 'image': {
@@ -65,7 +76,7 @@ export const Media: React.FC<MediaProps> = ({mediaUrl, metadata, time}) => {
           break
         }
         case "video": {
-          mediaContent = <VideoMedia mediaUrl={mediaUrl} />
+          mediaContent = <VideoMedia mediaUrl={mediaUrl} metadata={metadata}/>
           break
         }
         case "audio": {
@@ -150,24 +161,35 @@ const AudioMedia: React.FC<{ metadata: DocumentMediaData; mediaUrl?: string }> =
       </audio>
     </div>
 )}
+2021
 
-
-const VideoMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
+const VideoMedia: React.FC<{ mediaUrl?: string; metadata: DocumentMediaData }> = ({ mediaUrl, metadata }) => {
   if (!mediaUrl) return <PlaceholderBubble label="No video available" />
+
+  const mime = metadata.document?.mimeType?.toLowerCase() || 'video/mp4'
+  let thumbUrl: string | undefined = metadata.document ? getThumbURL(metadata.document) : undefined
+
   return (
-    <video controls className="w-full h-auto rounded-lg object-contain">
-      <source src={mediaUrl} type="video/mp4" />
-      video
+    <video
+      controls
+      className="w-full h-auto rounded-lg object-contain bg-muted"
+      poster={thumbUrl}
+    >
+      <source src={mediaUrl} type={mime} />
+      Your browser does not support the video tag.
     </video>
   )
 }
 
-const GifMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
+const GifMedia: React.FC<{ mediaUrl?: string; metadata?: DocumentMediaData }> = ({ mediaUrl, metadata }) => {
   if (!mediaUrl) return <PlaceholderBubble label="No video available" />
+
+  const mime = metadata?.document?.mimeType?.toLowerCase() || 'video/mp4'
+
   return (
-    <video autoPlay loop muted className="w-full max-h-96 rounded-lg">
-      <source src={mediaUrl} type="video/mp4" />
-      video
+    <video autoPlay loop muted playsInline className="w-full max-h-96 rounded-lg">
+      <source src={mediaUrl} type={mime} />
+      Your browser does not support the video tag.
     </video>
   )
 }
@@ -326,17 +348,9 @@ const WebPageMedia: React.FC<{metadata: WebPageMediaData}> = ({ metadata }) => {
 const FileMedia: React.FC<{ metadata: DocumentMediaData, mediaUrl?: string }> = ({ mediaUrl, metadata }) => {
   const fileName = metadata.document?.attributes?.find(attr => 'fileName' in attr)?.fileName || 'Unknown File'
   const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE'
-  
-  // @ts-ignore
-  const thumbBytes = metadata.document?.thumbs?.[0].bytes
-  let thumbUrl: string | undefined = undefined;
-  if (thumbBytes) {
-    try {
-      thumbUrl = toJPGDataURL(decodeStrippedThumb(thumbBytes as Uint8Array));
-    } catch (err) {
-      thumbUrl = undefined;
-    }
-  }
+
+  let thumbUrl: string | undefined = metadata.document ? getThumbURL(metadata.document) : undefined
+
   const handleDownload = async () => {
     try {
       if (openLink.isAvailable()) {
