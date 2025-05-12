@@ -25,7 +25,58 @@ type BackupDialogProps = {
   onScrollTop: () => void 
 }
 
-const formatDate = (timestamp: number) => (new Date(timestamp * 1000)).toLocaleString()
+const formatTime = (timestamp: number) => (new Date(timestamp * 1000)).toLocaleTimeString(undefined, {hour: '2-digit',
+  minute: '2-digit'})
+const formatDate = (timestamp: number) => ((new Date(timestamp * 1000)).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }))
+
+const DialogMessage: React.FC<{isOutgoing: boolean; date: number; message: string}> = ({isOutgoing, date, message}) => {
+  return (
+    <div
+      className={`px-4 py-2 text-sm rounded-xl whitespace-pre-line shadow-sm break-words min-w-[100px] ${
+        isOutgoing
+          ? 'bg-blue-500 text-white rounded-br-none'
+          : 'bg-gray-100 text-foreground rounded-bl-none'
+      }`}
+    >
+      {message &&
+        (<p>{message}</p>) 
+      }
+
+      <div className={`text-xs text-right mt-1 ${
+        isOutgoing
+          ? 'text-gray-300'
+          : 'text-muted-foreground'
+        }`}>
+        {formatTime(date)}
+      </div>
+
+    </div>
+  )
+}
+
+const ServiceMessage: React.FC<{text: string}> = ({text}) => {
+  return (
+    <div className="flex justify-center">
+      <div className="px-2 py-1 bg-muted rounded-full">
+      <p className="text-xs text-center">{text}</p>
+      </div>
+    </div>
+  )
+}
+
+const UserInfo: React.FC<{thumbSrc: string, userName: string}> = ({thumbSrc, userName}) => {
+  return (
+    <div className="flex items-center gap-2 mb-2">
+      <Avatar>
+        <AvatarImage src={thumbSrc} /> 
+        <AvatarFallback>{getInitials(userName)}</AvatarFallback>
+      </Avatar>
+      <p className="text-xs text-muted-foreground font-medium">
+        {userName}
+      </p>
+    </div>
+  )
+}
 
 function BackupDialog({
   userId,
@@ -63,79 +114,83 @@ function BackupDialog({
   
   return (
     <div className="flex flex-col bg-background">
-
       <ChatHeader image={dialogThumbSrc} name={dialog.name} type={dialog.type}/>
-
-      {/* Messages */}
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {sortedMessages
-          .filter((msg) => msg.type !== "service") // TODO: handle this once the message service types are defined
+          .filter((msg) => msg.type !== "service") // TODO: handle this 
           .map((msg, index) => {
+          const date = formatDate(msg.date)
+          const showDate = (index === 0 || formatDate(sortedMessages[index - 1].date) !== formatDate(msg.date))
+
           const isOutgoing = msg.from === userId
+  
           const sender = msg.from
             ? participants[msg.from]?.name ?? 'Unknown'
             : 'Anonymous'
 
-
-          const showSenderHeader =
-            !isOutgoing &&
+          const showSenderHeader = !isOutgoing &&
             (index === 0 || sortedMessages[index - 1].from !== msg.from)
 
           let thumbSrc = ''
           if(msg.from && participants[msg.from].photo?.strippedThumb){
-           thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb as Uint8Array))
+            thumbSrc = toJPGDataURL(decodeStrippedThumb(participants[msg.from].photo?.strippedThumb as Uint8Array))
           }
-
+         
           let mediaUrl: string | undefined
           if (msg.media?.content) {
             const rawContent = mediaMap[msg.media.content.toString()]
             mediaUrl = URL.createObjectURL(new Blob([rawContent]))
           }
+          // console.log(`showSenderHeader: ${showSenderHeader}, user: ${sender}`)
 
           return (
-            <div key={msg.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
-              <div className="flex flex-col max-w-[75%]">
-                {showSenderHeader && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar>
-                      <AvatarImage src={thumbSrc} /> 
-                      <AvatarFallback>{getInitials(sender)}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-xs text-muted-foreground font-medium">
-                      {sender}
-                    </p>
-                  </div>
-                )}
-                <div
-                  className={`px-4 py-2 text-sm rounded-xl whitespace-pre-line shadow-sm break-words ${
-                    isOutgoing
-                      ? 'bg-blue-500 text-white rounded-br-none'
-                      : 'bg-gray-100 text-foreground rounded-bl-none'
-                  }`}
-                >
-                  {msg.message &&
-                    (<p>{msg.message}</p>) 
-                  }
-                  {msg.media && (
-                    <div className="mt-2">
-                      <Media mediaUrl={mediaUrl} metadata={msg.media.metadata} />
-                    </div>
-                  )}
+            <>
+            { showDate && <ServiceMessage text={date} />}
+            {/* { msg.type === 'service' && <ServiceMessage text={msg.action.description} /> } // TODO: would be nice to have a description for each action */} 
+            { msg.type === 'message' &&
+                <div key={msg.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+                  <div className="flex flex-col max-w-[75%]">
+                    {showSenderHeader && (<UserInfo thumbSrc={thumbSrc} userName={sender} />)}
+                    { msg.media ? (
+                      <>
+                        <div className="mt-2">
+                          <Media mediaUrl={mediaUrl} metadata={msg.media.metadata} time={msg.message ? undefined : formatTime(msg.date)}/>
+                        </div>
+                        {
+                          msg.message && 
+                            <div
+                              className={`px-4 py-2 text-sm rounded-xl rounded-t-none whitespace-pre-line shadow-sm break-words ${
+                              isOutgoing
+                                ? 'bg-blue-500 text-white rounded-br-none'
+                                : 'bg-gray-100 text-foreground rounded-bl-none'
+                              }`}
+                            >
+                              {msg.message &&
+                              (<p>{msg.message}</p>) 
+                              }
 
-                  <div className={`text-xs text-right mt-1 ${
-                    isOutgoing
-                      ? 'text-gray-300'
-                      : 'text-muted-foreground'
-                    }`}>
-                    {formatDate(msg.date)}
+                              <div className={`text-xs text-right mt-1 ${
+                              isOutgoing
+                                ? 'text-gray-300'
+                                : 'text-muted-foreground'
+                              }`}>
+                              {formatTime(msg.date)}
+                              </div>
+                            </div>
+                         }
+                      </>
+                    ) : (
+                      <DialogMessage isOutgoing={isOutgoing} date={msg.date} message={msg.message}/>
+                    )}
                   </div>
                 </div>
-              </div>
-            </div>
+              }
+            </>
           )
         })}
       </div>
     </div>
+    
   )
 }
 

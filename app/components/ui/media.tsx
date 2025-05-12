@@ -1,13 +1,20 @@
 "use client"
 
 import React from "react"
-import { File } from 'lucide-react'
+import { File, MapPin } from 'lucide-react'
+import { openLink } from '@telegram-apps/sdk-react'
 import { decodeStrippedThumb, toJPGDataURL } from "@/lib/utils"
-import { AudioDocumentAttributeData, DocumentMediaData, MediaData, } from "@/api"
+import { AudioDocumentAttributeData, DocumentMediaData, MediaData, GeoLiveMediaData, VenueMediaData} from "@/api"
 interface MediaProps {
   mediaUrl?: string
   metadata: MediaData
+  time?: string
 }
+
+// TODO:
+// [] - File Document bug, I can't allow users to download it
+// [] - PoolMedia
+// [] - WebPageMedia
 
 const getDocumentType = (media: DocumentMediaData) => {
   if (media.video) return 'video'
@@ -17,7 +24,7 @@ const getDocumentType = (media: DocumentMediaData) => {
     const mime = media.document?.mimeType?.toLowerCase() || ''
     const fileName = media.document?.attributes?.find(a => 'fileName' in a)?.fileName?.toLowerCase() || ''
 
-    if (mime.startsWith('video/')) return 'animated'
+    if (mime.startsWith('video/')) return 'gif'
     if (mime.startsWith('image/')) return 'image'
     if (mime === 'application/pdf') return 'pdf'
     if (mime === 'application/zip' || /\.zip$|\.rar$|\.7z$/.test(fileName)) return 'archive'
@@ -26,56 +33,69 @@ const getDocumentType = (media: DocumentMediaData) => {
   return 'other'
 }
 
-export const Media: React.FC<MediaProps> = ({mediaUrl, metadata}) => {
-  
+export const Media: React.FC<MediaProps> = ({mediaUrl, metadata, time}) => {
+  let mediaContent
+
   switch (metadata.type){
     case 'photo': {
-      return <Bubble><ImageMedia mediaUrl={mediaUrl} /></Bubble>
+       mediaContent =  <ImageMedia mediaUrl={mediaUrl} />
+       break
+    }
+    case 'geo-live':
+    case 'venue': {
+      mediaContent = <GeoMedia metadata={metadata} />
+      break
     }
     case 'document': {
       const docType = getDocumentType(metadata)
 
       switch (docType) {
-        case 'animated': {
-          return <Bubble><AnimationMedia mediaUrl={mediaUrl} /></Bubble>
+        case 'gif': {
+          mediaContent = <GifMedia mediaUrl={mediaUrl} />
+          break
         }
         case 'image': {
-          return <Bubble><ImageMedia mediaUrl={mediaUrl} /></Bubble>
+          mediaContent = <ImageMedia mediaUrl={mediaUrl} />
+          break
         }
         case "video": {
-          return <Bubble><VideoMedia mediaUrl={mediaUrl} /></Bubble>
+          mediaContent = <VideoMedia mediaUrl={mediaUrl} />
+          break
         }
         case "audio": {
-          return <Bubble><AudioMedia metadata={metadata} mediaUrl={mediaUrl} /></Bubble>
+          mediaContent = <Bubble><AudioMedia metadata={metadata} mediaUrl={mediaUrl} /></Bubble>
+          break
         }
         default: {
-          return <Bubble><FileMedia metadata={metadata} mediaUrl={mediaUrl} /></Bubble>
+          mediaContent = <Bubble><FileMedia metadata={metadata} mediaUrl={mediaUrl} /></Bubble>
+          break
         }
-        
       }
+      break
     }
-    default:
-      return <Bubble><UnknownMedia /></Bubble>
+    default:{
+      console.log('type: ', metadata.type)
+      console.log(JSON.stringify(metadata))
+      mediaContent = <Bubble><UnknownMedia /></Bubble>
+      break
+    }
   }
+
+  return (
+    <div className="flex flex-col items-center">
+      {mediaContent}
+      {
+        time && (
+          <div className="mt-1 px-2 py-1 bg-black bg-opacity-50 text-white text-xs rounded-full self-end">
+            {time}
+          </div> 
+      )}
+    </div>
+  )
 }
 
-// export const Media: React.FC<MediaProps> = ({ mediaType, mediaUrl, altText }) => {
-//   switch (mediaType) {
-//     case 'image':
-//       return <Bubble><ImageMedia mediaUrl={mediaUrl} altText={altText} /></Bubble>
-//     case 'audio':
-//       return <Bubble><AudioMedia mediaUrl={mediaUrl} /></Bubble>
-//     case 'video':
-//       return <Bubble><VideoMedia mediaUrl={mediaUrl} /></Bubble>
-//     case 'file':
-//       return <Bubble><FileMedia mediaUrl={mediaUrl} /></Bubble>
-//     default:
-//       return <Bubble><UnknownMedia /></Bubble>
-//   }
-// }
-
 const Bubble: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="p-3 bg-muted rounded-xl max-w-sm">
+  <div className="p-3 bg-gray-100 rounded-xl max-w-sm">
     {children}
   </div>
 )
@@ -130,14 +150,14 @@ const AudioMedia: React.FC<{ metadata: DocumentMediaData; mediaUrl?: string }> =
 const VideoMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
   if (!mediaUrl) return <PlaceholderBubble label="No video available" />
   return (
-    <video controls className="w-full max-h-96 rounded-lg">
+    <video controls className="w-full h-auto rounded-lg object-contain">
       <source src={mediaUrl} type="video/mp4" />
       video
     </video>
   )
 }
 
-const AnimationMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
+const GifMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
   if (!mediaUrl) return <PlaceholderBubble label="No video available" />
   return (
     <video autoPlay loop muted className="w-full max-h-96 rounded-lg">
@@ -147,24 +167,90 @@ const AnimationMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
   )
 }
 
-const FileMedia: React.FC<{ metadata: DocumentMediaData, mediaUrl?: string }> = ({ mediaUrl, metadata }) => {
-  const fileName = metadata.document?.attributes?.find(attr => 'fileName' in attr)?.fileName || 'Unknown File'
-  const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE'
+const GeoMedia: React.FC<{ metadata: GeoLiveMediaData | VenueMediaData }> = ({ metadata }) => {
+  const geo = metadata.geo
+  if (!metadata.geo && metadata.type !== 'venue') {
+    return <PlaceholderBubble label="No geolocation available" />
+  }
 
-  if(fileName === 'Unknown File')console.log(JSON.stringify(metadata))
-  
-  // @ts-ignore
-  const thumbBytes = metadata.document?.thumbs?.[0].bytes
-  const thumbUrl = thumbBytes ? toJPGDataURL(decodeStrippedThumb(thumbBytes as Uint8Array)) : null
+  const mapsUrl = geo
+    ? `https://www.google.com/maps?q=${geo.lat},${geo.long}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((metadata as VenueMediaData).title)}`
 
   return (
     <a
-      href={mediaUrl}
-      className="flex items-center gap-3 p-3 bg-gray-100 rounded-lg hover:bg-gray-200"
+      href={mapsUrl}
       target="_blank"
       rel="noopener noreferrer"
+      className="flex items-center gap-3 bg-muted rounded-lg p-3 shadow-sm hover:bg-gray-100 transition"
     >
+      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 shrink-0">
+        <MapPin className="w-4 h-4 text-white" />
+      </span>
+
+      <div className="text-left">
+        {metadata.type === "venue" ? (
+          <div className="text-sm text-gray-700">
+            <div className="font-medium">{metadata.title}</div>
+            <div className="text-xs text-gray-500">{metadata.address}</div>
+          </div>
+        ) : (
+          <div className="text-blue-600 text-sm">
+            { geo!.lat.toFixed(5)}, { geo!.long.toFixed(5)}
+          </div>
+        )}
+      </div>
+    </a>
+  )
+}
+
+
+const FileMedia: React.FC<{ metadata: DocumentMediaData, mediaUrl?: string }> = ({ mediaUrl, metadata }) => {
+  const fileName = metadata.document?.attributes?.find(attr => 'fileName' in attr)?.fileName || 'Unknown File'
+  const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE'
+  
+  // @ts-ignore
+  const thumbBytes = metadata.document?.thumbs?.[0].bytes
+  let thumbUrl: string | undefined = undefined;
+  if (thumbBytes) {
+    try {
+      thumbUrl = toJPGDataURL(decodeStrippedThumb(thumbBytes as Uint8Array));
+    } catch (err) {
+      thumbUrl = undefined;
+    }
+  }
+  const handleDownload = async () => {
+    try {
+      if (openLink.isAvailable()) {
+        openLink(mediaUrl!, {
+          tryBrowser: 'chrome',
+          tryInstantView: true,
+        });
+      }
       
+      // const response = await fetch(mediaUrl!);
+      // const blob = await response.blob();
+      // const url = URL.createObjectURL(blob);
+
+      // const link = document.createElement("a");
+      // link.href = url;
+      // link.download = fileName;
+      // document.body.appendChild(link);
+      // link.click();
+      // link.remove();
+
+      // URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download failed", err);
+      alert("Failed to download the file.");
+    }
+  }
+
+  return (
+    <button
+      onClick={handleDownload}
+      className="w-full text-left flex items-center gap-3 p-3 bg-gray-100 rounded-lg hover:bg-gray-200"
+    >
       {thumbUrl ? (
         <img
           src={thumbUrl}
@@ -174,12 +260,12 @@ const FileMedia: React.FC<{ metadata: DocumentMediaData, mediaUrl?: string }> = 
       ) : (
         <File size={30} color="#1D4ED8" />
       )}
-      
+
       <div className="flex flex-col">
         <span className="text-sm font-medium text-gray-800 truncate">{fileName}</span>
         <span className="text-xs text-gray-500">{fileExtension}</span>
       </div>
-    </a>
+    </button>
   )
 }
 
