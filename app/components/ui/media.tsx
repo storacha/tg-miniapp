@@ -1,10 +1,10 @@
 "use client"
 
 import React from "react"
-import { File, MapPin } from 'lucide-react'
+import { File, MapPin, CheckCircle, ExternalLink} from 'lucide-react'
 import { openLink } from '@telegram-apps/sdk-react'
-import { decodeStrippedThumb, toJPGDataURL } from "@/lib/utils"
-import { AudioDocumentAttributeData, DocumentMediaData, MediaData, GeoLiveMediaData, VenueMediaData} from "@/api"
+import { decodeStrippedThumb, toJPGDataURL, cn } from "@/lib/utils"
+import { AudioDocumentAttributeData, DocumentMediaData, MediaData, GeoLiveMediaData, VenueMediaData, PollMediaData, WebPageMediaData, DefaultWebPageData } from "@/api"
 interface MediaProps {
   mediaUrl?: string
   metadata: MediaData
@@ -13,8 +13,6 @@ interface MediaProps {
 
 // TODO:
 // [] - File Document bug, I can't allow users to download it
-// [] - PoolMedia
-// [] - WebPageMedia
 
 const getDocumentType = (media: DocumentMediaData) => {
   if (media.video) return 'video'
@@ -46,6 +44,14 @@ export const Media: React.FC<MediaProps> = ({mediaUrl, metadata, time}) => {
       mediaContent = <GeoMedia metadata={metadata} />
       break
     }
+    case 'poll': {
+      mediaContent = <PoolMedia metadata={metadata} />
+      break
+    }
+    case 'webpage': {
+      mediaContent = <WebPageMedia metadata={metadata} />
+      break
+    }
     case 'document': {
       const docType = getDocumentType(metadata)
 
@@ -74,7 +80,6 @@ export const Media: React.FC<MediaProps> = ({mediaUrl, metadata, time}) => {
       break
     }
     default:{
-      console.log('type: ', metadata.type)
       console.log(JSON.stringify(metadata))
       mediaContent = <Bubble><UnknownMedia /></Bubble>
       break
@@ -204,6 +209,119 @@ const GeoMedia: React.FC<{ metadata: GeoLiveMediaData | VenueMediaData }> = ({ m
   )
 }
 
+const PoolMedia: React.FC<{metadata: PollMediaData}> = ({ metadata }) => {
+  const { poll, results } = metadata
+  const totalVoters = results.totalVoters ?? 0
+
+  const decodeOption = (bytes: Uint8Array) =>
+    new TextDecoder().decode(bytes)
+
+  const isQuiz = !!poll.quiz
+  const isMultipleChoice = !!poll.multipleChoice
+
+  return (
+    <div className="w-full min-w-[280px] max-w-md space-y-3 rounded-lg bg-muted p-4">
+      <div>
+        <h3 className="text-sm font-semibold text-gray-800">{poll.question.text}</h3>
+        <p className="text-xs text-gray-500">{isQuiz ? "Quiz" : "Poll"}</p>
+      </div>
+
+      <div className="space-y-2">
+        {poll.answers.map((answer, index) => {
+          const optionKey = decodeOption(answer.option)
+          const answerResult = results.results?.find(
+            (r) => decodeOption(r.option) === optionKey
+          )
+
+          const chosen = answerResult?.chosen
+          const correct = answerResult?.correct
+          const voters = answerResult?.voters ?? 0
+          const percent = totalVoters ? (voters / totalVoters) * 100 : 0
+
+          return (
+            <div key={index}>
+              <div className="flex items-center justify-between text-sm">
+                <span
+                  className={cn(
+                    "flex-1 text-gray-700",
+                    chosen && "font-medium text-blue-700",
+                    correct && isQuiz && "text-green-700"
+                  )}
+                >
+                  {answer.text.text}
+                </span>
+                <div className="ml-2 flex items-center gap-1 text-xs text-gray-500">
+                  {voters} vote{voters !== 1 && "s"}
+                  {isQuiz && correct && (
+                    <CheckCircle className="ml-1 h-4 w-4 text-green-600" />
+                  )}
+                </div>
+              </div>
+              <div className="mt-1 h-1.5 w-full rounded bg-gray-300">
+                <div
+                  className={cn("h-full rounded", {
+                    "bg-blue-500": chosen,
+                    "bg-green-500": isQuiz && correct && !chosen,
+                    "bg-gray-500": !chosen && !correct,
+                  })}
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="text-xs text-gray-500">
+        Total votes: {totalVoters}
+        {isMultipleChoice && " • Multiple choice"}
+      </div>
+    </div>
+  )
+}
+
+const WebPageMedia: React.FC<{metadata: WebPageMediaData}> = ({ metadata }) => {
+  const webpage = metadata.webpage
+  const isUnavailable = !webpage || webpage.type === "pending" || webpage.type === "not-modified"
+  const url = !isUnavailable && (webpage as DefaultWebPageData).url
+
+  return (
+    <a
+      href={url || "#"}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="relative min-w-[260px] w-full max-w-sm rounded-lg bg-muted p-4 no-underline hover:bg-muted/90 overflow-hidden block"
+    >
+      <div className="absolute top-3 right-3 text-blue-600">
+        <ExternalLink className="h-4 w-4" />
+      </div>
+
+      <div className="flex flex-col text-sm text-gray-800 overflow-hidden">
+        {!isUnavailable ? (
+          <>
+            {(webpage as DefaultWebPageData).siteName && (
+              <span className="text-xs text-gray-500 mb-1 truncate">
+                {(webpage as DefaultWebPageData).siteName}
+              </span>
+            )}
+            {(webpage as DefaultWebPageData).title && (
+              <span className="font-medium break-words line-clamp-2">
+                {(webpage as DefaultWebPageData).title}
+              </span>
+            )}
+            {(webpage as DefaultWebPageData).description && (
+              <span className="text-gray-600 text-xs mt-1 line-clamp-2 break-words">
+                {(webpage as DefaultWebPageData).description}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="text-sm text-gray-500">Preview not available</span>
+        )}
+      </div>
+    </a>
+  )
+}
 
 const FileMedia: React.FC<{ metadata: DocumentMediaData, mediaUrl?: string }> = ({ mediaUrl, metadata }) => {
   const fileName = metadata.document?.attributes?.find(attr => 'fileName' in attr)?.fileName || 'Unknown File'
