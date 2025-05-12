@@ -1,18 +1,10 @@
 <%
 # Don't mess with this file -- it will auto compile to env.production.local
-if [ "$TF_WORKSPACE" != "prod" ]; then
-  UPLOAD_PREFIX="staging."
-  GATEWAY_PREFIX="-staging"
-  STORACHA_DID="staging.up.storacha.network"
-  PRICING_TABLE_ID="prctbl_1R1egaF6A5ufQX5vyumO9QAf"
-  PUBLISHABLE_KEY="pk_test_51LO87hF6A5ufQX5viNsPTbuErzfavdrEFoBuaJJPfoIhzQXdOUdefwL70YewaXA32ZrSRbK4U4fqebC7SVtyeNcz00qmgNgueC"
-else
   UPLOAD_PREFIX=""
   GATEWAY_PREFIX=""
   STORACHA_DID="web3.storage"
   PRICING_TABLE_ID="prctbl_1R58oLF6A5ufQX5vozallJKX"
   PUBLISHABLE_KEY="pk_live_51LO87hF6A5ufQX5vQTO5BHyz8y9ybJp4kg1GsBjYuqwluuwtQTkbeZzkoQweFQDlv7JaGjuIdUWAyuwXp3tmCfsM005lJK9aS8"
-fi
 %>
 
 # set these to your upload API service URL and the DID your service is using as its service DID
@@ -32,8 +24,8 @@ NEXT_PUBLIC_SENTRY_ORG=storacha-it
 NEXT_PUBLIC_SENTRY_PROJECT=bluesky-backup
 NEXT_PUBLIC_SENTRY_ENV=<%= $TF_WORKSPACE %>
 
-NEXT_PUBLIC_TELEGRAM_API_ID=<%= $NEXT_PUBLIC_TELEGRAM_API_ID %>
-NEXT_PUBLIC_TELEGRAM_API_HASH=<%= $NEXT_PUBLIC_TELEGRAM_API_HASH %>
+NEXT_PUBLIC_TELEGRAM_API_ID=<%= $TF_VAR_next_public_telegram_api_id %>
+NEXT_PUBLIC_TELEGRAM_API_HASH=<%= $TF_VAR_next_public_telegram_api_hash %>
 NEXT_PUBLIC_POINTS_PER_BYTE=
 
 
@@ -45,6 +37,6 @@ NEXT_PUBLIC_POINTS_PER_BYTE=
 
 # This one can be used in development. It's commented out here just in case
 # these lines make their way into a deployment.
-NEXT_PUBLIC_SERVER_DID='did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi'
+# NEXT_PUBLIC_SERVER_DID='did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi'
 # Server did
 NEXT_PUBLIC_SERVER_DID=<%= $TF_VAR_did %>

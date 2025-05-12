@@ -17,7 +17,15 @@
   "buckets": null,
   "secrets": [
     {
-      "name": "SECRET_BOT_TOKEN",
+      "name": "TELEGRAM_BOT_TOKEN",
+      "variable": true
+    },
+    {
+      "name": "NEXT_PUBLIC_TELEGRAM_API_ID",
+      "variable": true
+    },
+    {
+      "name": "NEXT_PUBLIC_TELEGRAM_API_HASH",
       "variable": true
     }
   ],

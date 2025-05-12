@@ -6,6 +6,7 @@ import {  Principal } from '@ipld/dag-ucan'
 import * as SpaceBlob from '@storacha/capabilities/space/blob'
 import * as SpaceIndex from '@storacha/capabilities/space/index'
 import * as Upload from '@storacha/capabilities/upload'
+import * as Filecoin from '@storacha/capabilities/filecoin'
 import { NameView } from "@storacha/ucn/api"
 import { Buffer } from "buffer/"
 
@@ -51,6 +52,9 @@ class JobSender {
   }
 
   #saveSessionToString() {
+    // This code is copied from 
+    // https://github.com/gram-js/gramjs/blob/master/gramjs/sessions/StringSession.ts#L95-L124
+    // note that "Buffer" here is not node:buffer but the 'buffer' package
     if (!this.#session.authKey || !this.#session.serverAddress || !this.#session.port) {
         return "";
     }
@@ -81,7 +85,7 @@ class JobSender {
   }
 
   async #nameDelegation() {
-    const delegation = await this.#name.grant(this.#serverDID.did(), { expiration: defaultDuration})
+    const delegation = await this.#name.grant(this.#serverDID.did(), { expiration: new Date(Date.now() + defaultDuration).getTime()})
 
     const result = await delegation.archive()
 
@@ -92,7 +96,7 @@ class JobSender {
   }
 
   async #spaceDelegation() {
-    const delegation = await this.#storacha.createDelegation(this.#serverDID, [SpaceBlob.add.can, SpaceIndex.add.can, Upload.add.can], {expiration: new Date(Date.now() + defaultDuration).getTime()})
+    const delegation = await this.#storacha.createDelegation(this.#serverDID, [SpaceBlob.add.can, SpaceIndex.add.can, Upload.add.can, Filecoin.offer.can], {expiration: new Date(Date.now() + defaultDuration).getTime()})
     const result = await delegation.archive()
 
     if (result.error) {

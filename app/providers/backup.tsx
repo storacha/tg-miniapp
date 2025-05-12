@@ -29,6 +29,9 @@ export interface ContextState {
   restoredBackup: Result<RestoredBackup>
   // /** Media of the current backup (or current dialog if set). */
   // media: Result<Media>
+
+  // indicates whether we're ready to setup backups
+  jobManagerReady: boolean
 }
 
 export interface ContextActions {
@@ -46,9 +49,10 @@ export const ContextDefaultValue: ContextValue = [
   {
     jobs: { items: [], loading: false },
     backups: { items: [], loading: false },
-    restoredBackup: { items: [], loading: false}
+    restoredBackup: { items: [], loading: false},
     // messages: { items: [], loading: false },
     // media: { items: [], loading: false }
+    jobManagerReady: false
   },
   {
     addBackupJob: () => Promise.reject(new Error('provider not setup')),
@@ -79,6 +83,8 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
     loading: jobsLoading,
     error: jobsError
   }
+
+  const [jobManagerReady, setJobManagerReady] = useState(false)
 
   const [backups, setBackups] = useState<Backup[]>([])
   const [backupsLoading, setBackupsLoading] = useState(false)
@@ -221,8 +227,11 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
     }
   }, [jobStore])
 
+  useEffect(() => {
+    setJobManagerReady(!!jobManager)
+  }, [jobManager])
   return (
-    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, restoredBackup: restoreBackupResult }, { addBackupJob, removeBackupJob, restoreBackup, fetchMoreMessages}]}>
+    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, restoredBackup: restoreBackupResult, jobManagerReady }, { addBackupJob, removeBackupJob, restoreBackup, fetchMoreMessages}]}>
       {children}
     </Context.Provider>
   )

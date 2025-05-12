@@ -45,7 +45,17 @@ variable "domain_base" {
   default = ""
 }
 
-variable "secret_bot_token" {
-  description = "value for secret_bot_token secret"
+variable "telegram_bot_token" {
+  description = "value for telegram_bot_token secret"
+  type = string
+}
+
+variable "next_public_telegram_api_id" {
+  description = "value for next_public_telegram_api_id secret"
+  type = string
+}
+
+variable "next_public_telegram_api_hash" {
+  description = "value for next_public_telegram_api_hash secret"
   type = string
 }

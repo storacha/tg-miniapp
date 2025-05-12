@@ -1,3 +1,4 @@
+# storoku:ignore
 name: Deploy
 
 on:
@@ -41,6 +42,9 @@ jobs:
       aws-region: ${{ secrets.STAGING_AWS_REGION }}
       region: ${{ secrets.STAGING_AWS_REGION }}
       private-key: ${{ secrets.STAGING_PRIVATE_KEY }}
+      telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      next-public-telegram-api-id: ${{ secrets.TELEGRAM_API_ID }}
+      next-public-telegram-api-hash: ${{ secrets.TELEGRAM_API_HASH }}
 
   # apply prod on successful release, plan otherwise
   production:
@@ -59,4 +63,7 @@ jobs:
       aws-region: ${{ secrets.PROD_AWS_REGION }}
       region: ${{ secrets.PROD_AWS_REGION }}
       private-key: ${{ secrets.PROD_PRIVATE_KEY }}
+      telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      next-public-telegram-api-id: ${{ secrets.TELEGRAM_API_ID }}
+      next-public-telegram-api-hash: ${{ secrets.TELEGRAM_API_HASH }}
       
