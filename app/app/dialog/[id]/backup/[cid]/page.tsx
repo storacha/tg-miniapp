@@ -7,7 +7,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { Media } from '@/components/ui/media'
 import { Layouts } from '@/components/layouts'
 import { decodeStrippedThumb, getInitials, toJPGDataURL } from '@/lib/utils'
-import { DialogData, EntityData, EntityType, MessageData, ServiceMessageData } from '@/api'
+import { DialogData, EntityData, EntityType, MediaData, MessageData, ServiceMessageData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConnectError } from '@/components/backup/connect'
 import { useBackups } from '@/providers/backup'
@@ -28,7 +28,7 @@ const formatTime = (timestamp: number) => (new Date(timestamp * 1000)).toLocaleT
   minute: '2-digit'})
 const formatDate = (timestamp: number) => ((new Date(timestamp * 1000)).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }))
 
-const DialogMessage: React.FC<{isOutgoing: boolean; date: number; message: string}> = ({isOutgoing, date, message}) => {
+const Message: React.FC<{isOutgoing: boolean; date: number; message: string}> = ({isOutgoing, date, message}) => {
   return (
     <div
       className={`px-4 py-2 text-sm rounded-xl whitespace-pre-line shadow-sm break-words min-w-[100px] ${
@@ -50,6 +50,41 @@ const DialogMessage: React.FC<{isOutgoing: boolean; date: number; message: strin
       </div>
 
     </div>
+  )
+}
+
+const MessageWithMedia: React.FC<{
+  isOutgoing: boolean; 
+  date: number; 
+  message?: string; 
+  mediaUrl?: string; 
+  metadata: MediaData
+}> = ({isOutgoing, date, message, mediaUrl, metadata}) => {
+  return (
+    <>
+      <div className={`${message ? 'bg-muted rounded-t-xl overflow-hidden' : 'mt-2'}`}>
+        <Media mediaUrl={mediaUrl} metadata={metadata} time={message ? undefined : formatTime(date)} />
+      </div>
+      {
+        message && 
+          <div
+            className={`px-4 py-2 text-sm rounded-xl rounded-t-none whitespace-pre-line shadow-sm break-words ${
+            isOutgoing
+              ? 'bg-blue-500 text-white rounded-br-none'
+              : 'bg-gray-100 text-foreground rounded-bl-none'
+            }`}
+          >
+            <p>{message}</p>
+            <div className={`text-xs text-right mt-1 ${
+            isOutgoing
+              ? 'text-gray-300'
+              : 'text-muted-foreground'
+            }`}>
+            {formatTime(date)}
+            </div>
+          </div>
+        }
+    </>
   )
 }
 
@@ -150,37 +185,16 @@ function BackupDialog({
                 <div key={msg.id} className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
                   <div className="flex flex-col max-w-[75%]">
                     {showSenderHeader && (<UserInfo thumbSrc={thumbSrc} userName={sender} />)}
-                    { msg.media ? (
-                      <>
-                        <div className="mt-2">
-                          <Media mediaUrl={mediaUrl} metadata={msg.media.metadata} time={msg.message ? undefined : formatTime(msg.date)}/>
-                        </div>
-                        {
-                          msg.message && 
-                            <div
-                              className={`px-4 py-2 text-sm rounded-xl rounded-t-none whitespace-pre-line shadow-sm break-words ${
-                              isOutgoing
-                                ? 'bg-blue-500 text-white rounded-br-none'
-                                : 'bg-gray-100 text-foreground rounded-bl-none'
-                              }`}
-                            >
-                              {msg.message &&
-                              (<p>{msg.message}</p>) 
-                              }
-
-                              <div className={`text-xs text-right mt-1 ${
-                              isOutgoing
-                                ? 'text-gray-300'
-                                : 'text-muted-foreground'
-                              }`}>
-                              {formatTime(msg.date)}
-                              </div>
-                            </div>
-                         }
-                      </>
-                    ) : (
-                      <DialogMessage isOutgoing={isOutgoing} date={msg.date} message={msg.message}/>
-                    )}
+                    { msg.media 
+                      ? <MessageWithMedia 
+                          isOutgoing={isOutgoing} 
+                          date={msg.date} 
+                          message={msg.message} 
+                          metadata={msg.media.metadata} 
+                          mediaUrl={mediaUrl}
+                        />
+                      : <Message isOutgoing={isOutgoing} date={msg.date} message={msg.message}/>
+                    }
                   </div>
                 </div>
               }
