@@ -1,18 +1,20 @@
 "use client"
 
-import React from "react"
-import { File, MapPin, CheckCircle, ExternalLink} from 'lucide-react'
-import { openLink } from '@telegram-apps/sdk-react'
+import React, { useState } from "react"
+import { File, MapPin, CheckCircle, ExternalLink, X} from 'lucide-react'
+import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from "@/lib/utils"
 import { AudioDocumentAttributeData, DocumentMediaData, MediaData, GeoLiveMediaData, VenueMediaData, PollMediaData, WebPageMediaData, DefaultWebPageData, DocumentData } from "@/api"
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+	'pdfjs-dist/build/pdf.worker.min.mjs',
+	import.meta.url,
+).toString();
 interface MediaProps {
   mediaUrl?: string
   metadata: MediaData
   time?: string
 }
-
-// TODO:
-// [] - File Document bug, I can't allow users to download it
 
 const getThumbURL = (document: DocumentData) => {
   try {
@@ -351,53 +353,87 @@ const FileMedia: React.FC<{ metadata: DocumentMediaData, mediaUrl?: string }> = 
 
   let thumbUrl: string | undefined = metadata.document ? getThumbURL(metadata.document) : undefined
 
-  const handleDownload = async () => {
-    try {
-      if (openLink.isAvailable()) {
-        openLink(mediaUrl!, {
-          tryBrowser: 'chrome',
-          tryInstantView: true,
-        });
-      }
-      
-      // const response = await fetch(mediaUrl!);
-      // const blob = await response.blob();
-      // const url = URL.createObjectURL(blob);
-
-      // const link = document.createElement("a");
-      // link.href = url;
-      // link.download = fileName;
-      // document.body.appendChild(link);
-      // link.click();
-      // link.remove();
-
-      // URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Download failed", err);
-      alert("Failed to download the file.");
-    }
+  const handleClick = () => {
+   if(fileExtension === 'PDF'){
+    setShowPreview(true)
+   }
   }
 
+  const [showPreview, setShowPreview] = useState(false);
+  
   return (
-    <button
-      onClick={handleDownload}
-      className="w-full text-left flex items-center gap-3 p-3 bg-gray-100 rounded-lg hover:bg-gray-200"
-    >
-      {thumbUrl ? (
-        <img
-          src={thumbUrl}
-          alt="File Thumbnail"
-          className="w-12 h-12 object-cover rounded-md"
-        />
-      ) : (
-        <File size={30} color="#1D4ED8" />
-      )}
+    <>
+      <button
+        onClick={handleClick}
+        className="w-full text-left flex items-center gap-3 p-3 bg-gray-100 rounded-lg hover:bg-gray-200"
+      >
+        {thumbUrl ? (
+          <img
+            src={thumbUrl}
+            alt="File Thumbnail"
+            className="w-12 h-12 object-cover rounded-md"
+          />
+        ) : (
+          <File size={30} color="#1D4ED8" />
+        )}
 
-      <div className="flex flex-col">
-        <span className="text-sm font-medium text-gray-800 truncate">{fileName}</span>
-        <span className="text-xs text-gray-500">{fileExtension}</span>
+        <div className="flex flex-col">
+          <span className="text-sm font-medium text-gray-800 truncate">
+            {fileName}
+          </span>
+          <span className="text-xs text-gray-500">{fileExtension}</span>
+        </div>
+      </button>
+
+      {showPreview && <PdfView fileName={fileName} mediaUrl={mediaUrl} showPreview={() => setShowPreview(false)}/>}
+    </>
+  );
+}
+
+const PdfView: React.FC<{fileName: string; mediaUrl?: string; showPreview: () => void; }> = ({fileName, mediaUrl, showPreview}) => {
+  const [numPages, setNumPages] = useState<null | number >(null);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex flex-col">
+      <div className="flex justify-between items-center p-3 bg-white">
+        <h3 className="font-medium truncate">{fileName}</h3>
+        <button
+          onClick={showPreview}
+          className="p-2 rounded-full hover:bg-gray-100"
+          title="Close"
+        >
+          <X size={20} />
+        </button>
       </div>
-    </button>
+
+      <div className="flex-1 overflow-auto bg-gray-100 p-4">
+        {mediaUrl ? (
+          <Document
+            file={mediaUrl}
+            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+            loading={<p className="text-center">Loading PDF...</p>}
+          >
+            {Array.from(new Array(numPages), (_, index) => (
+              <div
+                key={`page_${index + 1}`}
+                className="flex justify-center mb-6"
+              >
+                <div className="mb-4 bg-white shadow-md">
+                  <Page
+                    pageNumber={index + 1}
+                    width={Math.min(window.innerWidth * 0.9, 800)}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                  />
+                </div>
+              </div>
+            ))}
+          </Document>
+        ) : (
+          <p className="text-center text-gray-500">No PDF to display.</p>
+        )}
+      </div>
+    </div>
   )
 }
 
