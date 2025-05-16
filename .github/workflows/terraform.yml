@@ -24,6 +24,16 @@ on:
         required: true
       region:
         required: true
+      telegram-bot-token:
+        required: true
+      next-public-telegram-api-id:
+        required: true
+      next-public-telegram-api-hash:
+        required: true
+      cloudflare-zone-id:
+        required: true
+      cloudflare-api-token:
+        required: true
         
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.workspace }}-${{ github.event.pull_request.number || github.ref }}
@@ -43,6 +53,8 @@ env:
   TF_VAR_telegram_bot_token: ${{ secrets.telegram-bot-token }}
   TF_VAR_next_public_telegram_api_id: ${{ secrets.next-public-telegram-api-id }}
   TF_VAR_next_public_telegram_api_hash: ${{ secrets.next-public-telegram-api-hash }}
+  TF_VAR_cloudflare_zone_id: ${{ secrets.cloudflare-zone-id }}
+  CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare-api-token }}
   DEPLOY_ENV: ci
 
 permissions:

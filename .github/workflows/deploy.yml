@@ -45,6 +45,8 @@ jobs:
       telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       next-public-telegram-api-id: ${{ secrets.TELEGRAM_API_ID }}
       next-public-telegram-api-hash: ${{ secrets.TELEGRAM_API_HASH }}
+      cloudflare-zone-id: ${{ secrets.STAGING_CLOUDFLARE_ZONE_ID }}
+      cloudflare-api-token: ${{ secrets.STAGING_CLOUDFLARE_API_TOKEN }}
 
   # apply prod on successful release, plan otherwise
   production:
@@ -66,4 +68,5 @@ jobs:
       telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       next-public-telegram-api-id: ${{ secrets.TELEGRAM_API_ID }}
       next-public-telegram-api-hash: ${{ secrets.TELEGRAM_API_HASH }}
-      
+      cloudflare-zone-id: ${{ secrets.PROD_CLOUDFLARE_ZONE_ID }}
+      cloudflare-api-token: ${{ secrets.PROD_CLOUDFLARE_API_TOKEN }}
