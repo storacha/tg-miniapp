@@ -177,7 +177,8 @@ function BackupDialog({
           let mediaUrl: string | undefined
           if (msg.media?.content) {
             const rawContent = mediaMap[msg.media.content.toString()]
-            mediaUrl = URL.createObjectURL(new Blob([rawContent]))
+            const type = msg.media.metadata.type === 'document' ?  msg.media.metadata.document?.mimeType : ''
+            mediaUrl = URL.createObjectURL(new Blob([rawContent], {type: type}))
           }
 
           return (
