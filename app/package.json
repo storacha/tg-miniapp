@@ -60,6 +60,7 @@
 		"postgres-shift": "^0.1.0",
 		"react": "^19.0.0",
 		"react-dom": "^19.0.0",
+		"react-pdf": "^9.2.1",
 		"tailwind-merge": "^2.5.5",
 		"tailwindcss-animate": "^1.0.7",
 		"telegram": "2.26.8",
