@@ -7,16 +7,20 @@ else
 	endif
 endif
 
-ECR_URI=$(TF_VAR_allowed_account_id).dkr.ecr.$(TF_VAR_region).amazonaws.com
+ECR_URI=$(TF_VAR_allowed_account_id).dkr.ecr.us-west-2.amazonaws.com
+REPLICATED_ECR_URI=$(TF_VAR_allowed_account_id).dkr.ecr.$(TF_VAR_region).amazonaws.com
 IMAGE_TAG_BASE=$(ECR_URI)/$(TF_VAR_app)-ecr:$(TF_WORKSPACE)
+REPLICATED_IMAGE_TAG_BASE=$(REPLICATED_ECR_URI)/$(TF_VAR_app)-ecr:$(TF_WORKSPACE)
 
 # This is a hack to eval the image tag only when it's a dependency, cause we don't want to set it until docker builds
 get_image_tag = IMAGE_TAG = $$(IMAGE_TAG_BASE)-$$(shell docker inspect --format $$(format-filter) $$(IMAGE_TAG_BASE)-latest | sed -e 's/sha256://g')
+get_replicated_image_tag = REPLICATED_IMAGE_TAG = $$(REPLICATED_IMAGE_TAG_BASE)-$$(shell docker inspect --format $$(format-filter) $$(IMAGE_TAG_BASE)-latest | sed -e 's/sha256://g')
 
 .PHONY: eval_image_tag
 
 eval_image_tag:
 	$(eval $(get_image_tag))
+	$(eval $(get_replicated_image_tag))
 
 # GET the absolute location for .env.production.local, again, only after it exists
 
@@ -29,12 +33,12 @@ eval_env_file: .env.production.local
 
 .PHONY: docker-login
 docker-login:
-	aws ecr get-login-password --region $(TF_VAR_region) | docker login --username AWS --password-stdin $(ECR_URI)
+	aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin $(ECR_URI)
 
 .env.terraform:
 
 .env.production.local: .env.terraform .env.production.local.tpl
-	./esh -o .env.production.local .env.production.local.tpl 
+	./esh -s /bin/bash -o .env.production.local .env.production.local.tpl 
 
 docker-build: docker-login .env.production.local
 	docker buildx build --platform linux/arm64 -t $(IMAGE_TAG_BASE)-latest --load ..
@@ -50,7 +54,7 @@ docker-push: docker-tag eval_image_tag
 .PHONY: clean-terraform
 
 clean-terraform: eval_image_tag
-	tofu -chdir=app destroy -var="image_tag=$(IMAGE_TAG)" 
+	tofu -chdir=app destroy -var="image_tag=$(REPLICATED_IMAGE_TAG)" 
 
 .PHONY: clean-shared
 
@@ -110,7 +114,7 @@ plan-shared: shared/.terraform
 .PHONY: plan-app
 
 plan-app: app/.terraform .tfworkspace eval_image_tag eval_env_file
-	tofu -chdir=app plan -var="image_tag=$(IMAGE_TAG)" -var='env_files=["$(ENV_FILE)"]'
+	tofu -chdir=app plan -var="image_tag=$(REPLICATED_IMAGE_TAG)" -var='env_files=["$(ENV_FILE)"]'
 
 .PHONY: plan
 
@@ -130,7 +134,7 @@ apply-shared: shared/.terraform
 .PHONY: apply-app
 
 apply-app: app/.terraform .tfworkspace docker-push eval_image_tag eval_env_file
-	tofu -chdir=app apply -var="image_tag=$(IMAGE_TAG)" -var='env_files=["$(ENV_FILE)"]' $(APPLY_ARGS)
+	tofu -chdir=app apply -var="image_tag=$(REPLICATED_IMAGE_TAG)" -var='env_files=["$(ENV_FILE)"]' $(APPLY_ARGS)
 
 .PHONY: apply
 
@@ -143,7 +147,7 @@ console-shared: shared/.terraform
 
 .PHONY: console-app
 console: app/.terraform .tfworkspace eval_image_tag eval_env_file
-	tofu -chdir=app console -var="image_tag=$(IMAGE_TAG)" -var='env_files=["$(ENV_FILE)"]' $(APPLY_ARGS)
+	tofu -chdir=app console -var="image_tag=$(REPLICATED_IMAGE_TAG)" -var='env_files=["$(ENV_FILE)"]' $(APPLY_ARGS)
 
 .PHONY: wait-deploy
 wait-deploy:

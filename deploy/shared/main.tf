@@ -19,7 +19,7 @@ terraform {
 
 provider "aws" {
   allowed_account_ids = [var.allowed_account_id]
-  region = var.region
+  region = "us-west-2"
   default_tags {
     tags = {
       "Environment" = terraform.workspace
@@ -33,7 +33,7 @@ provider "aws" {
 }
 
 module "shared" {
-  source = "github.com/storacha/storoku//shared?ref=v0.2.25"
+  source = "github.com/storacha/storoku//shared?ref=v0.2.31"
   create_db = false
   caches = [  ]
   app = var.app
