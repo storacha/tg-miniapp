@@ -44,6 +44,7 @@ export const listDialogs = async (sessionString: string, paginationParams: { lim
 		await client.connect()
 	}
 	
+	console.log('current params: ', paginationParams)
 
 	try {
 		const chats: DialogInfo[] = []
@@ -89,7 +90,7 @@ export const listDialogs = async (sessionString: string, paginationParams: { lim
 			offsetPeer: offsetPeerUsername ?? peer,
 		}
 
-		console.log(offsetParams)
+		console.log('next params: ', offsetParams)
 		console.log(chats)
 
 		return {

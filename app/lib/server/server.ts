@@ -9,7 +9,6 @@ import { create as createJobStorage } from '@/lib/store/jobs'
 import { AgentData } from '@storacha/access/agent'
 import { serviceConnection, getServerIdentity, receiptsEndpoint, getBotToken } from './constants'
 import { validate as validateInitData, parse as parseInitData } from '@telegram-apps/init-data-node';
-import { StringSession } from 'telegram/sessions'
 import { Name } from '@storacha/ucn'
 import { extract } from '@ucanto/core/delegation'
 import { getServerTelegramClient } from '@/components/server'
@@ -69,8 +68,7 @@ class JobServer {
   async #initializeTelegram(telegramAuth: TelegramAuth) {
     validateInitData(telegramAuth.initData, getBotToken())
     const initData = parseInitData(telegramAuth.initData)
-    const session = new StringSession(telegramAuth.session) 
-    const client = await getServerTelegramClient(session)
+    const client = await getServerTelegramClient(telegramAuth.session)
     // // DC ip servers need to be set to IP addresses on node
     // // see https://github.com/gram-js/gramjs/issues/344#issuecomment-1405518285
     // // and further discussion in @gramjschat on Telegram

@@ -1,4 +1,4 @@
-import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useState } from 'react'
+import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -6,7 +6,6 @@ import { useTelegram } from '@/providers/telegram'
 import { Button } from '../ui/button'
 import { Backup, DialogInfo } from '@/api'
 import { useBackups } from '@/providers/backup'
-import { useGlobal } from '@/zustand/global'
 
 interface Filter {
 	(dialog: DialogInfo): boolean
@@ -55,12 +54,8 @@ export interface ChatsProps {
 
 export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
 	const [{ backups }] = useBackups()
-	const {tgSessionString} = useGlobal()
-	const [loading, setLoading] = useState(true)
 	const [searchTerm, setSearchTerm] = useState('')
-	const [{ dialogs }, {listDialogs, setDialogs}] = useTelegram()
-	const [offsetParams, setOffsetParams] = useState<{limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}>({ limit: 10 })
-	const [hasMore, setHasMore] = useState(true)
+	const [{ dialogs, loadingDialogs }] = useTelegram()
 
 	const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
 	const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
@@ -68,35 +63,6 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	const items = dialogs.filter(and(typeFilter, searchFilter))
 
 	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
-
-	useEffect(() => {
-		if (!tgSessionString || !hasMore) return;
-
-		let cancel = false;
-
-		(async () => {
-			try {
-				if(dialogs.length === 0){
-					setLoading(true)
-					const { chats, offsetParams: newOffsetParams } = await listDialogs(offsetParams)
-					if (cancel) return
-
-					setDialogs([...chats])
-					setOffsetParams(newOffsetParams)
-					setHasMore(chats.length > 0)
-				}
-				
-			} catch (err) {
-				console.error('Failed to fetch dialogs:', err)
-			} finally {
-				if (!cancel) setLoading(false)
-			}
-		})();
-
-		return () => {
-			cancel = true
-		};
-	}, [tgSessionString, offsetParams]) 
 
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		setSearchTerm(e.target.value)
@@ -151,8 +117,8 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
 						return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
 					})}
-					{loading && <p className='text-center'>Loading chats...</p>}
-					{!loading && !items.length && <p className='text-center'>No chats found!</p>}
+					{loadingDialogs && <p className='text-center'>Loading chats...</p>}
+					{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">

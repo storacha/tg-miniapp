@@ -151,7 +151,7 @@ export default function Page () {
     }
 
     fetchBackup()
-  }, [backupCid, id, restoreBackup])
+  }, [backupCid, id, restoreBackup, getMe])
 
   const handleFetchMoreMessages = async () => {
     return fetchMoreMessages(restoredBackup.item?.messages.length || 0, 50)
