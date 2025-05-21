@@ -55,7 +55,7 @@ export interface ChatsProps {
 export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
 	const [{ backups }] = useBackups()
 	const [searchTerm, setSearchTerm] = useState('')
-	const [{ dialogs, loadingDialogs }] = useTelegram()
+	const [{ dialogs, loadingDialogs, error }] = useTelegram()
 
 	const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
 	const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
@@ -113,12 +113,18 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 					</Button>
 				</div>
 				<div className="flex flex-col min-h-screen">
-					{items.map(d => {
-						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
-						return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
-					})}
-					{loadingDialogs && <p className='text-center'>Loading chats...</p>}
-					{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
+					{error ? (
+						<p className="text-red-600 text-center text-xs my-2">{error.message}</p>
+					) : (
+						<>
+							{items.map((d: DialogInfo) => {
+								const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
+								return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
+							})}
+							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
+							{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
+						</>
+					)}
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">
