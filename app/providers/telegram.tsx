@@ -1,7 +1,5 @@
 import { createContext, useContext, ReactNode, PropsWithChildren, useState, useCallback, useEffect } from 'react'
 import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@telegram-apps/sdk-react'
-import { Session } from '@/vendor/telegram/sessions/Abstract'
-import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
 import { listDialogs as listDialogsRequest, getMe as getMeRequest } from '../components/server'
 import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
@@ -33,18 +31,11 @@ export const ContextDefaultValue: ContextValue = [
 
 export const Context = createContext<ContextValue>(ContextDefaultValue)
 
-export interface ProviderProps extends PropsWithChildren {
-  apiId: number
-  apiHash: string
-  clientParams?: TelegramClientParams
-  session?: Session
-}
-
 /**
  * Provider that adds launch params, init data and and exposes dialogs to
  * the context.
  */
-export const Provider = ({ apiId, apiHash, session, clientParams, children }: ProviderProps): ReactNode => {
+export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const {tgSessionString} = useGlobal()
   const user = useSignal(initData.user)
   const launchParams = useLaunchParams()

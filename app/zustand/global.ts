@@ -85,17 +85,6 @@ export const useGlobal = create<GlobalState>()(
 		}),
 		{
 			name: 'global-storage',
-			storage: typeof localStorage !== 'undefined' ? {
-				getItem: (name) => {
-					const item = localStorage.getItem(name);
-					return item ? JSON.parse(item) : null;
-				},
-				setItem: (name, value) => {
-					console.log(`setting ${String(name)} with: ${JSON.stringify(value)}`)
-					localStorage.setItem(name, JSON.stringify(value));
-				},
-				removeItem: (name) => localStorage.removeItem(name),
-			} : undefined
 		},
 	),
 )

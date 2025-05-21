@@ -13,8 +13,6 @@ import { Name } from '@storacha/ucn'
 import { extract } from '@ucanto/core/delegation'
 import { getServerTelegramClient } from '@/components/server'
 
-// const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
-
 export interface Context {
     queueFn: (jr: JobRequest) => Promise<void>
 }
@@ -69,29 +67,12 @@ class JobServer {
     validateInitData(telegramAuth.initData, getBotToken())
     const initData = parseInitData(telegramAuth.initData)
     const client = await getServerTelegramClient(telegramAuth.session)
-    // // DC ip servers need to be set to IP addresses on node
-    // // see https://github.com/gram-js/gramjs/issues/344#issuecomment-1405518285
-    // // and further discussion in @gramjschat on Telegram
-    // const dcServers : Record<number, string> = {
-    //   1: "149.154.175.54",
-    //   2: "149.154.167.50",
-    //   3: "149.154.175.100",
-    //   4: "149.154.167.91",
-    //   5: "91.108.56.103",
-    // }; 
-    // session.setDC(session.dcId, dcServers[session.dcId], session.port)
-    // const client = new TelegramClient(session, telegramAPIID, telegramAPIHash, defaultClientParams)
-
-    // if (!(await client.connect())) {
-    //   throw new Error("failed to connect to telegram")
-    // }
-    // if (!(await client.checkAuthorization())) {
-    //   throw new Error("client authorization failed")
-    // }
+   
     if(!client.connected){
       console.log('client is disconnected')
 		  await client.connect()
 	  }
+    
     const user = await client.getMe()
     if (user.id.toString() !== (initData.user?.id.toString() || '0')) {
        throw new Error("authorized user does not match telegram mini-app user")

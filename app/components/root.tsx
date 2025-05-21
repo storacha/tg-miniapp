@@ -26,8 +26,6 @@ import { useGlobal } from '@/zustand/global'
 import { sendRequest  } from './server'
 import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
 
-const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
-const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
 
@@ -49,7 +47,6 @@ export function Root(props: PropsWithChildren) {
 	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString} = useGlobal()
 
 	useEffect(() => {
-		console.log('calling useEffect on root: ', tgSessionString)
 		if(isTgAuthorized && !tgSessionString) {
 			console.log('setting session')
 			const defaultSessionName = 'tg-session'
@@ -73,7 +70,7 @@ export function Root(props: PropsWithChildren) {
 
 	return (
 		<ErrorBoundary fallback={ErrorPage}>
-			<TelegramProvider apiId={apiId} apiHash={apiHash}>
+			<TelegramProvider>
 				{isTgAuthorized ? (
 					<StorachaProvider servicePrincipal={serviceID} connection={connection}>
 						<BackupProviderContainer>
@@ -112,28 +109,19 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			await storacha.setCurrentSpace(space)
 
-			let proofs = storacha.proofs([
+			const proofs = storacha.proofs([
 				{ can: 'clock/head', with: space },
 				{ can: 'clock/advance', with: space }
 			])
-
-			let name
-			if ( !proofs.length ) {
-				console.log('merkle clock proofs not found')
-				name = await Name.create(storacha.agent.issuer)
-				// @ts-expect-error type mismatch
-				proofs = await Name.grant(name, space)
-				// throw new Error('merkle clock proofs not found')
-			} else {
-				console.log('found proofs')
-				name = Name.from(storacha.agent.issuer, proofs, { id: space })
+			if (!proofs.length) {
+				throw new Error('merkle clock proofs not found')
 			}
-
-			console.log('name: ', name.did())
 
 			const cipher = createCipher(encryptionPassword)
 			const remoteStore = createRemoteStorage(storacha)
+			const name = Name.from(storacha.agent.issuer, proofs, { id: space })
 			const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
+			console.log('name: ', name.did())
 
 			const jobs = await createJobStorage({ store })
 

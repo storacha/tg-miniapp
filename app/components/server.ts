@@ -33,7 +33,6 @@ export const getMe = async (sessionString: string): Promise<string> => {
 	}
 
 	const user = await client.getMe()
-	console.log('get Me: ', user.id.toString())
 	return user.id.toString()
 }
 
@@ -44,7 +43,7 @@ export const listDialogs = async (sessionString: string, paginationParams: { lim
 		await client.connect()
 	}
 	
-	console.log('current params: ', paginationParams)
+	console.log('list dialogs with current params: ', paginationParams)
 
 	try {
 		const chats: DialogInfo[] = []
@@ -90,9 +89,11 @@ export const listDialogs = async (sessionString: string, paginationParams: { lim
 			offsetPeer: offsetPeerUsername ?? peer,
 		}
 
+		console.log('total dialogs: ', chats.length)
+		console.log('first dialog: ', chats[0])
+		console.log('last dialog: ', chats[chats.length - 1])
 		console.log('next params: ', offsetParams)
-		console.log(chats)
-
+		
 		return {
 			chats,
 			offsetParams

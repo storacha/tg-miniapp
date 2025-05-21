@@ -11,8 +11,6 @@ import { NameView } from "@storacha/ucn/api"
 // default to 1 hour
 const defaultDuration = 1000 * 60 * 60
 
-// const CURRENT_VERSION = "1";
-
 export interface Context {
   storacha: StorachaClient
   serverDID: Principal,
@@ -48,39 +46,6 @@ class JobSender {
     this.#serverDID = serverDID
     this.#sendRequest = sendRequest
   }
-
-  // #saveSessionToString() {
-  //   // This code is copied from 
-  //   // https://github.com/gram-js/gramjs/blob/master/gramjs/sessions/StringSession.ts#L95-L124
-  //   // note that "Buffer" here is not node:buffer but the 'buffer' package
-  //   if (!this.#session.authKey || !this.#session.serverAddress || !this.#session.port) {
-  //       return "";
-  //   }
-  //   // TS is weird
-  //   const key = this.#session.authKey.getKey();
-  //   if (!key) {
-  //       return "";
-  //   }
-  //   const dcBuffer = Buffer.from([this.#session.dcId]);
-  //   const addressBuffer = Buffer.from(this.#session.serverAddress);
-  //   const addressLengthBuffer = Buffer.alloc(2);
-  //   addressLengthBuffer.writeInt16BE(addressBuffer.length, 0);
-  //   const portBuffer = Buffer.alloc(2);
-  //   portBuffer.writeInt16BE(this.#session.port, 0);
-  
-  //   return (
-  //       CURRENT_VERSION +
-  //       StringSession.encode(
-  //           Buffer.concat([
-  //               dcBuffer,
-  //               addressLengthBuffer,
-  //               addressBuffer,
-  //               portBuffer,
-  //               key,
-  //           ])
-  //       )
-  //   );
-  // }
 
   async #nameDelegation() {
     const delegation = await this.#name.grant(this.#serverDID.did(), { expiration: new Date(Date.now() + defaultDuration).getTime()})
