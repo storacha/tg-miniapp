@@ -3,29 +3,18 @@ import { ShieldCheck, ChevronRight } from 'lucide-react'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
 import { MouseEventHandler, useEffect, useState } from 'react'
-import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
-import { Backup } from '@/api'
-import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
+import { Backup, DialogInfo } from '@/api'
 import { useRouter } from 'next/navigation'
-import { getEntityType } from '@/lib/backup/utils'
+import { useGlobal } from '@/zustand/global'
 
 interface DialogItemProps {
-	dialog: Dialog
+	dialog: DialogInfo
 	onClick: MouseEventHandler
 	latestBackup?: Backup
 }
 
 const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
-	const title = (dialog.name ?? dialog.title ?? '').trim() || 'Unknown'
-	const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
-	const initials = parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-
-	let thumbSrc = ''
-	// @ts-expect-error Telegram types are messed up
-	const strippedThumbBytes = dialog.entity?.photo?.strippedThumb
-	if (strippedThumbBytes) {
-		thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
-	}
+	const {id, title, initials, thumbSrc} = dialog
 
 	let latestBackupDate
 	if (latestBackup) {
@@ -36,7 +25,7 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 
 	return (
 		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" 
-			data-id={String(dialog.id)} 
+			data-id={id} 
 			onClick={isClickable ? onClick : undefined}
 		>
 			<div className="flex gap-4 items-center w-full">
@@ -57,36 +46,48 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 }
 
 export default function BackedChats() {
-	const [{ client }] = useTelegram()
-	const [{ backups }] = useBackups()
 	const router = useRouter()
-	const [dialogs, setDialogs] = useState<Dialog[]>([])
+	const [{ backups }] = useBackups()
+	const {tgSessionString} =  useGlobal()
 	const [loading, setLoading] = useState(true)
+	const [{ dialogs }, {listDialogs, setDialogs}] = useTelegram()
+	const [offsetParams, setOffsetParams] = useState<{limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}>({ limit: 10 })
+	const [hasMore, setHasMore] = useState(true)
 
 	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
 
 	useEffect(() => {
-		let cancel = false
-		const dialogs = []
-		;(async () => {
-			if (!client.connected) await client.connect()
-			for await (const dialog of client.iterDialogs()) {
+		if (!tgSessionString || !hasMore) return
+
+		let cancel = false;
+
+		(async () => {
+			try {
+				setLoading(true)
+				const { chats, offsetParams: newOffsetParams } = await listDialogs(offsetParams)
 				if (cancel) return
-				setLoading(false)
-				dialogs.push(dialog)
-				setDialogs([...dialogs])
+
+				setDialogs([...chats])
+				setOffsetParams(newOffsetParams)
+				setHasMore(chats.length > 0)
+			} catch (err) {
+				console.error('Failed to fetch dialogs:', err)
+			} finally {
+				if (!cancel) setLoading(false)
 			}
 		})()
-		return () => { cancel = true }
-	}, [client])
+
+		return () => {
+			cancel = true
+		}
+	}, [tgSessionString, offsetParams])
 
 	const handleDialogItemClick: MouseEventHandler = e => {
 		e.preventDefault()
-		const id = BigInt(e.currentTarget.getAttribute('data-id') ?? 0)
-		const dialog = dialogs.find(d => d.id?.toString() == id.toString())
+		const id = e.currentTarget.getAttribute('data-id') ?? '0'
+		const dialog = dialogs.find(d => d.id == id)
 		if (!dialog) return
-		const type =  dialog.entity ? getEntityType(dialog.entity) : 'unknown'
-		router.push(`/dialog/${id}?type=${type}`)
+		router.push(`/dialog/${id}?type=${dialog.type}`)
 	}
 
 	return (
@@ -105,7 +106,7 @@ export default function BackedChats() {
 				<div className="flex flex-col">
 					{loading && <p className='text-center'>Loading chats...</p>}
 					{!loading && dialogs.map(d => {
-						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id.toString()))
+						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
 						return <DialogItem key={String(d.id)} dialog={d} latestBackup={latestBackup} onClick={handleDialogItemClick} />
 					})}
 				</div>

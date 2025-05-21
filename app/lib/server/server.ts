@@ -1,20 +1,20 @@
 import { JobID, JobRequest, TelegramAuth, Job, SpaceDID } from '@/api'
 import { Delegation, DID, Signer } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
-import { TelegramClient } from 'telegram'
 import { create as createObjectStorage } from '@/lib/store/object'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { create as createRemoteStorage } from '@/lib/store/remote'
 import { create as createHandler } from './handler'
 import { create as createJobStorage } from '@/lib/store/jobs'
 import { AgentData } from '@storacha/access/agent'
-import { serviceConnection, getServerIdentity, receiptsEndpoint, getBotToken, telegramAPIID, telegramAPIHash } from './constants'
+import { serviceConnection, getServerIdentity, receiptsEndpoint, getBotToken } from './constants'
 import { validate as validateInitData, parse as parseInitData } from '@telegram-apps/init-data-node';
 import { StringSession } from 'telegram/sessions'
-import { TelegramClientParams } from 'telegram/client/telegramBaseClient'
 import { Name } from '@storacha/ucn'
 import { extract } from '@ucanto/core/delegation'
-const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
+import { getServerTelegramClient } from '@/components/server'
+
+// const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
 
 export interface Context {
     queueFn: (jr: JobRequest) => Promise<void>
@@ -70,25 +70,30 @@ class JobServer {
     validateInitData(telegramAuth.initData, getBotToken())
     const initData = parseInitData(telegramAuth.initData)
     const session = new StringSession(telegramAuth.session) 
-    // DC ip servers need to be set to IP addresses on node
-    // see https://github.com/gram-js/gramjs/issues/344#issuecomment-1405518285
-    // and further discussion in @gramjschat on Telegram
-    const dcServers : Record<number, string> = {
-      1: "149.154.175.54",
-      2: "149.154.167.50",
-      3: "149.154.175.100",
-      4: "149.154.167.91",
-      5: "91.108.56.103",
-    }; 
-    session.setDC(session.dcId, dcServers[session.dcId], session.port)
-    const client = new TelegramClient(session, telegramAPIID, telegramAPIHash, defaultClientParams)
+    const client = await getServerTelegramClient(session)
+    // // DC ip servers need to be set to IP addresses on node
+    // // see https://github.com/gram-js/gramjs/issues/344#issuecomment-1405518285
+    // // and further discussion in @gramjschat on Telegram
+    // const dcServers : Record<number, string> = {
+    //   1: "149.154.175.54",
+    //   2: "149.154.167.50",
+    //   3: "149.154.175.100",
+    //   4: "149.154.167.91",
+    //   5: "91.108.56.103",
+    // }; 
+    // session.setDC(session.dcId, dcServers[session.dcId], session.port)
+    // const client = new TelegramClient(session, telegramAPIID, telegramAPIHash, defaultClientParams)
 
-    if (!(await client.connect())) {
-      throw new Error("failed to connect to telegram")
-    }
-    if (!(await client.checkAuthorization())) {
-      throw new Error("client authorization failed")
-    }
+    // if (!(await client.connect())) {
+    //   throw new Error("failed to connect to telegram")
+    // }
+    // if (!(await client.checkAuthorization())) {
+    //   throw new Error("client authorization failed")
+    // }
+    if(!client.connected){
+      console.log('client is disconnected')
+		  await client.connect()
+	  }
     const user = await client.getMe()
     if (user.id.toString() !== (initData.user?.id.toString() || '0')) {
        throw new Error("authorized user does not match telegram mini-app user")

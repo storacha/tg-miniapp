@@ -4,10 +4,16 @@ import { useState, useEffect, FormEventHandler } from 'react'
 import { Button } from '@/components/ui/button'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { useGlobal } from '@/zustand/global'
-import { Api } from '@/vendor/telegram'
+import { Api, TelegramClient } from '@/vendor/telegram'
 import { computeCheck } from '@/vendor/telegram/Password'
 import { Input } from './ui/input'
 import { useTelegram } from '@/providers/telegram'
+import { StringSession } from '@/vendor/telegram/sessions'
+import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
+
+const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
+const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
+const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
 
 function CountDown({ onResend }: { onResend: () => unknown }) {
 	const [count, setCount] = useState(59)
@@ -112,11 +118,19 @@ export default function TelegramAuth() {
 	const [error, setError] = useState<Error>()
 	const [codeHash, setCodeHash] = useState('')
 	const [code, setCode] = useState('')
-	const { setIsTgAuthorized, phoneNumber, setPhoneNumber } = useGlobal()
-	const [{ client, user }] = useTelegram()
+	const { setIsTgAuthorized, phoneNumber, setPhoneNumber, tgSessionString, setTgSessionString } = useGlobal()
+	const [{ user }] = useTelegram()
 	const [is2FARequired, set2FARequired] = useState(false)
 	const [password, setPassword] = useState('')
 	const [srp, setSRP] = useState<Api.account.Password>()
+	const [client, setClient] = useState<TelegramClient>()
+
+	useEffect(()=> {
+		const newClient = new TelegramClient(new StringSession(tgSessionString), apiId, apiHash, defaultClientParams)
+		setClient(newClient)
+	}, [tgSessionString])
+
+	if (!client) return
 
 	const handlePhoneSubmit: FormEventHandler<HTMLFormElement> = async e => {
 		e.preventDefault()
@@ -171,7 +185,7 @@ export default function TelegramAuth() {
 					throw new Error('login user and user using the app must match')
 				}
 			}
-
+			setTgSessionString(client.session)
 			setIsTgAuthorized(true)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
@@ -215,7 +229,7 @@ export default function TelegramAuth() {
 					throw new Error('login user and user using the app must match')
 				}
 			}
-
+			setTgSessionString(client.session)
 			setIsTgAuthorized(true)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {

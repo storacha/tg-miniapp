@@ -128,7 +128,7 @@ function BackupDialog({
 
 export default function Page () {
   const router = useRouter()
-  const [{ client }] = useTelegram()
+  const [{}, {getMe}] = useTelegram()
   const [{ restoredBackup }, { restoreBackup, fetchMoreMessages }] = useBackups()
   const {id, cid: backupCid} = useParams<{ id: string, cid: string }>()
   const searchParams = useSearchParams()
@@ -140,9 +140,7 @@ export default function Page () {
 
     const fetchBackup = async () => {
       try {
-        if (!client.connected) await client.connect()
-          
-        const userId = (await client.getMe()).id.toString()
+        const userId = await getMe()
         setUserId(userId)
 
         await restoreBackup(backupCid!, normalizedId, 50)
@@ -153,7 +151,7 @@ export default function Page () {
     }
 
     fetchBackup()
-  }, [client, backupCid, id, restoreBackup])
+  }, [backupCid, id, restoreBackup])
 
   const handleFetchMoreMessages = async () => {
     return fetchMoreMessages(restoredBackup.item?.messages.length || 0, 50)

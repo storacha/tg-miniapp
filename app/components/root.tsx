@@ -24,6 +24,8 @@ import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
 import { sendRequest  } from './server'
+import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
+
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
@@ -44,7 +46,18 @@ if (typeof window !== 'undefined') {
 
 export function Root(props: PropsWithChildren) {
 	const didMount = useDidMount()
-	const { isOnboarded, isTgAuthorized } = useGlobal()
+	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString} = useGlobal()
+
+	useEffect(() => {
+		console.log('calling useEffect on root: ', tgSessionString)
+		if(isTgAuthorized && !tgSessionString) {
+			console.log('setting session')
+			const defaultSessionName = 'tg-session'
+			const session = (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
+			setTgSessionString(session)
+		}
+		
+	}, [tgSessionString])
 
 	if (!didMount) {
 		return (
@@ -78,13 +91,13 @@ export function Root(props: PropsWithChildren) {
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 	const [{ client: storacha }] = useStoracha()
-	const [{ client: telegram, launchParams }] = useTelegram()
-	const { isStorachaAuthorized, space } = useGlobal()
+	const [{ launchParams }] = useTelegram()
+	const { isStorachaAuthorized, space, tgSessionString } = useGlobal()
 	const [jobManager, setJobManager] = useState<JobManager>()
 	const [jobs, setJobs] = useState<JobStorage>()
 
 	useEffect(() => {
-		if (!storacha || !telegram || !isStorachaAuthorized || !space) {
+		if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
 			return
 		}
 		;(async () => {
@@ -99,17 +112,27 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			await storacha.setCurrentSpace(space)
 
-			const proofs = storacha.proofs([
+			let proofs = storacha.proofs([
 				{ can: 'clock/head', with: space },
 				{ can: 'clock/advance', with: space }
 			])
-			if (!proofs.length) {
-				throw new Error('merkle clock proofs not found')
+
+			let name
+			if ( !proofs.length ) {
+				console.log('merkle clock proofs not found')
+				name = await Name.create(storacha.agent.issuer)
+				// @ts-expect-error type mismatch
+				proofs = await Name.grant(name, space)
+				// throw new Error('merkle clock proofs not found')
+			} else {
+				console.log('found proofs')
+				name = Name.from(storacha.agent.issuer, proofs, { id: space })
 			}
+
+			console.log('name: ', name.did())
 
 			const cipher = createCipher(encryptionPassword)
 			const remoteStore = createRemoteStorage(storacha)
-			const name = Name.from(storacha.agent.issuer, proofs, { id: space })
 			const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
 
 			const jobs = await createJobStorage({ store })
@@ -121,7 +144,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 				launchParams,
 				name,
 				encryptionPassword,
-				session: telegram.session,
+				session: tgSessionString,
 				sendRequest
 			})
 
@@ -130,7 +153,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 			setJobs(jobs)
 			setJobManager(jobManager)
 		})()
-	}, [storacha, telegram, isStorachaAuthorized, space])
+	}, [storacha, tgSessionString, isStorachaAuthorized, space])
 
 	return (
 		<BackupProvider jobManager={jobManager} jobs={jobs}>

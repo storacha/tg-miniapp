@@ -9,7 +9,7 @@ import { MouseEventHandler } from 'react'
 import { useW3 as useStoracha } from '@storacha/ui-react'
 
 export function Menu() {
-	const [{ client: telegram, user }] = useTelegram()
+	const [{ user }] = useTelegram()
 	const [, { logout }] = useStoracha()
 	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber, setSpace } = useGlobal()
 	const initials = user?.firstName ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase() : ''
@@ -22,7 +22,7 @@ export function Menu() {
 		// TODO: remove other stuff in global?
 		// TODO: I don't think this actually does anything 😱
 		// There's no client logout method (there is in Python)
-		telegram.session.delete()
+		// telegram.session.delete()
 		setIsTgAuthorized(false)
 		await logout()
 		setIsStorachaAuthorized(false)
