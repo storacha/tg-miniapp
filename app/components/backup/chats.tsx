@@ -1,4 +1,4 @@
-import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useState } from 'react'
+import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -55,7 +55,7 @@ export interface ChatsProps {
 export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
 	const [{ backups }] = useBackups()
 	const [searchTerm, setSearchTerm] = useState('')
-	const [{ dialogs, loadingDialogs, error }] = useTelegram()
+	const [{ dialogs, loadingDialogs, error }, { loadMoreDialogs }] = useTelegram()
 
 	const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
 	const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
@@ -63,6 +63,26 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	const items = dialogs.filter(and(typeFilter, searchFilter))
 
 	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
+	const observerRef = useRef<HTMLDivElement | null>(null)
+
+	useEffect(() => {
+		if (!observerRef.current) return
+
+		const observer = new IntersectionObserver(
+			entries => {
+				if (entries[0].isIntersecting && !loadingDialogs) {
+					loadMoreDialogs()
+				}
+			},
+			{
+				threshold: 0.1,
+			}
+		)
+
+		observer.observe(observerRef.current)
+		return () => observer.disconnect()
+	}, [loadMoreDialogs, loadingDialogs])
+	
 
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		setSearchTerm(e.target.value)
@@ -122,6 +142,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 								return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
 							})}
 							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
+							<div ref={observerRef} className="h-10" />
 							{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
 						</>
 					)}
