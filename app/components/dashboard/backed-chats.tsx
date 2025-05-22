@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ShieldCheck, ChevronRight } from 'lucide-react'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
-import { MouseEventHandler } from 'react'
+import { MouseEventHandler, useEffect, useRef } from 'react'
 import { Backup, DialogInfo } from '@/api'
 import { useRouter } from 'next/navigation'
 interface DialogItemProps {
@@ -46,9 +46,28 @@ const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
 export default function BackedChats() {
 	const router = useRouter()
 	const [{ backups }] = useBackups()
-	const [{ dialogs, loadingDialogs, error}] = useTelegram()
+	const [{ dialogs, loadingDialogs, error }, { loadMoreDialogs }] = useTelegram()
 
 	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
+	const observerRef = useRef<HTMLDivElement | null>(null)
+
+	useEffect(() => {
+		if (!observerRef.current) return
+
+		const observer = new IntersectionObserver(
+			entries => {
+				if (entries[0].isIntersecting && !loadingDialogs) {
+					loadMoreDialogs()
+				}
+			},
+			{
+				threshold: 0.1,
+			}
+		)
+
+		observer.observe(observerRef.current)
+		return () => observer.disconnect()
+	}, [loadMoreDialogs, loadingDialogs])
 
 	const handleDialogItemClick: MouseEventHandler = e => {
 		e.preventDefault()
@@ -75,12 +94,13 @@ export default function BackedChats() {
 						</div>
 					)}
 					{backups.items.length > 0 && (
-						<div   className="flex flex-col">
-							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
-							{!loadingDialogs && dialogs.map(d => {
+						<div  className="flex flex-col">
+							{dialogs.map(d => {
 								const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
 								return <DialogItem key={String(d.id)} dialog={d} latestBackup={latestBackup} onClick={handleDialogItemClick} />
 							})}
+							<div ref={observerRef} className="h-10" />
+							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
 						</div>
 					)}
 				</>
