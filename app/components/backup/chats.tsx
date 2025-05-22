@@ -1,4 +1,4 @@
-import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useState } from 'react'
+import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react'
 import { DialogInfo } from '@/api'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
@@ -31,7 +31,7 @@ export interface ChatsProps {
 export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
 	const [{ backups }] = useBackups()
 	const [searchTerm, setSearchTerm] = useState('')
-	const [{ dialogs, loadingDialogs, error }] = useTelegram()
+	const [{ dialogs, loadingDialogs, error }, { loadMoreDialogs }] = useTelegram()
 
 	const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
 	const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
@@ -39,6 +39,26 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	const items = dialogs.filter(and(typeFilter, searchFilter))
 
 	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
+	const observerRef = useRef<HTMLDivElement | null>(null)
+
+	useEffect(() => {
+		if (!observerRef.current) return
+
+		const observer = new IntersectionObserver(
+			entries => {
+				if (entries[0].isIntersecting && !loadingDialogs) {
+					loadMoreDialogs()
+				}
+			},
+			{
+				threshold: 0.1,
+			}
+		)
+
+		observer.observe(observerRef.current)
+		return () => observer.disconnect()
+	}, [loadMoreDialogs, loadingDialogs])
+	
 
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		setSearchTerm(e.target.value)
@@ -103,6 +123,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 								)
 							})}
 							{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
+							<div ref={observerRef} className="h-10" />
 							{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
 						</>
 					)}
