@@ -1,0 +1,20 @@
+{
+	"name": "backup-queue",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc",
+		"dev": "wrangler dev",
+		"deploy": "wrangler publish",
+		"test": "vitest run"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@cloudflare/workers-types": "^4.20250413.0",
+		"typescript": "^5.8.3",
+		"wrangler": "^4.6.0"
+	}
+}
