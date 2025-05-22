@@ -24,8 +24,8 @@ import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
 import { sendRequest  } from './server'
-const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
-const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
+import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
+
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
 
@@ -44,7 +44,17 @@ if (typeof window !== 'undefined') {
 
 export function Root(props: PropsWithChildren) {
 	const didMount = useDidMount()
-	const { isOnboarded, isTgAuthorized } = useGlobal()
+	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString} = useGlobal()
+
+	useEffect(() => {
+		if(isTgAuthorized && !tgSessionString) {
+			console.log('setting session')
+			const defaultSessionName = 'tg-session'
+			const session = (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
+			setTgSessionString(session)
+		}
+		
+	}, [tgSessionString])
 
 	if (!didMount) {
 		return (
@@ -60,7 +70,7 @@ export function Root(props: PropsWithChildren) {
 
 	return (
 		<ErrorBoundary fallback={ErrorPage}>
-			<TelegramProvider apiId={apiId} apiHash={apiHash}>
+			<TelegramProvider>
 				{isTgAuthorized ? (
 					<StorachaProvider servicePrincipal={serviceID} connection={connection}>
 						<BackupProviderContainer>
@@ -78,13 +88,13 @@ export function Root(props: PropsWithChildren) {
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 	const [{ client: storacha }] = useStoracha()
-	const [{ client: telegram, launchParams }] = useTelegram()
-	const { isStorachaAuthorized, space } = useGlobal()
+	const [{ launchParams }] = useTelegram()
+	const { isStorachaAuthorized, space, tgSessionString } = useGlobal()
 	const [jobManager, setJobManager] = useState<JobManager>()
 	const [jobs, setJobs] = useState<JobStorage>()
 
 	useEffect(() => {
-		if (!storacha || !telegram || !isStorachaAuthorized || !space) {
+		if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
 			return
 		}
 		;(async () => {
@@ -111,6 +121,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 			const remoteStore = createRemoteStorage(storacha)
 			const name = Name.from(storacha.agent.issuer, proofs, { id: space })
 			const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
+			console.log('name: ', name.did())
 
 			const jobs = await createJobStorage({ store })
 
@@ -121,7 +132,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 				launchParams,
 				name,
 				encryptionPassword,
-				session: telegram.session,
+				session: tgSessionString,
 				sendRequest
 			})
 
@@ -130,7 +141,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 			setJobs(jobs)
 			setJobManager(jobManager)
 		})()
-	}, [storacha, telegram, isStorachaAuthorized, space])
+	}, [storacha, tgSessionString, isStorachaAuthorized, space])
 
 	return (
 		<BackupProvider jobManager={jobManager} jobs={jobs}>

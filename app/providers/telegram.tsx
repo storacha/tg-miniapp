@@ -1,20 +1,20 @@
-import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect } from 'react'
-import { TelegramClient } from '@/vendor/telegram'
+import { createContext, useContext, ReactNode, PropsWithChildren, useState, useCallback, useEffect } from 'react'
 import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@telegram-apps/sdk-react'
-import { Session } from '@/vendor/telegram/sessions/Abstract'
-import { StoreSession, StringSession } from '@/vendor/telegram/sessions'
-import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
-
-const defaultSessionName = 'tg-session'
-const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
+import { listDialogs as listDialogsRequest, getMe as getMeRequest } from '../components/server'
+import { useGlobal } from '@/zustand/global'
+import { DialogInfo } from '@/api'
 
 export interface ContextState {
   launchParams: LaunchParams
   user?: User
-  client: TelegramClient
+  dialogs: DialogInfo[]
+  loadingDialogs: boolean
+  error: Error | null
 }
 
-export interface ContextActions {}
+export interface ContextActions {
+  getMe: () => Promise<string>
+}
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
 
@@ -22,42 +22,79 @@ export const ContextDefaultValue: ContextValue = [
   {
     launchParams: { platform: '', themeParams: {}, version: '' },
     user: undefined,
-    // @ts-expect-error not a client instance
-    client: {},
+    dialogs: [],
+    loadingDialogs: false,
+    error: null
   },
-  {},
+  {
+    getMe: () => Promise.reject(new Error('provider not setup')),
+  },
 ]
 
 export const Context = createContext<ContextValue>(ContextDefaultValue)
 
-export interface ProviderProps extends PropsWithChildren {
-  apiId: number
-  apiHash: string
-  clientParams?: TelegramClientParams
-  session?: Session
-}
-
 /**
- * Provider that adds launch params, init data and a Telegram client instance to
+ * Provider that adds launch params, init data and and exposes dialogs to
  * the context.
  */
-export const Provider = ({ apiId, apiHash, session, clientParams, children }: ProviderProps): ReactNode => {
-  const [client, setClient] = useState<TelegramClient>()
-  const launchParams = useLaunchParams()
+export const Provider = ({ children }: PropsWithChildren): ReactNode => {
+  const {tgSessionString} = useGlobal()
   const user = useSignal(initData.user)
+  const launchParams = useLaunchParams()
+  const [dialogs, setDialogs] = useState<DialogInfo[]>([])
+  const [offsetParams, setOffsetParams] = useState<{limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}>({ limit: 10 })
+	const [hasMore, setHasMore] = useState(true)
+  const [loadingDialogs, setLoadingDialogs] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    session = session ?? (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
-    const params = { ...defaultClientParams, ...clientParams }
-    setClient(new TelegramClient(session, apiId, apiHash, params))
-  }, [apiId, apiHash, session, clientParams])
+		if (!tgSessionString || !hasMore) return
 
-  if (!client) {
-    return null
-  }
+		let cancel = false;
+		
+		(async () => {
+			try {
+        setError(null)
+				setLoadingDialogs(true)
+        
+				const { chats, offsetParams: newOffsetParams } = await listDialogs(offsetParams)
+				if (cancel) return
+
+				setDialogs([...dialogs, ...chats])
+				setOffsetParams({...newOffsetParams, limit: 100})
+				setHasMore(chats.length > 0)
+			} catch (err: any) {
+				console.error('Failed to fetch dialogs:', err)
+        setError(new Error('Failed to load dialogs. Please try again.', {cause: err}))
+			} finally {
+				if (!cancel) setLoadingDialogs(false)
+			}
+		})()
+
+		return () => {
+			cancel = true
+		}
+	}, [tgSessionString, offsetParams])
+
+
+  const listDialogs = useCallback(
+      async (paginationParams = { limit: 10 }) => {
+        if (!tgSessionString) return { chats: [], offsetParams: {} }
+        return listDialogsRequest(tgSessionString, paginationParams )
+      },
+      [tgSessionString]
+  )
+  
+  const getMe = useCallback(
+    async () => {
+      if (!tgSessionString) return '0'
+      return getMeRequest(tgSessionString)
+    },
+    []
+  )
 
   return (
-    <Context.Provider value={[{ client, user, launchParams }, {}]}>
+    <Context.Provider value={[{ user, launchParams, dialogs, loadingDialogs, error}, { getMe }]}>
       {children}
     </Context.Provider>
   )

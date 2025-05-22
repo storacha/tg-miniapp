@@ -1,40 +1,28 @@
+import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { useTelegram } from '@/providers/telegram'
 import { Button } from '../ui/button'
-import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useState } from 'react'
-import { Dialog } from '@/vendor/telegram/tl/custom/dialog'
-import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
-import { Backup } from '@/api'
+import { Backup, DialogInfo } from '@/api'
 import { useBackups } from '@/providers/backup'
 
 interface Filter {
-	(dialog: Dialog): boolean
+	(dialog: DialogInfo): boolean
 }
 
-const and = (...filters: Filter[]) => (dialog: Dialog) => filters.every(f => f(dialog))
+const and = (...filters: Filter[]) => (dialog: DialogInfo) => filters.every(f => f(dialog))
 
-const filterPrivate = (dialog: Dialog) => !dialog.isChannel
-const filterPublic = (dialog: Dialog) => dialog.isChannel
+const filterPrivate = (dialog: DialogInfo) => !dialog.isPublic
+const filterPublic = (dialog: DialogInfo) => dialog.isPublic
 const noFilter = () => true
 
-const toSearchFilter = (t: string) => (dialog: Dialog) => {
-	const title = dialog.name ?? dialog.title ?? ''
-	return title.toLowerCase().includes(t.toLowerCase())
+const toSearchFilter = (t: string) => (dialog: DialogInfo) => {
+	return dialog.title.toLowerCase().includes(t.toLowerCase())
 }
 
-function DialogItem({ dialog, selected, onClick, latestBackup }: { dialog: Dialog, selected: boolean, onClick: MouseEventHandler, latestBackup?: Backup }) {
-	const title = (dialog.name ?? dialog.title ?? '').trim() || 'Unknown'
-	const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
-	const initials = parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-
-	let thumbSrc = ''
-	// @ts-expect-error Telegram types are messed up
-	const strippedThumbBytes = dialog.entity?.photo?.strippedThumb
-	if (strippedThumbBytes) {
-		thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
-	}
+function DialogItem({ dialog, selected, onClick, latestBackup }: { dialog: DialogInfo, selected: boolean, onClick: MouseEventHandler, latestBackup?: Backup }) {
+	const {id, title, initials, thumbSrc} = dialog
 
 	let latestBackupDate
 	if (latestBackup) {
@@ -42,7 +30,7 @@ function DialogItem({ dialog, selected, onClick, latestBackup }: { dialog: Dialo
 	}
 
 	return (
-		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={String(dialog.id)} onClick={onClick}>
+		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={id} onClick={onClick}>
 			<Checkbox checked={selected} />
 			<div className="flex gap-4 items-center">
 				<Avatar>
@@ -65,11 +53,9 @@ export interface ChatsProps {
 }
 
 export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
-	const [{ client }] = useTelegram()
 	const [{ backups }] = useBackups()
 	const [searchTerm, setSearchTerm] = useState('')
-	const [dialogs, setDialogs] = useState<Dialog[]>([])
-	const [loading, setLoading] = useState(true)
+	const [{ dialogs, loadingDialogs, error }] = useTelegram()
 
 	const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
 	const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
@@ -77,21 +63,6 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	const items = dialogs.filter(and(typeFilter, searchFilter))
 
 	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
-
-	useEffect(() => {
-		let cancel = false
-		const dialogs = []
-		;(async () => {
-			if (!client.connected) await client.connect()
-			for await (const dialog of client.iterDialogs()) {
-				if (cancel) return
-				setLoading(false)
-				dialogs.push(dialog)
-				setDialogs([...dialogs])
-			}
-		})()
-		return () => { cancel = true }
-	}, [client])
 
 	const handleSearchChange: ChangeEventHandler<HTMLInputElement> = e => {
 		setSearchTerm(e.target.value)
@@ -142,12 +113,18 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 					</Button>
 				</div>
 				<div className="flex flex-col min-h-screen">
-					{items.map(d => {
-						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id.toString()))
-						return <DialogItem key={d.id?.toString()} dialog={d} selected={selections.has(BigInt(d.id?.toString() || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
-					})}
-					{loading && <p className='text-center'>Loading chats...</p>}
-					{!loading && !items.length && <p className='text-center'>No chats found!</p>}
+					{error ? (
+						<p className="text-red-600 text-center text-xs my-2">{error.message}</p>
+					) : (
+						<>
+							{items.map((d: DialogInfo) => {
+								const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
+								return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
+							})}
+							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
+							{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
+						</>
+					)}
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">

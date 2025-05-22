@@ -209,6 +209,16 @@ export interface DialogData extends EntityData {
   messages: Array<Link<EncryptedTaggedByteView<Array<MessageData|ServiceMessageData>>>>
 }
 
+export interface DialogInfo {
+  id?: ToString<EntityID>
+  title: string
+  initials: string
+  thumbSrc: string
+  isPublic: boolean
+  type: EntityType
+  entityId?: ToString<EntityID>
+}
+
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>
 
 export type EntityType = 'user' | 'chat' | 'channel' | 'unknown'
