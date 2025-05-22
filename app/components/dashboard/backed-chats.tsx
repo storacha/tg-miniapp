@@ -1,4 +1,4 @@
-import { MouseEventHandler } from 'react'
+import { MouseEventHandler, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck, ChevronRight } from 'lucide-react'
 import { useBackups } from '@/providers/backup'
@@ -9,9 +9,28 @@ import { DialogItem } from '@/components/backup/dialog-item'
 export default function BackedChats() {
 	const router = useRouter()
 	const [{ backups }] = useBackups()
-	const [{ dialogs, loadingDialogs, error}] = useTelegram()
+	const [{ dialogs, loadingDialogs, error }, { loadMoreDialogs }] = useTelegram()
 
 	const sortedBackups = backups.items.sort((a, b) => b.params.period[1] - a.params.period[1])
+	const observerRef = useRef<HTMLDivElement | null>(null)
+
+	useEffect(() => {
+		if (!observerRef.current) return
+
+		const observer = new IntersectionObserver(
+			entries => {
+				if (entries[0].isIntersecting && !loadingDialogs) {
+					loadMoreDialogs()
+				}
+			},
+			{
+				threshold: 0.1,
+			}
+		)
+
+		observer.observe(observerRef.current)
+		return () => observer.disconnect()
+	}, [loadMoreDialogs, loadingDialogs])
 
 	const handleDialogItemClick: MouseEventHandler = e => {
 		e.preventDefault()
@@ -52,6 +71,8 @@ export default function BackedChats() {
 									</div>
 								)
 							})}
+							<div ref={observerRef} className="h-10" />
+							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
 						</div>
 					)}
 				</>

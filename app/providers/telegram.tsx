@@ -15,6 +15,7 @@ export interface ContextState {
 
 export interface ContextActions {
   getMe: () => Promise<string>
+  loadMoreDialogs: () => Promise<void>
 }
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
@@ -29,6 +30,7 @@ export const ContextDefaultValue: ContextValue = [
   },
   {
     getMe: () => Promise.reject(new Error('provider not setup')),
+    loadMoreDialogs: () => Promise.reject(new Error('provider not setup')),
   },
 ]
 
@@ -43,49 +45,45 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const user = useSignal(initData.user)
   const launchParams = useLaunchParams()
   const [dialogs, setDialogs] = useState<DialogInfo[]>([])
-  const [offsetParams, setOffsetParams] = useState<{limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}>({ limit: 10 })
+  const [offsetParams, setOffsetParams] = useState<{limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}>({ limit: 20 })
 	const [hasMore, setHasMore] = useState(true)
   const [loadingDialogs, setLoadingDialogs] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
-  useEffect(() => {
-		if (!tgSessionString || !hasMore) return
-
-		let cancel = false;
-		
-		(async () => {
-			try {
-        setError(null)
-				setLoadingDialogs(true)
-        
-				const { chats, offsetParams: newOffsetParams } = await listDialogs(offsetParams)
-				if (cancel) return
-
-				setDialogs([...dialogs, ...chats])
-				setOffsetParams({...newOffsetParams, limit: 100})
-				setHasMore(chats.length > 0)
-			} catch (err: any) {
-				console.error('Failed to fetch dialogs:', err)
-        setError(new Error('Failed to load dialogs. Please try again.', {cause: err}))
-			} finally {
-				if (!cancel) setLoadingDialogs(false)
-			}
-		})()
-
-		return () => {
-			cancel = true
-		}
-	}, [tgSessionString, offsetParams])
-
-
   const listDialogs = useCallback(
-      async (paginationParams = { limit: 10 }) => {
-        if (!tgSessionString) return { chats: [], offsetParams: {} }
-        return fromResult(await listDialogsRequest(tgSessionString, paginationParams ))
-      },
-      [tgSessionString]
+    async (paginationParams = { limit: 10 }) => {
+      if (!tgSessionString) return { chats: [], offsetParams: {} }
+      return listDialogsRequest(tgSessionString, paginationParams )
+    },
+    [tgSessionString]
   )
-  
+
+  const loadMoreDialogs = useCallback(async () => {
+    if (!tgSessionString || !hasMore || loadingDialogs) return
+
+    setError(null)
+    setLoadingDialogs(true)
+    try {
+      const { chats, offsetParams: newOffsetParams } = await listDialogs(offsetParams)
+      setDialogs([...dialogs, ...chats])
+      setOffsetParams({ ...newOffsetParams, limit: 100 })
+      setHasMore(chats.length > 0)
+    } catch (err: any) {
+      console.error('Failed to fetch dialogs:', err)
+      setError(new Error('Failed to load dialogs. Please try again.', { cause: err }))
+    } finally {
+      setLoadingDialogs(false)
+    }
+  }, [tgSessionString, hasMore, loadingDialogs, offsetParams, listDialogs])
+
+  useEffect(() => {
+		if (!tgSessionString) return
+    setDialogs([])
+    setOffsetParams({ limit: 20 })
+    setHasMore(true)
+    loadMoreDialogs()
+	}, [tgSessionString])
+
   const getMe = useCallback(
     async () => {
       if (!tgSessionString) return '0'
@@ -95,7 +93,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   )
 
   return (
-    <Context.Provider value={[{ user, launchParams, dialogs, loadingDialogs, error}, { getMe }]}>
+    <Context.Provider value={[{ user, launchParams, dialogs, loadingDialogs, error}, { getMe, loadMoreDialogs }]}>
       {children}
     </Context.Provider>
   )
