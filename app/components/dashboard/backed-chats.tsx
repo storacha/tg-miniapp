@@ -1,47 +1,10 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { MouseEventHandler } from 'react'
+import { useRouter } from 'next/navigation'
 import { ShieldCheck, ChevronRight } from 'lucide-react'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
-import { MouseEventHandler } from 'react'
-import { Backup, DialogInfo } from '@/api'
-import { useRouter } from 'next/navigation'
-interface DialogItemProps {
-	dialog: DialogInfo
-	onClick: MouseEventHandler
-	latestBackup?: Backup
-}
-
-const DialogItem = ({ dialog, onClick, latestBackup }: DialogItemProps) => {
-	const {id, title, initials, thumbSrc} = dialog
-
-	let latestBackupDate
-	if (latestBackup) {
-		latestBackupDate = new Date(latestBackup.params.period[1] * 1000)
-	}
-
-	const isClickable = !!latestBackup // Check if the dialog has a backup
-
-	return (
-		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" 
-			data-id={id} 
-			onClick={isClickable ? onClick : undefined}
-		>
-			<div className="flex gap-4 items-center w-full">
-				<Avatar className="flex-none">
-					<AvatarImage src={thumbSrc} />
-					<AvatarFallback>{initials}</AvatarFallback>
-				</Avatar>
-				<div className="flex-auto">
-					<h1 className="font-semibold text-foreground/80">{title}</h1>
-					<p className="text-sm text-foreground/60">Last Backup: {latestBackupDate ? latestBackupDate.toLocaleString() : <span className="text-red-900">Never</span>}</p>
-				</div>
-				<div className={`flex-none ${latestBackupDate ? '' : 'text-gray-300'}`}>
-					<ChevronRight />
-				</div>
-			</div>
-		</div>
-	)
-}
+import { Loading } from '@/components/ui/loading'
+import { DialogItem } from '@/components/backup/dialog-item'
 
 export default function BackedChats() {
 	const router = useRouter()
@@ -75,11 +38,19 @@ export default function BackedChats() {
 						</div>
 					)}
 					{backups.items.length > 0 && (
-						<div   className="flex flex-col">
-							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
+						<div className="flex flex-col">
+							{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
 							{!loadingDialogs && dialogs.map(d => {
 								const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
-								return <DialogItem key={String(d.id)} dialog={d} latestBackup={latestBackup} onClick={handleDialogItemClick} />
+								if (!latestBackup) return null
+								return (
+									<div key={d.id} className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={d.id} onClick={handleDialogItemClick}>
+										<DialogItem  dialog={d} latestBackup={latestBackup} />
+										<div className={`flex-none`}>
+											<ChevronRight />
+										</div>
+									</div>
+								)
 							})}
 						</div>
 					)}
