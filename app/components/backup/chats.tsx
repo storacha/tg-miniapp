@@ -1,11 +1,12 @@
 import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useState } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { useTelegram } from '@/providers/telegram'
-import { Button } from '../ui/button'
-import { Backup, DialogInfo } from '@/api'
+import { DialogInfo } from '@/api'
 import { useBackups } from '@/providers/backup'
+import { useTelegram } from '@/providers/telegram'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Loading } from '@/components/ui/loading'
+import { Checkbox } from '@/components/ui/checkbox'
+import { DialogItem } from '@/components/backup/dialog-item'
 
 interface Filter {
 	(dialog: DialogInfo): boolean
@@ -19,31 +20,6 @@ const noFilter = () => true
 
 const toSearchFilter = (t: string) => (dialog: DialogInfo) => {
 	return dialog.title.toLowerCase().includes(t.toLowerCase())
-}
-
-function DialogItem({ dialog, selected, onClick, latestBackup }: { dialog: DialogInfo, selected: boolean, onClick: MouseEventHandler, latestBackup?: Backup }) {
-	const {id, title, initials, thumbSrc} = dialog
-
-	let latestBackupDate
-	if (latestBackup) {
-		latestBackupDate = new Date(latestBackup.params.period[1] * 1000)
-	}
-
-	return (
-		<div className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={id} onClick={onClick}>
-			<Checkbox checked={selected} />
-			<div className="flex gap-4 items-center">
-				<Avatar>
-					<AvatarImage src={thumbSrc} />
-					<AvatarFallback>{initials}</AvatarFallback>
-				</Avatar>
-				<div>
-					<h1 className="font-semibold text-foreground/80">{title}</h1>
-					<p className="text-sm text-foreground/60">Last Backup: {latestBackupDate ? latestBackupDate.toLocaleString() : <span className="text-red-900">Never</span>}</p>
-				</div>
-			</div>
-		</div>
-	)
 }
 
 export interface ChatsProps {
@@ -119,9 +95,14 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 						<>
 							{items.map((d: DialogInfo) => {
 								const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
-								return <DialogItem key={d.id} dialog={d} selected={selections.has(BigInt(d.id || 0))} onClick={handleDialogItemClick} latestBackup={latestBackup} />
+								return (
+									<div key={d.id} className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={d.id} onClick={handleDialogItemClick}>
+										<Checkbox checked={selections.has(BigInt(d.id || 0))} />
+										<DialogItem dialog={d} latestBackup={latestBackup} />
+									</div>
+								)
 							})}
-							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
+							{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
 							{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
 						</>
 					)}
