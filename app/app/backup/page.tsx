@@ -64,11 +64,15 @@ export default function Page() {
 
 	const handleSummarySubmit = async () => {
 		if (!space) return
-		setStarting(true)
-		const id = await addBackupJob(chats, period)
-		console.log('backup job added with ID', id)
-		setStarting(false)
-		router.push('/')
+  		setStarting(true)
+		try {
+			const id = await addBackupJob(chats, period)
+			console.log('backup job added with ID', id)
+			router.push('/')
+		} catch (err) {
+			console.error(err)
+			setStarting(false)
+		}
 	}
 
 	return (
