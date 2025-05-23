@@ -47,11 +47,11 @@ export function Root(props: PropsWithChildren) {
 
 	useEffect(() => {
 		(async () => {
-			const sessionString = await cloudStorage.getItem('tg-session')
-			if(sessionString){
-				setTgSessionString(sessionString)
+			const sessionString = (await cloudStorage.getItem('tg-session')) ?? ''
+			setTgSessionString(sessionString) // Always set session string to handle cases where user disconnects from another device
+			setIsTgAuthorized(!!sessionString)
+			if(!isOnboarded && sessionString) {
 				setIsOnboarded(true)
-				setIsTgAuthorized(true)
 			}
 		})()
 	}, [])
