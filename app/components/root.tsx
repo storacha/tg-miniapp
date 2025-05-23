@@ -24,7 +24,6 @@ import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
 import { sendRequest  } from './server'
-import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -44,17 +43,18 @@ if (typeof window !== 'undefined') {
 
 export function Root(props: PropsWithChildren) {
 	const didMount = useDidMount()
-	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString} = useGlobal()
+	const { isOnboarded, isTgAuthorized, setTgSessionString, setIsOnboarded, setIsTgAuthorized} = useGlobal()
 
 	useEffect(() => {
-		if(isTgAuthorized && !tgSessionString) {
-			console.log('setting session')
-			const defaultSessionName = 'tg-session'
-			const session = (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
-			setTgSessionString(session)
-		}
-		
-	}, [tgSessionString])
+		(async () => {
+			const sessionString = await cloudStorage.getItem('tg-session')
+			if(sessionString){
+				setTgSessionString(sessionString)
+				setIsOnboarded(true)
+				setIsTgAuthorized(true)
+			}
+		})()
+	}, [])
 
 	if (!didMount) {
 		return (
@@ -121,6 +121,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 			const remoteStore = createRemoteStorage(storacha)
 			const name = Name.from(storacha.agent.issuer, proofs, { id: space })
 			const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
+			console.log('space: ', space)
 			console.log('name: ', name.did())
 
 			const jobs = await createJobStorage({ store })

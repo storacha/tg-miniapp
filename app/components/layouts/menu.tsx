@@ -1,28 +1,24 @@
-import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { AlignJustify, LogOut } from 'lucide-react'
-import { useTelegram } from '@/providers/telegram'
-import { useGlobal } from '@/zustand/global'
 import { MouseEventHandler } from 'react'
+import { AlignJustify, LogOut } from 'lucide-react'
 import { useW3 as useStoracha } from '@storacha/ui-react'
+import { useGlobal } from '@/zustand/global'
+import { useTelegram } from '@/providers/telegram'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer'
 
 export function Menu() {
-	const [{ user }] = useTelegram()
 	const [, { logout }] = useStoracha()
-	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber, setSpace } = useGlobal()
+	const { setIsStorachaAuthorized, setSpace } = useGlobal()
+	const [{ user, phoneNumber }, { logout: tgLogout }] = useTelegram()
 	const initials = user?.firstName ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase() : ''
 
 	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async e => {
 		e.preventDefault()
 		if (!confirm('Are you sure you want to log out?')) return
-		setPhoneNumber('')
 		setSpace(null)
-		// TODO: remove other stuff in global?
-		// TODO: I don't think this actually does anything 😱
-		// There's no client logout method (there is in Python)
-		setIsTgAuthorized(false)
 		await logout()
 		setIsStorachaAuthorized(false)
+		await tgLogout()
 	}
 
 	return (

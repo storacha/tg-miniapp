@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useEffect, FormEventHandler } from 'react'
-import { Button } from '@/components/ui/button'
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
-import { useGlobal } from '@/zustand/global'
 import { Api, TelegramClient } from '@/vendor/telegram'
 import { computeCheck } from '@/vendor/telegram/Password'
-import { Input } from './ui/input'
-import { useTelegram } from '@/providers/telegram'
 import { StringSession } from '@/vendor/telegram/sessions'
 import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
+import { useTelegram } from '@/providers/telegram'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
@@ -114,12 +113,14 @@ function TwoFAForm({ onSubmit, onPasswordChange, password, hint, loading, error 
 }
 
 export default function TelegramAuth() {
+	const [
+		{ user, phoneNumber,  tgSessionString },
+		{ recordSession, setPhoneNumber }
+	] = useTelegram()
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<Error>()
 	const [codeHash, setCodeHash] = useState('')
 	const [code, setCode] = useState('')
-	const { setIsTgAuthorized, phoneNumber, setPhoneNumber, tgSessionString, setTgSessionString } = useGlobal()
-	const [{ user }] = useTelegram()
 	const [is2FARequired, set2FARequired] = useState(false)
 	const [password, setPassword] = useState('')
 	const [srp, setSRP] = useState<Api.account.Password>()
@@ -185,8 +186,7 @@ export default function TelegramAuth() {
 					throw new Error('login user and user using the app must match')
 				}
 			}
-			setTgSessionString(client.session)
-			setIsTgAuthorized(true)
+			await recordSession(client.session)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
 			if (err.errorMessage === 'SESSION_PASSWORD_NEEDED') {
@@ -229,8 +229,7 @@ export default function TelegramAuth() {
 					throw new Error('login user and user using the app must match')
 				}
 			}
-			setTgSessionString(client.session)
-			setIsTgAuthorized(true)
+			await recordSession(client.session)
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
 			console.error('checking password:', err)

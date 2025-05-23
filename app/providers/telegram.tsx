@@ -3,16 +3,63 @@ import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@teleg
 import { listDialogs as listDialogsRequest, getMe as getMeRequest } from '../components/server'
 import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
+import { cloudStorage } from '@telegram-apps/sdk-react'
+import { Session, StringSession } from '@/vendor/telegram/sessions'
+import { Buffer } from "buffer/"
+
+const CURRENT_VERSION = "1";
+const defaultSessionName = 'tg-session'
+
+export const saveSessionToString = (session?:  Session | string ) => {
+  if (typeof session === 'string'){
+    return session
+  }
+  // This code is copied from 
+  // https://github.com/gram-js/gramjs/blob/master/gramjs/sessions/StringSession.ts#L95-L124
+  // note that "Buffer" here is not node:buffer but the 'buffer' package
+  if (!session || !session.authKey || !session.serverAddress || !session.port) {
+    return ""
+  }
+  // TS is weird
+  const key = session.authKey.getKey()
+  if (!key) {
+    return ""
+  }
+  const dcBuffer = Buffer.from([session.dcId])
+  const addressBuffer = Buffer.from(session.serverAddress)
+  const addressLengthBuffer = Buffer.alloc(2)
+  addressLengthBuffer.writeInt16BE(addressBuffer.length, 0)
+  const portBuffer = Buffer.alloc(2)
+  portBuffer.writeInt16BE(session.port, 0)
+  
+  return (
+    CURRENT_VERSION +
+    StringSession.encode(
+      Buffer.concat([
+        dcBuffer,
+        addressLengthBuffer,
+        addressBuffer,
+        portBuffer,
+        key,
+      ])
+    )
+  )
+  }
 
 export interface ContextState {
-  launchParams: LaunchParams
   user?: User
+  launchParams: LaunchParams
+  tgSessionString: string
+  phoneNumber: string
   dialogs: DialogInfo[]
   loadingDialogs: boolean
-  error: Error | null
+  error: Error | null,
 }
 
 export interface ContextActions {
+  logout: () => Promise<void>
+  recordSession: (session: Session | string) => Promise<void>
+  setPhoneNumber: (phone: string) => void
   getMe: () => Promise<string>
 }
 
@@ -20,13 +67,18 @@ export type ContextValue = [state: ContextState, actions: ContextActions]
 
 export const ContextDefaultValue: ContextValue = [
   {
-    launchParams: { platform: '', themeParams: {}, version: '' },
     user: undefined,
+    launchParams: { platform: '', themeParams: {}, version: '' },
+    tgSessionString: '',
+    phoneNumber: '',
     dialogs: [],
     loadingDialogs: false,
-    error: null
+    error: null,
   },
   {
+    logout: () => Promise.resolve(),
+    recordSession: () => Promise.resolve(),
+    setPhoneNumber: () => {},
     getMe: () => Promise.reject(new Error('provider not setup')),
   },
 ]
@@ -38,17 +90,17 @@ export const Context = createContext<ContextValue>(ContextDefaultValue)
  * the context.
  */
 export const Provider = ({ children }: PropsWithChildren): ReactNode => {
-  const {tgSessionString} = useGlobal()
   const user = useSignal(initData.user)
   const launchParams = useLaunchParams()
+  const {tgSessionString, phoneNumber, setTgSessionString, setPhoneNumber, setIsTgAuthorized} = useGlobal()
   const [dialogs, setDialogs] = useState<DialogInfo[]>([])
+  const [loadingDialogs, setLoadingDialogs] = useState(false)
   const [offsetParams, setOffsetParams] = useState<{limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}>({ limit: 10 })
 	const [hasMore, setHasMore] = useState(true)
-  const [loadingDialogs, setLoadingDialogs] = useState(false)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-		if (!tgSessionString || !hasMore) return
+		if ( !tgSessionString || !hasMore ) return
 
 		let cancel = false;
 		
@@ -76,6 +128,20 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
 		}
 	}, [tgSessionString, offsetParams])
 
+  const recordSession = async (session: Session | string ) => {
+    console.log('recording Session')
+    const sessionString = saveSessionToString(session)
+    await cloudStorage.setItem(defaultSessionName, sessionString)
+    setTgSessionString(sessionString)
+    setIsTgAuthorized(true)
+  }
+
+  const logout = async () => {
+    setPhoneNumber('')
+		setTgSessionString('')
+    setIsTgAuthorized(false)
+    await cloudStorage.setItem(defaultSessionName, '')
+  }
 
   const listDialogs = useCallback(
       async (paginationParams = { limit: 10 }) => {
@@ -94,7 +160,15 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   )
 
   return (
-    <Context.Provider value={[{ user, launchParams, dialogs, loadingDialogs, error}, { getMe }]}>
+    <Context.Provider value={[{ 
+      user, 
+      launchParams, 
+      tgSessionString, 
+      phoneNumber,
+      dialogs, 
+      loadingDialogs, 
+      error, 
+    }, { getMe, recordSession, setPhoneNumber, logout }]}>
       {children}
     </Context.Provider>
   )
