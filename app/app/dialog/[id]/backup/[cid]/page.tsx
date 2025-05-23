@@ -13,6 +13,7 @@ import { ConnectError } from '@/components/backup/connect'
 import { useBackups } from '@/providers/backup'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { ChatHeader } from '@/components/layouts/chat-header'
+import { Loading } from '@/components/ui/loading'
 
 type BackupDialogProps = {
   userId: string
@@ -146,7 +147,6 @@ export default function Page () {
         await restoreBackup(backupCid!, normalizedId, 50)
       } catch (error) {
         console.error('Error in useEffect:', error)
-        
       }
     }
 
@@ -159,35 +159,31 @@ export default function Page () {
 
   return (
     <Layouts isSinglePage withHeader={false}>
-       {restoredBackup.error && (
-          <ConnectError
-            open={!!restoredBackup.error}
-            error={restoredBackup.error}
-            onDismiss={() => router.back()}
-          />
-        )}
+      {restoredBackup.error && (
+        <ConnectError
+          open={!!restoredBackup.error}
+          error={restoredBackup.error}
+          onDismiss={() => router.back()}
+        />
+      )}
 
-        {restoredBackup.loading ? (
-          <div className="flex flex-col items-center justify-center h-screen">
-            <p className="text-lg font-semibold text-center">Loading...</p>
-          </div>
-        ) : (
-          !restoredBackup.item ? (
-            <div className="flex flex-col items-center justify-center h-screen">
-              <p className="text-lg font-semibold text-red-500">Dialog not found</p>
-            </div>
-          ) : (
-            userId && restoredBackup.item && (
-              <BackupDialog
-                userId={userId}
-                dialog={restoredBackup.item.dialogData}
-                messages={restoredBackup.item.messages}
-                participants={restoredBackup.item.participants}
-                onScrollTop={handleFetchMoreMessages}
-              />
-            )
-          )
-        )}
+      {restoredBackup.loading || !userId ? (
+        <div className="flex flex-col items-center justify-center h-screen">
+          <p className="text-lg font-semibold text-center"><Loading /></p>
+        </div>
+      ) : restoredBackup.item ? (
+        <BackupDialog
+          userId={userId}
+          dialog={restoredBackup.item.dialogData}
+          messages={restoredBackup.item.messages}
+          participants={restoredBackup.item.participants}
+          onScrollTop={handleFetchMoreMessages}
+        />
+      ) : (
+        <div className="flex flex-col items-center justify-center h-screen">
+          <p className="text-lg font-semibold text-red-500">Dialog not found</p>
+        </div>
+      )}
     </Layouts>
   )
 }
