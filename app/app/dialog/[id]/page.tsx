@@ -25,7 +25,7 @@ export default function BackupSelectionPage() {
         <h1 className="px-5 text-xl font-bold">Select a Backup</h1>
         <div className="flex flex-col">
           {dialogBackups.map((backup, index) => {
-            let fromDate = backup.params.period[0] === 0 ? 'all time' : new Date(backup.params.period[0] * 1000).toLocaleDateString()
+            const fromDate = backup.params.period[0] === 0 ? 'all time' : new Date(backup.params.period[0] * 1000).toLocaleDateString()
             const toDate = new Date(backup.params.period[1] * 1000).toLocaleDateString()
             const sharedTime = new Date(backup.params.period[1] * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit'})
 
