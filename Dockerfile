@@ -46,6 +46,9 @@ RUN \
   fi  
 
 
+RUN \
+  npx @vercel/ncc build ./app/scripts/migrate.mjs -o ./app/build/scripts/migrate
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
@@ -63,6 +66,7 @@ COPY --from=builder /app/app/public ./app/public
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nodejs:nodejs /app/app/.next/standalone ./
 COPY --from=builder --chown=nodejs:nodejs /app/app/.next/static ./app/.next/static
+COPY --from=builder --chown=nodejs:nodejs /app/app/build/scripts/migrate ./app/scripts/migrate
 
 USER nodejs
 

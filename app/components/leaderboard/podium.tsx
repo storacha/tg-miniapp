@@ -1,47 +1,48 @@
+import { Podium as PodiumData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import Image from 'next/image'
 
-export function Podium() {
+export function Podium({ firstPlace, secondPlace, thirdPlace } : PodiumData) {
 	return (
 		<div className="flex justify-center items-end">
 			<div className="flex flex-col">
-				<div className="flex flex-col gap-2 justify-center items-center py-10">
+				{secondPlace ? <div className="flex flex-col gap-2 justify-center items-center py-10">
 					<Avatar className="h-12 w-12">
-						<AvatarImage src="https://github.com/shadcn.png" />
-						<AvatarFallback>CN</AvatarFallback>
-					</Avatar>
+						<AvatarImage src={secondPlace.thumbSrc} />
+						<AvatarFallback>{secondPlace.initials}</AvatarFallback>
+				</Avatar>
 					<div className="flex flex-col items-center gap-1">
-						<p className="text-sm">Alena Donin</p>
-						<p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">1,209 RP</p>
+						<p className="text-sm">{secondPlace.name}</p>
+						<p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">{secondPlace.points.toLocaleString()} RP</p>
 					</div>
-				</div>
-				<Image src="/rank-two.png" alt="gold" width={100} height={100} />
+				</div> : ''}
+				<Image src="/rank-two.png" alt="silver" width={100} height={100} />
 			</div>
 			<div className="flex flex-col">
-				<div className="flex flex-col gap-4 justify-center items-center py-10">
+				{firstPlace ? <div className="flex flex-col gap-4 justify-center items-center py-10">
 					<Avatar className="h-12 w-12">
-						<AvatarImage src="https://github.com/shadcn.png" />
-						<AvatarFallback>CN</AvatarFallback>
+						<AvatarImage src={firstPlace.thumbSrc} />
+						<AvatarFallback>{firstPlace.initials}</AvatarFallback>
 					</Avatar>
 					<div className="flex flex-col items-center gap-1">
-						<p className="text-sm">Alena Donin</p>
-						<p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">1,209 RP</p>
+						<p className="text-sm">{firstPlace.name}</p>
+						<p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">{firstPlace.points.toLocaleString()} RP</p>
 					</div>
-				</div>
+				</div> : ''}
 				<Image src="/rank-one.png" alt="gold" width={100} height={100} />
 			</div>
 			<div className="flex flex-col">
-				<div className="flex flex-col gap-4 justify-center items-center py-10">
+				{thirdPlace ? <div className="flex flex-col gap-4 justify-center items-center py-10">
 					<Avatar className="h-12 w-12">
-						<AvatarImage src="https://github.com/shadcn.png" />
-						<AvatarFallback>CN</AvatarFallback>
+						<AvatarImage src={thirdPlace.thumbSrc} />
+						<AvatarFallback>{thirdPlace.initials}</AvatarFallback>
 					</Avatar>
 					<div className="flex flex-col items-center gap-1">
-						<p className="text-sm">Alena Donin</p>
-						<p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">1,209 RP</p>
+						<p className="text-sm">{thirdPlace.name}</p>
+						<p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">{thirdPlace.points.toLocaleString()} RP</p>
 					</div>
-				</div>
-				<Image src="/rank-three.png" alt="gold" width={100} height={100} />
+				</div> : ''}
+				<Image src="/rank-three.png" alt="bronze" width={100} height={100} />
 			</div>
 		</div>
 	)

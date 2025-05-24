@@ -6,11 +6,16 @@
   "js": {
     "next": true,
     "entryPoint": "",
-    "scripts": null
+    "scripts": [
+      {
+        "script": "app/scripts/migrate.mjs",
+        "runInCI": true
+      }
+    ]
   },
   "domainBase": "",
   "cloudflare": true,
-  "createDB": false,
+  "createDB": true,
   "caches": null,
   "topics": null,
   "queues": null,

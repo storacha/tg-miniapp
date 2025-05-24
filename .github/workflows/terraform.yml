@@ -101,6 +101,12 @@ jobs:
           make apply
         working-directory: deploy
 
+      - name: Run 'migrate'
+        if: ${{ inputs.apply }}
+        run: |
+          make migrate
+        working-directory: deploy
+
       - name: Wait For Deployment
         if: ${{ inputs.apply }}
         run: |

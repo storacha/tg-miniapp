@@ -1,29 +1,30 @@
+import { LeaderboardUser } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
-function User() {
+function User({ user, rank } : { user: LeaderboardUser, rank: number} ) {
 	return (
 		<div className="flex justify-between active:bg-accent px-5 py-3">
 			<div className="flex gap-4 items-center">
-				<p className=" text-blue-600">#4</p>
+				<p className=" text-blue-600">#{rank}</p>
 				<Avatar>
-					<AvatarImage src="https://github.com/shadcn.png" />
-					<AvatarFallback>CN</AvatarFallback>
+					<AvatarImage src={user.thumbSrc} />
+					<AvatarFallback>{user.initials}</AvatarFallback>
 				</Avatar>
 				<div>
-					<h1 className="font-semibold text-foreground/80">Shadcn</h1>
-					<p className="text-sm text-foreground/60">Theresa Webbs</p>
+					<h1 className="font-semibold text-foreground/80">{user.name}</h1>
+					<p className="text-sm text-foreground/60">{user.points} Points</p>
 				</div>
 			</div>
 		</div>
 	)
 }
 
-export default function Users() {
+export default function Users({ users } : { users: LeaderboardUser[] }) {
 	return (
 		<div className="flex flex-col py-10 bg-background h-full rounded-t-xl">
-			<User />
-			<User />
-			<User />
+			{
+				users.map((user, i) => <User key={user.id} user={user} rank={i}/>)
+			}
 		</div>
 	)
 }

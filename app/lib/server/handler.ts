@@ -2,9 +2,14 @@ import { JobRequest, JobStorage } from '@/api'
 import { Context as RunnerContext } from './runner'
 import { Context as ServerContext } from './server'
 import * as Runner from './runner'
+import { TGDatabase, User } from './db'
+import { CARMetadata } from '@storacha/ui-react'
+import { mRachaPointsPerByte } from './constants'
 
 export interface Context extends RunnerContext, ServerContext {
   jobs: JobStorage
+  db: TGDatabase
+  dbUser: User
 }
 
 export const create = async (ctx: Context) => {
@@ -15,13 +20,17 @@ class Handler {
   storacha
   telegram
   cipher
+  #db
+  #dbUser
   #jobs
   #queueFn
 
-  constructor ({ storacha, telegram, cipher, jobs, queueFn }: Context) {
+  constructor ({ storacha, telegram, cipher, jobs, db, dbUser, queueFn }: Context) {
     this.storacha = storacha
     this.telegram = telegram
     this.cipher = cipher
+    this.#db = db
+    this.#dbUser = dbUser
     this.#jobs = jobs
     this.#queueFn = queueFn
   }
@@ -78,6 +87,9 @@ class Handler {
           } catch (err) {
             console.error(err)
           }
+        },
+        onShardStored: (meta: CARMetadata) => {
+          this.#db.updateUser(this.#dbUser.id, {...this.#dbUser, points: (this.#dbUser.points + (meta.size * mRachaPointsPerByte))})
         }
       })
 

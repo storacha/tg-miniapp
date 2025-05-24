@@ -56,7 +56,7 @@ module "app" {
   # NOTE: do not put sensitive data in env-vars. use secrets
   deployment_env_vars = []
   image_tag = var.image_tag
-  create_db = false
+  create_db = true
   # enter secret values your app will use here -- these will be available
   # as env vars in the container at runtime
   secrets = { 

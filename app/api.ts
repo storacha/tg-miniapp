@@ -1,4 +1,4 @@
-import { Block, ByteView, Link, ToString, UnknownLink, Variant, DID, Result } from '@ucanto/client'
+import { Block, ByteView, Link, ToString, UnknownLink, Variant, DID } from '@ucanto/client'
 import { identity } from 'multiformats/hashes/identity'
 export type { Block, ByteView, Link, ToString, UnknownLink, Variant }
 
@@ -2073,3 +2073,23 @@ export interface PaidMediaData {
 export interface UnknownMediaData {
   type: 'unknown'
 }
+
+export interface LeaderboardUser {
+  id: string
+  initials: string
+  thumbSrc: string
+	name: string
+	points: number
+}
+
+export interface Podium {
+  firstPlace: LeaderboardUser | undefined
+  secondPlace: LeaderboardUser | undefined
+  thirdPlace: LeaderboardUser | undefined
+}
+
+export interface Ranking {
+  rank: number, 
+  percentile: number
+}
+
