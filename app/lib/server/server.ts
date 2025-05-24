@@ -11,7 +11,8 @@ import { serviceConnection, getServerIdentity, receiptsEndpoint, getBotToken } f
 import { validate as validateInitData, parse as parseInitData } from '@telegram-apps/init-data-node';
 import { Name } from '@storacha/ucn'
 import { extract } from '@ucanto/core/delegation'
-import { getServerTelegramClient } from '@/components/server'
+import { getTelegramClient } from './telegram-manager'
+import { getDB } from './db'
 
 export interface Context {
     queueFn: (jr: JobRequest) => Promise<void>
@@ -52,21 +53,23 @@ class JobServer {
     const spaceDelegation = await this.#extractDelegation(request.spaceDelegation)
     const nameDelegation = await this.#extractDelegation(request.nameDelegation)
     const storacha = this.#initializeStoracha(request.spaceDID, spaceDelegation)
-    const telegram = await this.#initializeTelegram(request.telegramAuth)
+    const { telegram, telegramId } = await this.#initializeTelegram(request.telegramAuth)
     const cipher = createCipher(request.encryptionPassword)
     const name = Name.from(getServerIdentity(), [nameDelegation])
     const remoteStore = createRemoteStorage(storacha)
     const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
     const jobs = await createJobStorage({ store })
+    const db = getDB()
+    const dbUser = await db.findOrCreateUser({ storachaSpace: request.spaceDID, telegramId })
     return createHandler({
-      storacha, telegram, cipher, jobs, queueFn: this.#queueFn
+      storacha, telegram, cipher, jobs, db, dbUser, queueFn: this.#queueFn
     })
   }
 
   async #initializeTelegram(telegramAuth: TelegramAuth) {
     validateInitData(telegramAuth.initData, getBotToken())
     const initData = parseInitData(telegramAuth.initData)
-    const client = await getServerTelegramClient(telegramAuth.session)
+    const client = await getTelegramClient(telegramAuth.session)
    
     if(!client.connected){
       console.log('client is disconnected')
@@ -77,7 +80,7 @@ class JobServer {
     if (user.id.toString() !== (initData.user?.id.toString() || '0')) {
        throw new Error("authorized user does not match telegram mini-app user")
     }
-    return client
+    return { telegram: client, telegramId: BigInt(user.id.toString()) }
   }
 
   #initializeStoracha(space: SpaceDID, delegation: Delegation) {

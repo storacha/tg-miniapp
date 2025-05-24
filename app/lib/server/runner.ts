@@ -10,6 +10,7 @@ import { createEncodeAndEncryptStream } from '@/lib/crypto'
 import bigInt from 'big-integer'
 import { DID, Link, UnknownLink} from '@ucanto/client'
 import { Client as StorachaClient} from '@storacha/client'
+import { CARMetadata } from '@storacha/ui-react'
 
 type SpaceDID = DID<'key'>
 const versionTag = 'tg-miniapp-backup@0.0.1'
@@ -34,6 +35,7 @@ export interface Options {
    * not yet stored.
    */
   onDialogRetrieved?: (id: bigint) => unknown
+  onShardStored?: (meta: CARMetadata) => unknown
 }
 
 export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
@@ -184,7 +186,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Set<bigint>, p
 
   const root = await ctx.storacha.uploadCAR({
     stream: () => blockStream.pipeThrough(new CARWriterStream())
-  })
+  }, { onShardStored: options?.onShardStored})
   console.log(`backup job complete: ${root}`)
   return root
 }

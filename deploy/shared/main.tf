@@ -34,7 +34,7 @@ provider "aws" {
 
 module "shared" {
   source = "github.com/storacha/storoku//shared?ref=v0.2.31"
-  create_db = false
+  create_db = true
   caches = [  ]
   app = var.app
   zone_id = var.cloudflare_zone_id

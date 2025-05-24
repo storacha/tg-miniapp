@@ -2,11 +2,14 @@
 
 import { create as createJobServer } from '@/lib/server/server'
 import Queue from 'p-queue'
-import { DialogInfo, JobRequest } from '@/api'
+import { DialogInfo, JobRequest, LeaderboardUser, Ranking } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
-import { TelegramClient } from 'telegram'
+import { Api } from 'telegram'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
 import { getEntityType } from '@/lib/backup/utils'
+import { getDB } from '@/lib/server/db'
+import bigInt from 'big-integer'
+import { toResultFn } from '@/lib/errorhandling'
 
 //TODO replace with actual server action
   const queue = new Queue({concurrency: 1})
@@ -21,11 +24,7 @@ export const sendRequest = async (jr: JobRequest) => server.queueJob(jr)
 // end TODO
 
 
-export const getServerTelegramClient = async (sessionString: string): Promise<TelegramClient> => {
-  return await getTelegramClient(sessionString)
-}
-
-export const getMe = async (sessionString: string): Promise<string> => {
+const _getMe = async (sessionString: string): Promise<string> => {
 	const client = await getTelegramClient(sessionString)
 
 	if(!client.connected){
@@ -36,7 +35,9 @@ export const getMe = async (sessionString: string): Promise<string> => {
 	return user.id.toString()
 }
 
-export const listDialogs = async (sessionString: string, paginationParams: { limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}) => {
+export const getMe = toResultFn(_getMe)
+
+export const listDialogs = toResultFn(async (sessionString: string, paginationParams: { limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}) => {
 	const client = await getTelegramClient(sessionString)
 
 	if(!client.connected){
@@ -104,4 +105,42 @@ export const listDialogs = async (sessionString: string, paginationParams: { lim
 	} finally{
 		await client.disconnect()
 	}
-}
+})
+
+export const getLeaderboard = toResultFn(async (sessionString: string) : Promise<LeaderboardUser[]> => {
+	const client = await getTelegramClient(sessionString)
+	const dbUsers = await getDB().leaderboard()
+	const telegramIDs = dbUsers.map(user => bigInt(user.telegramId))
+	const users = await client.invoke(new Api.users.GetUsers({
+    id: telegramIDs,
+  }))
+	return dbUsers.map((dbUser, i) : LeaderboardUser => {
+		if (users[i].className == "UserEmpty") {
+			return {
+				id: dbUser.id,
+				name: "missing user",
+				initials: "MU",
+				thumbSrc: "",
+				points: dbUser.points,
+			}
+		}
+		const tgUser = users[i]
+		const name = tgUser.lastName ? `${tgUser.firstName ? `${tgUser.firstName} `: ""}${tgUser.lastName}` : tgUser.username || ""
+		const parts = name.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
+		const initials = parts.length === 1 ? name[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+		let thumbSrc = ''
+		// @ts-expect-error Telegram types are messed up
+		const strippedThumbBytes = tgUser.photo?.strippedThumb
+		if (strippedThumbBytes) {
+			thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
+		}
+		return {
+			name, initials, thumbSrc, points: dbUser.points, id: dbUser.id
+		}
+	})
+})
+
+export const getRanking = toResultFn(async (sessionString: string) : Promise<Ranking | undefined> => {
+	const id = await _getMe(sessionString)
+	return await getDB().rank(BigInt(id))
+})

@@ -101,3 +101,5 @@ export const serviceConnection = connect<Service>({
 
 export const telegramAPIID = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? die('NEXT_PUBLIC_TELEGRAM_API_ID'))
 export const telegramAPIHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? die('NEXT_PUBLIC_TELEGRAM_API_HASH')
+
+export const mRachaPointsPerByte = parseFloat(process.env.NEXT_PUBLIC_POINTS_PER_BYTE ?? die('NEXT_PUBLIC_POINTS_PER_BYTE'))

@@ -154,3 +154,22 @@ wait-deploy:
 	aws deploy wait deployment-successful --region $(TF_VAR_region) --deployment-id $(shell aws deploy list-deployments --region $(TF_VAR_region) --deployment-group-name $(TF_WORKSPACE)-$(TF_VAR_app)-code-deploy-deployment-group --application-name $(TF_WORKSPACE)-$(TF_VAR_app)-code-deploy-app --query "deployments[0]" --output text)
 
 
+
+.PHONY: migrate
+migrate:
+	aws ecs run-task \
+	--region $(TF_VAR_region) \
+	--cluster $(TF_WORKSPACE)-$(TF_VAR_app)-cluster \
+	--task-definition $(TF_WORKSPACE)-$(TF_VAR_app) \
+	--count 1 \
+  --launch-type FARGATE \
+	--overrides "{ \
+  	\"containerOverrides\": [ \
+    	{ \
+			  \"name\": \"first\", \
+    		\"command\": [\"node\", \"app/scripts/migrate/index.mjs\"] \
+			} \
+		] \
+	}" \
+   --network-configuration '$(shell aws ecs describe-services --region $(TF_VAR_region) --cluster $(TF_WORKSPACE)-$(TF_VAR_app)-cluster --service $(TF_WORKSPACE)-$(TF_VAR_app)-service --query "services[0].networkConfiguration")'
+

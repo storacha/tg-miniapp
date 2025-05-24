@@ -3,6 +3,7 @@ import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@teleg
 import { listDialogs as listDialogsRequest, getMe as getMeRequest } from '../components/server'
 import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
+import { fromResult } from '@/lib/errorhandling'
 
 export interface ContextState {
   launchParams: LaunchParams
@@ -80,7 +81,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const listDialogs = useCallback(
       async (paginationParams = { limit: 10 }) => {
         if (!tgSessionString) return { chats: [], offsetParams: {} }
-        return listDialogsRequest(tgSessionString, paginationParams )
+        return fromResult(await listDialogsRequest(tgSessionString, paginationParams ))
       },
       [tgSessionString]
   )
@@ -88,7 +89,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const getMe = useCallback(
     async () => {
       if (!tgSessionString) return '0'
-      return getMeRequest(tgSessionString)
+      return fromResult(await getMeRequest(tgSessionString))
     },
     []
   )

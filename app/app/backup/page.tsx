@@ -14,7 +14,7 @@ import { useTelegram } from '@/providers/telegram'
 import { Period } from '@/api'
 import { useBackups } from '@/providers/backup'
 
-const spaceNamePrefix = 'Telegram Backups'
+const spaceNamePrefix = 'Telegram Backups testing'
 
 export default function Page() {
 	const [step, setStep] = useState(0)
