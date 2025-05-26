@@ -1,10 +1,10 @@
--- DROP TABLE IF EXISTS users
+-- DROP TABLE IF EXISTS users;
 
 CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   telegram_id BIGINT NOT NULL UNIQUE,
   storacha_space TEXT NOT NULL CHECK (storacha_space LIKE 'did:key:%'),
-	points DOUBLE PRECISION NOT NULL,
+	points DOUBLE PRECISION DEFAULT 0 NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 

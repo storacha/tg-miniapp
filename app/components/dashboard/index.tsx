@@ -5,6 +5,7 @@ import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'
 import { useBackups } from '@/providers/backup'
 import { JobID, PendingJob } from '@/api'
+import Head from './head'
 
 export default function Dashboard() {
 	const router = useRouter()
@@ -12,9 +13,9 @@ export default function Dashboard() {
 
 	return (
 		<div className="w-full flex items-center flex-col h-full">
-			{/* <div className="w-full px-5">
+			<div className="w-full px-5 mb-5">
 				<Head />
-			</div> */}
+			</div>
 			{jobs.items.map(j => <JobItem key={j.id} job={j} onRemove={removeBackupJob} />)}
 			<div className="rounded-t-xl bg-background flex-grow w-full shadow-t-xl pt-5">
 				<BackedChats />

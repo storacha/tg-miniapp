@@ -45,14 +45,17 @@ export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T
       return { ok: response }
     } catch (err) {
       if (err instanceof Api.RpcError) {
+        console.error("telegram error", err.errorCode, err.errorMessage)
         return {
           error: { kind: 'telegram', errorMessage: err.errorMessage, errorCode: err.errorCode}
         }
       }
       if (err instanceof Error) {
+        console.error(err.message)
         return { error: serializeErrorObject(err) }
       }
       if (typeof err == 'string') {
+        console.error(err)
         return {
           error: { kind: 'string', value: err }
         }

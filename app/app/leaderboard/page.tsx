@@ -19,10 +19,10 @@ export default function Page() {
 			setLeaderboard(fromResult(await getLeaderboard(tgSessionString)))
 			setRanking(fromResult(await getRanking(tgSessionString)))
 		})()
-	})
+	}, [tgSessionString])
 	return (
 		<Layouts isSinglePage isBackgroundBlue>
-			{ranking ? <Banner rank={ranking.rank} percentile={ranking.percentile}/> : ''} 
+			{ranking ? <Banner {...ranking}/> : ''} 
 			<Podium 
 				firstPlace={leaderboard.length > 0 ? leaderboard[0] : undefined}
 				secondPlace={leaderboard.length > 1 ? leaderboard[1] : undefined}

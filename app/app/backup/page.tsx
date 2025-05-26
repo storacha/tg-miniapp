@@ -14,7 +14,7 @@ import { useTelegram } from '@/providers/telegram'
 import { Period } from '@/api'
 import { useBackups } from '@/providers/backup'
 
-const spaceNamePrefix = 'Telegram Backups testing'
+const spaceNamePrefix = 'Telegram Backups'
 
 export default function Page() {
 	const [step, setStep] = useState(0)
@@ -65,7 +65,7 @@ export default function Page() {
 	const handleSummarySubmit = async () => {
 		if (!space) return
 		setStarting(true)
-		const id = await addBackupJob(space, chats, period)
+		const id = await addBackupJob(chats, period)
 		console.log('backup job added with ID', id)
 		setStarting(false)
 		router.push('/')

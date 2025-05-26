@@ -81,7 +81,7 @@ export interface FailedJob extends BaseJob {
 export interface CompletedJob extends BaseJob {
   status: 'completed'
   /** Link to the actual backup data. */
-  data: UnknownLink
+  data: string
   /** Timestamp of when this backup was started. */
   started: number
   /** Timestamp of when this backup completed successfully. */
@@ -97,41 +97,12 @@ export interface Page<T> {
   items: T[]
 }
 
-/** Interface for remote storage, like Storacha! */
-export interface RemoteStorage {
-  uploadBlocks: (blocks: UnknownBlock[]) => Promise<void>
-  retrieveFile: (cid: UnknownLink) => Promise<File>
-}
-
-/** Generic storage for a particular object. */
-export interface ObjectStorage<T> {
-  /** Initialize the object store if not already initialized. */
-  init: (value: T) => Promise<void>
-  set: (value: T) => Promise<void>
-  get: () => Promise<T>
-}
-
 export interface JobStorage extends EventTarget {
   find: (id: JobID) => Promise<Job|null>
   listPending: () => Promise<Page<WaitingJob|QueuedJob|RunningJob|FailedJob>>
   listCompleted: () => Promise<Page<CompletedJob>>
-  add: (job: Job) => Promise<void>
-  replace: (job: Job) => Promise<void>
+  add: (dialogs: Set<bigint>, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
-}
-
-export interface JobManager {
-  /** Add a backup job to the queue. */
-  add: (space: SpaceDID, dialogs: Set<bigint>, period: Period) => Promise<JobID>
-  /** 
-   * Remove an existing job. If the job is queued it will be cancelled. Jobs
-   * that are running cannot be removed and will throw an error.
-   */
-  remove: (id: JobID) => Promise<void>
-}
-
-export interface JobSender {
-  sendJob: (id: JobID) => Promise<void>
 }
 
 export interface TelegramAuth {
@@ -139,19 +110,41 @@ export interface TelegramAuth {
   initData: string
 }
 
-export interface JobRequest {
+export interface Auth {
   spaceDID: SpaceDID
-  spaceDelegation: Uint8Array
-  nameDelegation: Uint8Array
   telegramAuth: TelegramAuth
-  jobID: JobID
-  encryptionPassword: string
 }
 
-export interface JobServer {
-  queueJob: (request: JobRequest) => Promise<void>
-  handleJob: (request: JobRequest) => Promise<void>
+export interface ExecuteAuth extends Auth {
+  spaceDelegation: Uint8Array
+  encryptionPassword: string
 }
+export interface ExecuteJobRequest extends ExecuteAuth {
+  jobID: JobID
+}
+
+export interface CreateJobRequest extends ExecuteAuth {
+  dialogs: Set<bigint>
+  period: Period
+}
+
+export interface ListJobsRequest extends Auth {}
+
+export interface FindJobRequest extends Auth {
+  jobID: JobID
+}
+
+export interface RemoveJobRequest extends Auth {
+  jobID: JobID
+}
+
+export interface JobClient {
+  createJob: (jr: CreateJobRequest) => Promise<Job>
+  findJob: (jr: FindJobRequest) => Promise<Job>
+  listJobs: (jr: ListJobsRequest) => Promise<Job[]>
+  removeJob: (jr: RemoveJobRequest) => Promise<Job>
+}
+
 export interface Encrypter {
   encrypt: <T>(data: ByteView<T>) => Promise<EncryptedByteView<T>>
 }
@@ -2091,5 +2084,6 @@ export interface Podium {
 export interface Ranking {
   rank: number, 
   percentile: number
+  points: number
 }
 

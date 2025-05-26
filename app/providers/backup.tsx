@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect, useCallback } from 'react'
 import { cloudStorage} from '@telegram-apps/sdk-react'
-import { Backup, JobID, JobManager, JobStorage, PendingJob, Period, RestoredBackup } from '@/api'
+import { Backup, JobID, JobStorage, PendingJob, Period, RestoredBackup } from '@/api'
 import { SpaceDID } from '@storacha/ui-react'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
@@ -31,11 +31,11 @@ export interface ContextState {
   // media: Result<Media>
 
   // indicates whether we're ready to setup backups
-  jobManagerReady: boolean
+  jobsReady: boolean
 }
 
 export interface ContextActions {
-  addBackupJob: (space: SpaceDID, chats: Set<bigint>, period: Period) => Promise<JobID>
+  addBackupJob: (chats: Set<bigint>, period: Period) => Promise<JobID>
   removeBackupJob: (job: JobID) => Promise<void>
   restoreBackup: ( backupCid: string, dialogId: string, limit: number ) => Promise<void>
   fetchMoreMessages: ( offset: number, limit: number ) => Promise<void>
@@ -52,7 +52,7 @@ export const ContextDefaultValue: ContextValue = [
     restoredBackup: { items: [], loading: false},
     // messages: { items: [], loading: false },
     // media: { items: [], loading: false }
-    jobManagerReady: false
+    jobsReady: false
   },
   {
     addBackupJob: () => Promise.reject(new Error('provider not setup')),
@@ -67,14 +67,13 @@ export const ContextDefaultValue: ContextValue = [
 export const Context = createContext<ContextValue>(ContextDefaultValue)
 
 export interface ProviderProps extends PropsWithChildren {
-  jobManager?: JobManager
   jobs?: JobStorage
 }
 
 /**
  * Provider that enables initiating and tracking current and exiting backups.
  */
-export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps): ReactNode => {
+export const Provider = ({ jobs: jobStore, children }: ProviderProps): ReactNode => {
   const [jobs, setJobs] = useState<PendingJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(false)
   const [jobsError, setJobsError] = useState<Error>()
@@ -84,7 +83,7 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
     error: jobsError
   }
 
-  const [jobManagerReady, setJobManagerReady] = useState(false)
+  const [jobsReady, setJobsReady] = useState(false)
 
   const [backups, setBackups] = useState<Backup[]>([])
   const [backupsLoading, setBackupsLoading] = useState(false)
@@ -160,19 +159,20 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
   }
 
   const addBackupJob = useCallback(
-    (space: SpaceDID, dialogs: Set<bigint>, period: Period) => {
-      if (!jobManager) throw new Error('missing job manager')
-      return jobManager.add(space, dialogs, period)
+    async (dialogs: Set<bigint>, period: Period) => {
+      if (!jobStore) throw new Error('missing job store')
+      const job = await jobStore.add(dialogs, period)
+      return job.id
     },
-    [jobManager]
+    [jobStore]
   )
 
   const removeBackupJob = useCallback(
     (id: JobID) => {
-      if (!jobManager) throw new Error('missing job manager')
-      return jobManager.remove(id)
+      if (!jobStore) throw new Error('missing job manager')
+      return jobStore.remove(id)
     },
-    [jobManager]
+    [jobStore]
   )
 
   useEffect(() => {
@@ -219,19 +219,21 @@ export const Provider = ({ jobManager, jobs: jobStore, children }: ProviderProps
     jobStore.addEventListener('add', handleJobChange)
     jobStore.addEventListener('replace', handleJobChange)
     jobStore.addEventListener('remove', handleJobChange)
-
+    // this is in place till we can find a good mechanism to handle push server updates
+    const t = setInterval(handleJobChange, 2000)
     return () => {
       jobStore.removeEventListener('add', handleJobChange)
       jobStore.removeEventListener('replace', handleJobChange)
       jobStore.removeEventListener('remove', handleJobChange)
+      clearInterval(t)
     }
   }, [jobStore])
 
   useEffect(() => {
-    setJobManagerReady(!!jobManager)
-  }, [jobManager])
+    setJobsReady(!!jobStore)
+  }, [jobStore])
   return (
-    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, restoredBackup: restoreBackupResult, jobManagerReady }, { addBackupJob, removeBackupJob, restoreBackup, fetchMoreMessages}]}>
+    <Context.Provider value={[{ jobs: jobsResult, backups: backupsResult, restoredBackup: restoreBackupResult, jobsReady }, { addBackupJob, removeBackupJob, restoreBackup, fetchMoreMessages}]}>
       {children}
     </Context.Provider>
   )

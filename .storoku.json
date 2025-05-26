@@ -18,7 +18,7 @@
   "createDB": true,
   "caches": null,
   "topics": null,
-  "queues": null,
+  "queues": [],
   "buckets": null,
   "secrets": [
     {

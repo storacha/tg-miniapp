@@ -17,7 +17,7 @@ export const Summary = ({ chats, period, starting, onSubmit }: SummaryProps) => 
     e.preventDefault()
     onSubmit()
   }
-  const [{jobManagerReady}, {}] = useBackups()
+  const [{jobsReady}, {}] = useBackups()
 
   return (
     <form onSubmit={handleSubmit}>
@@ -40,7 +40,7 @@ export const Summary = ({ chats, period, starting, onSubmit }: SummaryProps) => 
           )}
         </div>
         <div className="sticky bottom-0 w-full p-5">
-          <Button type="submit" className="w-full" disabled={starting || !jobManagerReady}>{starting ? 'Starting...' : 'Start Backup'}</Button>
+          <Button type="submit" className="w-full" disabled={starting || !jobsReady}>{starting ? 'Starting...' : 'Start Backup'}</Button>
         </div>
       </div>
 		</form>

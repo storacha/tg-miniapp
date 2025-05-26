@@ -1,21 +1,17 @@
-import { JobID, JobRequest, TelegramAuth, Job, SpaceDID } from '@/api'
+import { ExecuteJobRequest, TelegramAuth, SpaceDID, CreateJobRequest, FindJobRequest, ListJobsRequest, RemoveJobRequest, ExecuteAuth } from '@/api'
 import { Delegation, DID, Signer } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
-import { create as createObjectStorage } from '@/lib/store/object'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
-import { create as createRemoteStorage } from '@/lib/store/remote'
 import { create as createHandler } from './handler'
-import { create as createJobStorage } from '@/lib/store/jobs'
 import { AgentData } from '@storacha/access/agent'
 import { serviceConnection, getServerIdentity, receiptsEndpoint, getBotToken } from './constants'
 import { validate as validateInitData, parse as parseInitData } from '@telegram-apps/init-data-node';
-import { Name } from '@storacha/ucn'
 import { extract } from '@ucanto/core/delegation'
 import { getTelegramClient } from './telegram-manager'
 import { getDB } from './db'
 
 export interface Context {
-    queueFn: (jr: JobRequest) => Promise<void>
+    queueFn: (jr: ExecuteJobRequest) => Promise<void>
 }
 
 export const create = async (ctx: Context) => {
@@ -31,14 +27,59 @@ class JobServer {
     this.#queueFn = queueFn
   }
 
-  async queueJob(request: JobRequest) {
-    const handler = await this.#initializeHandler(request)
-    return await handler.queueJob(request)
+  async createJob(request: CreateJobRequest) {
+    console.debug('adding job...')
+    const telegramId = this.#validateInitData(request.telegramAuth)
+    const db = getDB()
+    const dbUser = await db.findOrCreateUser({ storachaSpace: request.spaceDID, telegramId: telegramId.toString() })
+    const job = await db.createJob({
+      userId: dbUser.id,
+      status: 'queued',
+      periodFrom: request.period[0], 
+      periodTo: (request.period[1] ?? Date.now() / 1000),
+      space: request.spaceDID,
+      dialogs: [...request.dialogs].map(d => d.toString())
+    })
+    this.#queueFn({...request, jobID: job.id})
+    console.debug(`job store added job: ${job.id} status: ${job.status}`)
+    return job
   }
 
-  async handleJob(request: JobRequest) {
+  async findJob(request: FindJobRequest) {
+    const telegramId = this.#validateInitData(request.telegramAuth)
+    const db = getDB()
+    const dbUser = await db.findOrCreateUser({ storachaSpace: request.spaceDID, telegramId: telegramId.toString() })
+    return await db.getJobByID(request.jobID, dbUser.id)
+  }
+
+  async listJobs(request: ListJobsRequest) {
+    const telegramId = this.#validateInitData(request.telegramAuth)
+    const db = getDB()
+    const dbUser = await db.findOrCreateUser({ storachaSpace: request.spaceDID, telegramId: telegramId.toString() })
+    return await db.getJobsByUserID(dbUser.id)
+  }
+
+  async removeJob(request: RemoveJobRequest) {
+    console.debug('job store removing job...')
+    const telegramId = this.#validateInitData(request.telegramAuth)
+    const db = getDB()
+    const dbUser = await db.findOrCreateUser({ storachaSpace: request.spaceDID, telegramId: telegramId.toString() })
+    const job = await db.getJobByID(request.jobID, dbUser.id)
+    if (job.status == 'running') {
+      throw new Error("job is already running")
+    }
+    await db.removeJob(request.jobID, dbUser.id)
+    console.debug(`job store removed job: ${job.id}`)
+    return job
+  }
+
+  async handleJob(request: ExecuteJobRequest) {
     const handler = await this.#initializeHandler(request)
-    return await handler.handleJob(request)
+    try {
+      return await handler.handleJob(request)
+    } finally {
+      handler.telegram.disconnect()
+    }
   }
 
   async #extractDelegation(serialized: Uint8Array) {
@@ -49,26 +90,26 @@ class JobServer {
     return result.ok
   }
 
-  async #initializeHandler(request: JobRequest) {
+  async #initializeHandler(request: ExecuteAuth) {
     const spaceDelegation = await this.#extractDelegation(request.spaceDelegation)
-    const nameDelegation = await this.#extractDelegation(request.nameDelegation)
     const storacha = this.#initializeStoracha(request.spaceDID, spaceDelegation)
     const { telegram, telegramId } = await this.#initializeTelegram(request.telegramAuth)
     const cipher = createCipher(request.encryptionPassword)
-    const name = Name.from(getServerIdentity(), [nameDelegation])
-    const remoteStore = createRemoteStorage(storacha)
-    const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
-    const jobs = await createJobStorage({ store })
     const db = getDB()
-    const dbUser = await db.findOrCreateUser({ storachaSpace: request.spaceDID, telegramId })
+    const dbUser = await db.findOrCreateUser({ storachaSpace: request.spaceDID, telegramId: telegramId.toString() })
     return createHandler({
-      storacha, telegram, cipher, jobs, db, dbUser, queueFn: this.#queueFn
+        storacha, telegram, cipher, db, dbUser, queueFn: this.#queueFn
     })
   }
 
-  async #initializeTelegram(telegramAuth: TelegramAuth) {
+  #validateInitData(telegramAuth: TelegramAuth) {
     validateInitData(telegramAuth.initData, getBotToken())
     const initData = parseInitData(telegramAuth.initData)
+    return BigInt(initData.user?.id.toString() || '0')
+  }
+
+  async #initializeTelegram(telegramAuth: TelegramAuth) {
+    const telegramId = this.#validateInitData(telegramAuth)
     const client = await getTelegramClient(telegramAuth.session)
    
     if(!client.connected){
@@ -77,10 +118,10 @@ class JobServer {
 	  }
     
     const user = await client.getMe()
-    if (user.id.toString() !== (initData.user?.id.toString() || '0')) {
+    if (BigInt(user.id.toString()) !== telegramId) {
        throw new Error("authorized user does not match telegram mini-app user")
     }
-    return { telegram: client, telegramId: BigInt(user.id.toString()) }
+    return { telegram: client, telegramId }
   }
 
   #initializeStoracha(space: SpaceDID, delegation: Delegation) {
