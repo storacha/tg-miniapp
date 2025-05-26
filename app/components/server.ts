@@ -2,9 +2,9 @@
 
 import { create as createJobServer } from '@/lib/server/server'
 import Queue from 'p-queue'
-import { DialogInfo, JobRequest, LeaderboardUser, Ranking } from '@/api'
+import { CreateJobRequest, DialogInfo, ExecuteJobRequest, FindJobRequest, Job, LeaderboardUser, ListJobsRequest, Ranking, RemoveJobRequest } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
-import { Api } from 'telegram'
+import { Api, TelegramClient } from 'telegram'
 import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
 import { getEntityType } from '@/lib/backup/utils'
 import { getDB } from '@/lib/server/db'
@@ -13,102 +13,102 @@ import { toResultFn } from '@/lib/errorhandling'
 
 //TODO replace with actual server action
   const queue = new Queue({concurrency: 1})
-  const server = await createJobServer({
-    queueFn: (jr: JobRequest) => {
+const server = await createJobServer({
+    queueFn: (jr: ExecuteJobRequest) => {
       return queue.add(async () => {
         await server.handleJob(jr)
       })
     }
   })
-export const sendRequest = async (jr: JobRequest) => server.queueJob(jr)
+
+export const createJob = toResultFn(async (jr: CreateJobRequest) : Promise<Job> => server.createJob(jr))
+export const findJob = toResultFn(async (jr: FindJobRequest) : Promise<Job> => server.findJob(jr))
+export const listJobs = toResultFn(async (jr: ListJobsRequest) : Promise<Job[]> => server.listJobs(jr))
+export const removeJob = toResultFn(async (jr: RemoveJobRequest) : Promise<Job> => server.removeJob(jr))
 // end TODO
 
+const withClient =  <T extends [...unknown[]], U>(fn: (client: TelegramClient, ...args: T) => Promise<U>) : ((sessionString: string, ...args: T) => Promise<U>) => {
+	return async (sessionString: string, ...args: T) => {
+		const client = await getTelegramClient(sessionString)
 
-const _getMe = async (sessionString: string): Promise<string> => {
-	const client = await getTelegramClient(sessionString)
-
-	if(!client.connected){
-		await client.connect()
+		if(!client.connected){
+			await client.connect()
+		}
+		try {
+			return await fn(client, ...args)
+		} finally {
+			client.disconnect()
+		}
 	}
+}
 
+const _getMe = async (client: TelegramClient) => {
 	const user = await client.getMe()
 	return user.id.toString()
 }
 
-export const getMe = toResultFn(_getMe)
+export const getMe = toResultFn(withClient(_getMe))
 
-export const listDialogs = toResultFn(async (sessionString: string, paginationParams: { limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}) => {
-	const client = await getTelegramClient(sessionString)
-
-	if(!client.connected){
-		await client.connect()
-	}
+export const listDialogs = toResultFn(withClient(async (client: TelegramClient, paginationParams: { limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}) => {
 	
 	console.log('list dialogs with current params: ', paginationParams)
 
-	try {
-		const chats: DialogInfo[] = []
-		let lastChat 
-		for await (const chat of client.iterDialogs(paginationParams)){
-			const title = (chat.name ?? chat.title ?? '').trim() || 'Unknown'
-			const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
-			const initials = parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+	const chats: DialogInfo[] = []
+	let lastChat 
+	for await (const chat of client.iterDialogs(paginationParams)){
+		const title = (chat.name ?? chat.title ?? '').trim() || 'Unknown'
+		const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
+		const initials = parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 
-			let thumbSrc = ''
-			// @ts-expect-error Telegram types are messed up
-			const strippedThumbBytes = chat.entity?.photo?.strippedThumb
-			if (strippedThumbBytes) {
-				thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
-			}
-
-			const isPublic = chat.entity?.className === 'Channel' && !!chat.entity.username ? true : false
-
-			const type = chat.entity ? getEntityType(chat.entity) : 'unknown'
-
-			chats.push({
-				id: chat.id?.toString(),
-				title,
-				initials,
-				thumbSrc,
-				isPublic,
-				type,
-				entityId: chat.entity?.id.toString(),
-			})
-			lastChat = chat
-		}
-		
-		const lastMessage = lastChat?.message
-		const offsetId = lastMessage ? lastMessage.id : 0
-		const offsetDate = lastMessage ? lastMessage.date : 0
-		// @ts-expect-error the check is happening later
-		const offsetPeerUsername = lastChat?.entity?.username
-		const peer = String(lastChat?.id)
-
-		const offsetParams = {
-			offsetId,
-			offsetDate,
-			offsetPeer: offsetPeerUsername ?? peer,
+		let thumbSrc = ''
+		// @ts-expect-error Telegram types are messed up
+		const strippedThumbBytes = chat.entity?.photo?.strippedThumb
+		if (strippedThumbBytes) {
+			thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
 		}
 
-		console.log('total dialogs: ', chats.length)
-		console.log('first dialog: ', chats[0])
-		console.log('last dialog: ', chats[chats.length - 1])
-		console.log('next params: ', offsetParams)
-		
-		return {
-			chats,
-			offsetParams
-		}
-	} catch (err) {
-		console.error('Error fetching chats:', err)
-		throw err
-	} finally{
-		await client.disconnect()
+		const isPublic = chat.entity?.className === 'Channel' && !!chat.entity.username ? true : false
+
+		const type = chat.entity ? getEntityType(chat.entity) : 'unknown'
+
+		chats.push({
+			id: chat.id?.toString(),
+			title,
+			initials,
+			thumbSrc,
+			isPublic,
+			type,
+			entityId: chat.entity?.id.toString(),
+		})
+		lastChat = chat
 	}
-})
+	
+	const lastMessage = lastChat?.message
+	const offsetId = lastMessage ? lastMessage.id : 0
+	const offsetDate = lastMessage ? lastMessage.date : 0
+	// @ts-expect-error the check is happening later
+	const offsetPeerUsername = lastChat?.entity?.username
+	const peer = String(lastChat?.id)
 
-export const getLeaderboard = toResultFn(async (sessionString: string) : Promise<LeaderboardUser[]> => {
-	const client = await getTelegramClient(sessionString)
+	const offsetParams = {
+		offsetId,
+		offsetDate,
+		offsetPeer: offsetPeerUsername ?? peer,
+	}
+
+	console.log('total dialogs: ', chats.length)
+	console.log('first dialog: ', chats[0])
+	console.log('last dialog: ', chats[chats.length - 1])
+	console.log('next params: ', offsetParams)
+	
+	return {
+		chats,
+		offsetParams
+	}
+
+}))
+
+export const getLeaderboard = toResultFn(withClient(async (client: TelegramClient) : Promise<LeaderboardUser[]> => {
 	const dbUsers = await getDB().leaderboard()
 	const telegramIDs = dbUsers.map(user => bigInt(user.telegramId))
 	const users = await client.invoke(new Api.users.GetUsers({
@@ -138,9 +138,9 @@ export const getLeaderboard = toResultFn(async (sessionString: string) : Promise
 			name, initials, thumbSrc, points: dbUser.points, id: dbUser.id
 		}
 	})
-})
+}))
 
-export const getRanking = toResultFn(async (sessionString: string) : Promise<Ranking | undefined> => {
-	const id = await _getMe(sessionString)
+export const getRanking = toResultFn(withClient(async (client: TelegramClient) : Promise<Ranking | undefined> => {
+	const id = await _getMe(client)
 	return await getDB().rank(BigInt(id))
-})
+}))

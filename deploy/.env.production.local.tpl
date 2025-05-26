@@ -26,7 +26,7 @@ NEXT_PUBLIC_SENTRY_ENV=<%= $TF_WORKSPACE %>
 
 NEXT_PUBLIC_TELEGRAM_API_ID=<%= $TF_VAR_next_public_telegram_api_id %>
 NEXT_PUBLIC_TELEGRAM_API_HASH=<%= $TF_VAR_next_public_telegram_api_hash %>
-NEXT_PUBLIC_POINTS_PER_BYTE=
+NEXT_PUBLIC_POINTS_PER_BYTE=0.000009313225746
 
 
 # The identity of this service, and the private key associated with it. Note

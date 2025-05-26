@@ -1,115 +1,112 @@
-import { Job, JobID, JobStorage, ObjectStorage } from '@/api'
-
-export interface Init {
-  store: ObjectStorage<Record<JobID, Job>>
-}
+import { Client as StorachaClient, SpaceDID } from "@storacha/ui-react"
+import { JobID, JobStorage, Auth, Period,  JobClient } from "@/api"
+import { LaunchParams } from "@telegram-apps/sdk-react"
+import {  Principal } from '@ipld/dag-ucan'
+import * as SpaceBlob from '@storacha/capabilities/space/blob'
+import * as SpaceIndex from '@storacha/capabilities/space/index'
+import * as Upload from '@storacha/capabilities/upload'
+import * as Filecoin from '@storacha/capabilities/filecoin'
 
 export interface Context {
-  target: EventTarget
-  store: ObjectStorage<Record<JobID, Job>>
+  storacha: StorachaClient
+  serverDID: Principal,
+  spaceDID: SpaceDID
+  encryptionPassword: string
+  session: string
+  launchParams: LaunchParams
+  jobClient: JobClient
 }
 
-/** Create a new job storage, initializing it if empty. */
-export const create = async (init: Init): Promise<JobStorage> => {
-  const store = new Store(init)
-  await init.store.init({})
-  return store
+// default to 1 hour
+const defaultDuration = 1000 * 60 * 60
+
+export const create = async (ctx: Context) => {
+  return new Store(ctx)
 }
 
 class Store extends EventTarget implements JobStorage {
-  public store
   public target
+  #spaceDID
+  #encryptionPassword
+  #session
+  #launchParams
+  #storacha
+  #serverDID
+  #jobClient
 
-  constructor ({ store }: Init) {
+  constructor({ spaceDID, encryptionPassword, session, launchParams, storacha, serverDID, jobClient} : Context) {
     super()
+    this.#spaceDID = spaceDID
+    this.#encryptionPassword = encryptionPassword
+    this.#session = session
+    this.#launchParams = launchParams
+    this.#storacha = storacha
+    this.#serverDID = serverDID
+    this.#jobClient = jobClient
     this.target = this
-    this.store = store
   }
 
-  async find (id: JobID) {
-    return find(this, id)
+  #authParams() : Auth {
+    return {
+      spaceDID: this.#spaceDID,
+      telegramAuth: {
+        session: this.#session,
+        initData: this.#launchParams.initDataRaw || '', 
+      },
+    }
+  }
+
+  async #spaceDelegation() {
+    const delegation = await this.#storacha.createDelegation(this.#serverDID, [SpaceBlob.add.can, SpaceIndex.add.can, Upload.add.can, Filecoin.offer.can], {expiration: new Date(Date.now() + defaultDuration).getTime()})
+    const result = await delegation.archive()
+
+    if (result.error) {
+      throw result.error
+    }
+    return result.ok
+  }
+
+  find (id: JobID) {
+    const auth = this.#authParams()
+    return this.#jobClient.findJob({
+      ...auth,
+      jobID: id
+    })
   }
 
   async listPending () {
-    return listPending(this)
+    const allJobs = await this.#jobClient.listJobs(this.#authParams())
+    return { items: allJobs.filter((j) => (j.status === 'waiting' || j.status === 'queued' || j.status === 'running' || j.status === 'failed')) }
   }
 
   async listCompleted () {
-    return listCompleted(this)
+    const allJobs = await this.#jobClient.listJobs(this.#authParams())
+    return { items: allJobs.filter((j) => (j.status === 'completed')) }
   }
 
-  async add (job: Job) {
-    await add(this, job)
+  async add (dialogs: Set<bigint>, period: Period) {
+    console.debug('job store adding job...')
+    const auth = this.#authParams()
+    const job = await this.#jobClient.createJob({
+      ...auth,
+      dialogs,
+      period,
+      spaceDelegation: await this.#spaceDelegation(),
+      encryptionPassword: this.#encryptionPassword, 
+    })
+    this.target.dispatchEvent(new CustomEvent('add', { detail: job }))
+    console.debug(`job store added job: ${job.id} status: ${job.status}`)
+    return job
   }
 
-  async replace (data: Job) {
-    await replace(this, data)
-  }
 
   async remove (id: JobID) {
-    await remove(this, id)
+    console.debug('job store removing job...')
+    const job = await this.#jobClient.removeJob({
+      ...this.#authParams(),
+      jobID: id
+    })
+    this.target.dispatchEvent(new CustomEvent('remove', { detail: job }))
+    console.debug(`job store removed job: ${job.id}`)
   }
-}
-
-export const find = async ({ store }: Context, id: JobID) => {
-  const jobs = await store.get()
-  return jobs[id] ?? null
-}
-
-export const list = async ({ store }: Context) => {
-  const jobs = await store.get()
-  return { items: Object.values(jobs) }
-}
-
-export const listPending = async (ctx: Context) => {
-  const jobs = []
-  const page = await list(ctx)
-  for (const j of page.items) {
-    if (j.status === 'waiting' || j.status === 'queued' || j.status === 'running' || j.status === 'failed') {
-      jobs.push(j)
-    }
-  }
-  return { items: jobs }
-}
-
-export const listCompleted = async (ctx: Context) => {
-  const jobs = []
-  const page = await list(ctx)
-  for (const j of page.items) {
-    if (j.status === 'completed') {
-      jobs.push(j)
-    }
-  }
-  return { items: jobs }
-}
-
-export const add = async ({ store, target }: Context, job: Job) => {
-  console.debug('job store adding job...')
-  const jobs = await store.get()
-  jobs[job.id] = job
-  await store.set(jobs)
-  target.dispatchEvent(new CustomEvent('add', { detail: job }))
-  console.debug(`job store added job: ${job.id} status: ${job.status}`)
-}
-
-export const replace = async ({ store, target }: Context, job: Job) => {
-  console.debug('job store replacing job...')
-  const jobs = await store.get()
-  const prev = jobs[job.id]
-  if (!prev) throw new Error(`job not found: ${job.id}`)
-  jobs[job.id] = job
-  await store.set(jobs)
-  target.dispatchEvent(new CustomEvent('replace', { detail: job }))
-  console.debug(`job store replacing job: ${job.id} status: ${prev.status} -> ${job.status}`)
-}
-
-export const remove = async ({ store, target }: Context, id: JobID) => {
-  console.debug('job store removing job...')
-  const jobs = await store.get()
-  const job = jobs[id]
-  if (!job) throw new Error(`job not found: ${id}`)
-  delete jobs[id]
-  await store.set(jobs)
-  target.dispatchEvent(new CustomEvent('remove', { detail: job }))
-  console.debug(`job store removed job: ${job.id}`)
 }

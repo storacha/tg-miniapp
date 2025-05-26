@@ -12,7 +12,7 @@ function User({ user, rank } : { user: LeaderboardUser, rank: number} ) {
 				</Avatar>
 				<div>
 					<h1 className="font-semibold text-foreground/80">{user.name}</h1>
-					<p className="text-sm text-foreground/60">{user.points} Points</p>
+					<p className="text-sm text-foreground/60">{user.points.toLocaleString()} Points</p>
 				</div>
 			</div>
 		</div>

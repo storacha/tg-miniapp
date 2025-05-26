@@ -1,4 +1,4 @@
-import { JobRequest, JobStorage } from '@/api'
+import { ExecuteJobRequest } from '@/api'
 import { Context as RunnerContext } from './runner'
 import { Context as ServerContext } from './server'
 import * as Runner from './runner'
@@ -7,7 +7,6 @@ import { CARMetadata } from '@storacha/ui-react'
 import { mRachaPointsPerByte } from './constants'
 
 export interface Context extends RunnerContext, ServerContext {
-  jobs: JobStorage
   db: TGDatabase
   dbUser: User
 }
@@ -22,34 +21,17 @@ class Handler {
   cipher
   #db
   #dbUser
-  #jobs
-  #queueFn
 
-  constructor ({ storacha, telegram, cipher, jobs, db, dbUser, queueFn }: Context) {
+  constructor ({ storacha, telegram, cipher,  db, dbUser }: Context) {
     this.storacha = storacha
     this.telegram = telegram
     this.cipher = cipher
     this.#db = db
     this.#dbUser = dbUser
-    this.#jobs = jobs
-    this.#queueFn = queueFn
   }
 
-  async queueJob(request: JobRequest) {
-    const job = await this.#jobs.find(request.jobID)
-    if (!job) throw new Error(`job not found: ${request.jobID}`)
-
-    await this.#jobs.replace({
-      id: job.id,
-      status: 'queued',
-      params: job.params,
-      created: job.created
-    })
-    this.#queueFn(request)
-  }
-
-  async handleJob(request: JobRequest) {
-    const job = await this.#jobs.find(request.jobID)
+  async handleJob(request: ExecuteJobRequest) {
+    const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
     // check if job was cancelled
     if (job.status != 'queued') {
@@ -61,7 +43,7 @@ class Handler {
     const started = Date.now()
     try {
 
-      await this.#jobs.replace({
+      await this.#db.updateJob(id, {
         id,
         status: 'running',
         params,
@@ -76,7 +58,7 @@ class Handler {
           dialogsRetrieved++
           try {
             progress = (dialogsRetrieved / dialogs.size) / 2.1
-            await this.#jobs.replace({
+            await this.#db.updateJob(id, {
               id,
               status: 'running',
               params,
@@ -93,18 +75,18 @@ class Handler {
         }
       })
 
-      await this.#jobs.replace({
+      await this.#db.updateJob(id, {
         id,
         status: 'completed',
         params,
-        data,
+        data: data.toString(),
         created,
         started,
         finished: Date.now()
       })
     } catch (err) {
       console.error('backup failed', err)
-      await this.#jobs.replace({
+      await this.#db.updateJob(id, {
         id,
         status: 'failed',
         params,

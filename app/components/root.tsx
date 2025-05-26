@@ -9,22 +9,18 @@ import { Provider as TelegramProvider, useTelegram } from '@/providers/telegram'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import { Provider as StorachaProvider, useW3 as useStoracha } from '@storacha/ui-react'
 import { uploadServiceConnection, defaultHeaders } from '@storacha/client/service'
-import { Name } from '@storacha/ucn'
 import { parse as parseDID } from '@ipld/dag-ucan/did'
 import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
-import { create as createJobManager } from '@/lib/backup/manager'
-import { create as createJobSender } from '@/lib/backup/sender'
-import { create as createObjectStorage } from '@/lib/store/object'
-import { create as createJobStorage } from '@/lib/store/jobs'
-import { create as createCipher } from '@/lib/aes-cbc-cipher'
-import { create as createRemoteStorage } from '@/lib/store/remote'
-import { JobStorage, JobManager, JobID, Job } from '@/api'
+//import { create as createJobStorage } from '@/lib/store/jobs'
+import { JobStorage } from '@/api'
 import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
-import { sendRequest  } from './server'
+import { createJob, findJob, listJobs, removeJob } from './server'
+import { create as createJobStorage} from '@/lib/store/jobs'
 import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
+import { fromResult } from '@/lib/errorhandling'
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -90,7 +86,6 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 	const [{ client: storacha }] = useStoracha()
 	const [{ launchParams }] = useTelegram()
 	const { isStorachaAuthorized, space, tgSessionString } = useGlobal()
-	const [jobManager, setJobManager] = useState<JobManager>()
 	const [jobs, setJobs] = useState<JobStorage>()
 
 	useEffect(() => {
@@ -109,42 +104,26 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			await storacha.setCurrentSpace(space)
 
-			const proofs = storacha.proofs([
-				{ can: 'clock/head', with: space },
-				{ can: 'clock/advance', with: space }
-			])
-			if (!proofs.length) {
-				throw new Error('merkle clock proofs not found')
-			}
-
-			const cipher = createCipher(encryptionPassword)
-			const remoteStore = createRemoteStorage(storacha)
-			const name = Name.from(storacha.agent.issuer, proofs, { id: space })
-			const store = createObjectStorage<Record<JobID, Job>>({ remoteStore, name, cipher })
-			console.log('name: ', name.did())
-
-			const jobs = await createJobStorage({ store })
-
-			const jobSender = await createJobSender({
+			const jobs = await createJobStorage({
 				spaceDID: space,
 				serverDID: serverDID,
 				storacha,
 				launchParams,
-				name,
 				encryptionPassword,
 				session: tgSessionString,
-				sendRequest
+				jobClient: {
+					createJob: async (jr) => fromResult(await createJob(jr)),
+					findJob: async(jr) => fromResult(await findJob(jr)),
+					listJobs: async(jr) => fromResult(await listJobs(jr)),
+					removeJob: async(jr) => fromResult(await removeJob(jr))
+				}
 			})
-
-			const jobManager = await createJobManager({ jobs, jobSender })
-
 			setJobs(jobs)
-			setJobManager(jobManager)
 		})()
 	}, [storacha, tgSessionString, isStorachaAuthorized, space])
 
 	return (
-		<BackupProvider jobManager={jobManager} jobs={jobs}>
+		<BackupProvider jobs={jobs}>
 			{children}
 		</BackupProvider>
 	)
