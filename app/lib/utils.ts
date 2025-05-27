@@ -103,3 +103,38 @@ export const getInitials = (name: string) => {
 		const parts = title.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
 		return parts.length === 1 ? title[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 	}
+
+
+export function stringifyWithUIntArrays(obj: unknown): string {
+  return JSON.stringify(obj, (_, value) => {
+    if (
+      value instanceof Uint8Array
+    ) {
+      return {
+        __typedarray__: true,
+        type: value.constructor.name,
+        data: Array.from(value)
+      }
+    }
+    return value
+  })
+}
+
+export function parseWithUIntArrays(str: string): unknown {
+  return JSON.parse(str, (_, value) => {
+    if (
+      value &&
+      value.__typedarray__ &&
+      typeof value.type === 'string' &&
+      Array.isArray(value.data)
+    ) {
+      switch (value.type) {
+        case 'Uint8Array':
+          return new Uint8Array(value.data)
+        default:
+          return value
+      }
+    }
+    return value
+  })
+}
