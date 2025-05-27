@@ -18,7 +18,12 @@
   "createDB": true,
   "caches": null,
   "topics": null,
-  "queues": [],
+  "queues": [
+    {
+      "name": "jobs",
+      "fifo": false
+    }
+  ],
   "buckets": null,
   "secrets": [
     {
@@ -32,6 +37,10 @@
     {
       "name": "NEXT_PUBLIC_TELEGRAM_API_HASH",
       "variable": true
+    },
+    {
+      "name": "BACKUP_PASSWORD",
+      "variable": false
     }
   ],
   "tables": null,
