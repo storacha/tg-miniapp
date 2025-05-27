@@ -15,6 +15,7 @@
 		"pages:deploy": "pnpm run pages:build && wrangler pages deploy"
 	},
 	"dependencies": {
+		"@aws-sdk/client-sqs": "^3.817.0",
 		"@aws-sdk/rds-signer": "^3.816.0",
 		"@dotenvx/dotenvx": "^1.44.1",
 		"@ipld/dag-cbor": "^9.2.2",

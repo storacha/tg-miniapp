@@ -5,21 +5,40 @@ import Queue from 'p-queue'
 import { CreateJobRequest, DialogInfo, ExecuteJobRequest, FindJobRequest, Job, LeaderboardUser, ListJobsRequest, Ranking, RemoveJobRequest } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
 import { Api, TelegramClient } from 'telegram'
-import { decodeStrippedThumb, toJPGDataURL } from '@/lib/utils'
+import { decodeStrippedThumb, stringifyWithUIntArrays, toJPGDataURL } from '@/lib/utils'
 import { getEntityType } from '@/lib/backup/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
 import { toResultFn } from '@/lib/errorhandling'
+import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
 
-//TODO replace with actual server action
-  const queue = new Queue({concurrency: 1})
-const server = await createJobServer({
-    queueFn: (jr: ExecuteJobRequest) => {
+const queueURL = process.env.JOBS_QUEUE_ID
+
+const localQueueFn = () => {
+	const queue = new Queue({concurrency: 1})
+	return (jr: ExecuteJobRequest) => {
       return queue.add(async () => {
         await server.handleJob(jr)
       })
     }
-  })
+}
+
+const sqsQueueFn = () => {
+	console.debug("creating message for sqs queue id: ", queueURL)
+	const client = new SQSClient({})
+
+	return async (jr: ExecuteJobRequest) => {
+		const command = new SendMessageCommand({
+    	QueueUrl: queueURL,
+    	MessageBody: stringifyWithUIntArrays(jr)
+  	});
+		await client.send(command)
+	}
+}
+
+const server = await createJobServer({
+    queueFn: queueURL ? sqsQueueFn() : localQueueFn()
+})
 
 export const createJob = toResultFn(async (jr: CreateJobRequest) : Promise<Job> => server.createJob(jr))
 export const findJob = toResultFn(async (jr: FindJobRequest) : Promise<Job> => server.findJob(jr))
