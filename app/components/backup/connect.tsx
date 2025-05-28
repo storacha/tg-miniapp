@@ -13,7 +13,6 @@ import { Input } from '../ui/input'
 import { FormEventHandler, useState } from 'react'
 import { useGlobal } from '@/zustand/global'
 import { useTelegram } from '@/providers/telegram'
-import { on } from 'events'
 
 const spaceNamePrefix = 'Telegram Backups'
 export interface ConnectProps {
