@@ -9,10 +9,11 @@ import Dates from '@/components/backup/dates'
 import Chats from '@/components/backup/chats'
 import { Layouts } from '@/components/layouts'
 import { Summary } from '@/components/backup/summary'
+import { StorachaConnect } from '@/components/backup/connect'
 
 export default function Page() {
 	const router = useRouter()
-	const { space } = useGlobal()
+	const { isStorachaAuthorized, space } = useGlobal()
 	const [, { addBackupJob }] = useBackups()
 	const [step, setStep] = useState(0)
 	const [starting, setStarting] = useState(false)
@@ -41,9 +42,14 @@ export default function Page() {
 
 	return (
 		<Layouts isSinglePage back={() => handleBack()}>
-			{step === 0 && <Chats selections={chats} onSelectionsChange={s => setChats(s)} onSubmit={() => setStep(1)}/>}
-			{step === 1 && <Dates period={period} onPeriodChange={setPeriod} onSubmit={() => setStep(2)} />}
-			{step === 2 && space && <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit} starting={starting} />}
-		</Layouts>
+            {step === 0 && <Chats selections={chats} onSelectionsChange={s => setChats(s)} onSubmit={() => setStep(1)}/>}
+            {(step === 1 || (step === 2 && (!isStorachaAuthorized || !space))) && <Dates period={period} onPeriodChange={setPeriod} onSubmit={() => setStep(2)} />}
+            {step === 2 && !isStorachaAuthorized && (
+                <StorachaConnect open={true} onDismiss={() => setStep(1)} />
+            )}
+            {step === 2 && isStorachaAuthorized && space && (
+                <Summary space={space} chats={chats} period={period} onSubmit={handleSummarySubmit} starting={starting} />
+            )}
+        </Layouts>
 	)
 }

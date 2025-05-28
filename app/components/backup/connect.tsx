@@ -1,3 +1,5 @@
+import { useW3 as useStoracha } from '@storacha/ui-react'
+import { email as parseEmail } from '@storacha/did-mailto'
 import {
 	Drawer,
 	DrawerContent,
@@ -8,22 +10,27 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { FormEventHandler } from 'react'
+import { FormEventHandler, useState } from 'react'
+import { useGlobal } from '@/zustand/global'
+import { useTelegram } from '@/providers/telegram'
+import { on } from 'events'
 
+const spaceNamePrefix = 'Telegram Backups'
 export interface ConnectProps {
 	open: boolean
 	email: string
 	onEmailChange: (value: string) => unknown
 	onSubmit: () => unknown
+	onDismiss?: () => void
 }
 
-export function Connect({ open, email, onEmailChange, onSubmit}: ConnectProps) {
+export function Connect({ open, email, onEmailChange, onSubmit, onDismiss}: ConnectProps) {
 	const handleSubmit: FormEventHandler = e => {
 		e.preventDefault()
 		onSubmit()
 	}
 	return (
-		<Drawer open={open} >
+		<Drawer open={open} onClose={onDismiss}>
 			<DrawerContent>
 				<DrawerHeader>
 					<DrawerTitle>Connect Your Storacha Account</DrawerTitle>
@@ -46,11 +53,12 @@ export function Connect({ open, email, onEmailChange, onSubmit}: ConnectProps) {
 export interface VerifyProps {
 	open: boolean
 	email: string
+	onDismiss?: () => void
 }
 
-export const Verify = ({ open, email }: VerifyProps) => {
+export const Verify = ({ open, email, onDismiss }: VerifyProps) => {
 	return (
-		<Drawer open={open}>
+		<Drawer open={open} onClose={onDismiss}>
 			<DrawerContent>
 				<DrawerHeader>
 					<DrawerTitle>Verify your email address</DrawerTitle>
@@ -90,32 +98,51 @@ export const ConnectError = ({ open, error, onDismiss }: ConnectErrorProps) => {
 	)
 }
 
-export interface StorachaConnectProps {
-  email: string
-  onEmailChange: (value: string) => void
-  onConnect: () => Promise<void>
-  error?: Error
-  verifying: boolean
-  onErrorDismiss: () => void
-  open: boolean
-}
+export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?: () => void  }) => {
+	const [{ user }] = useTelegram()
+	const [{ client }] = useStoracha()
+	const { setIsStorachaAuthorized, setSpace } = useGlobal()
 
-export const StorachaConnect = ({
-  email,
-  onEmailChange,
-  onConnect,
-  error,
-  verifying,
-  onErrorDismiss,
-  open
-}: StorachaConnectProps) => {
+	const [email, setEmail] = useState('')
+	const [connErr, setConnErr] = useState<Error>()
+	const [verifying, setVerifying] = useState(false)
+	
+	const handleConnectSubmit = async () => {
+		try {
+			if (!client) throw new Error('missing Storacha client instance')
+			setConnErr(undefined)
+			setVerifying(true)
 
-  if (open && error) {
+			const spaceName = `${spaceNamePrefix} (${user?.id})`
+			const account = await client.login(parseEmail(email))
+			const space = client.spaces().find(s => s.name === spaceName)
+			if (space) {
+				await client.setCurrentSpace(space.did())
+				setSpace(space.did())
+			} else {
+				await account.plan.wait()
+				const space = await client.createSpace(spaceName, { account })
+				await client.setCurrentSpace(space.did())
+				setSpace(space.did())
+			}
+			setIsStorachaAuthorized(true)
+		} catch (err) {
+			console.error(err)
+			setConnErr(err as Error)
+		} finally {
+			setVerifying(false)
+		}
+	}
+
+  if (open && connErr) {
     return (
       <ConnectError
         open={true}
-        error={error}
-        onDismiss={onErrorDismiss}
+        error={connErr}
+		onDismiss={() => {
+		  setConnErr(undefined)
+		  if (onDismiss) onDismiss()
+		}}
       />
     )
   }
@@ -125,6 +152,7 @@ export const StorachaConnect = ({
       <Verify
         open={true}
         email={email}
+		onDismiss={onDismiss}
       />
     )
   }
@@ -133,8 +161,9 @@ export const StorachaConnect = ({
     <Connect
       open={open}
       email={email}
-      onEmailChange={onEmailChange}
-      onSubmit={onConnect}
+      onEmailChange={setEmail}
+      onSubmit={handleConnectSubmit}
+	  onDismiss={onDismiss}
     />
   )
 }
