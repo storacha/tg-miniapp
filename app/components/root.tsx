@@ -108,13 +108,13 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			await storacha.setCurrentSpace(space)
 
-			await login({
+			fromResult(await login({
 				telegramAuth: {
 					session: tgSessionString,
 					initData: launchParams.initDataRaw || '',
 				},
 				spaceDID: space
-			})
+			}))
 
 			const jobs = await createJobStorage({
 				serverDID: serverDID,
