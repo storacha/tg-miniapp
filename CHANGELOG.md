@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/storacha/tg-miniapp/compare/v2.0.0...v2.0.1) (2025-05-28)
+
+
+### Bug Fixes
+
+* **login:** raise exceptions for login errors ([e236d04](https://github.com/storacha/tg-miniapp/commit/e236d04d1bea066e53dbb0f4a1428faba69670d5))
+
 ## [2.0.0](https://github.com/storacha/tg-miniapp/compare/v1.4.0...v2.0.0) (2025-05-28)
 
 
