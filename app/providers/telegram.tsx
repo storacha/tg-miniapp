@@ -53,7 +53,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const listDialogs = useCallback(
     async (paginationParams = { limit: 10 }) => {
       if (!tgSessionString) return { chats: [], offsetParams: {} }
-      return listDialogsRequest(tgSessionString, paginationParams )
+      return fromResult(await listDialogsRequest(tgSessionString, paginationParams ))
     },
     [tgSessionString]
   )
