@@ -154,7 +154,7 @@ function BackupDialog({
       <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {sortedMessages
           .filter((msg) => msg.type !== "service") // TODO: handle this 
-          .map((msg, index) => {
+          .map((msg) => {
           const date = formatDate(msg.date)
           const showDate = lastRenderedDate !== date
           if (showDate) lastRenderedDate = date

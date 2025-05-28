@@ -18,7 +18,7 @@ interface MediaProps {
 
 const getThumbURL = (document: DocumentData) => {
   try {
-    // @ts-ignore already handling undefined 'thumbBytes'
+    // @ts-expect-error already handling undefined 'thumbBytes'
     const thumbBytes = document.thumbs?.[0]?.bytes
     return thumbBytes ? toJPGDataURL(decodeStrippedThumb(thumbBytes as Uint8Array)) : undefined
   } catch (err) {
@@ -163,13 +163,12 @@ const AudioMedia: React.FC<{ metadata: DocumentMediaData; mediaUrl?: string }> =
       </audio>
     </div>
 )}
-2021
 
 const VideoMedia: React.FC<{ mediaUrl?: string; metadata: DocumentMediaData }> = ({ mediaUrl, metadata }) => {
   if (!mediaUrl) return <PlaceholderBubble label="No video available" />
 
   const mime = metadata.document?.mimeType?.toLowerCase() || 'video/mp4'
-  let thumbUrl: string | undefined = metadata.document ? getThumbURL(metadata.document) : undefined
+  const thumbUrl = metadata.document ? getThumbURL(metadata.document) : undefined
 
   return (
     <video
@@ -351,7 +350,7 @@ const FileMedia: React.FC<{ metadata: DocumentMediaData, mediaUrl?: string }> = 
   const fileName = metadata.document?.attributes?.find(attr => 'fileName' in attr)?.fileName || 'Unknown File'
   const fileExtension = fileName.split('.').pop()?.toUpperCase() || 'FILE'
 
-  let thumbUrl: string | undefined = metadata.document ? getThumbURL(metadata.document) : undefined
+  const thumbUrl = metadata.document ? getThumbURL(metadata.document) : undefined
 
   const handleClick = () => {
    if(fileExtension === 'PDF'){
