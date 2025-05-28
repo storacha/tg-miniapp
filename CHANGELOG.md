@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/storacha/tg-miniapp/compare/v2.0.1...v2.0.2) (2025-05-28)
+
+
+### Bug Fixes
+
+* **dashboard:** show safe icon if there aren't backups ([1e830d5](https://github.com/storacha/tg-miniapp/commit/1e830d5db181235af6e897c093f033f0ecf084a2))
+
 ## [2.0.1](https://github.com/storacha/tg-miniapp/compare/v2.0.0...v2.0.1) (2025-05-28)
 
 
