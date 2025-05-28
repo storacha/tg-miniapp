@@ -11,15 +11,18 @@ import { useGlobal } from '@/zustand/global'
 import { useEffect, useState } from 'react'
 
 export default function Page() {
-	const { tgSessionString } = useGlobal()
+	const { tgSessionString, space } = useGlobal()
 	const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
 	const [ranking, setRanking] = useState<Ranking | undefined>()
 	useEffect(() => {
+		if (!space) {
+			return
+		}
 		(async () => {
 			setLeaderboard(fromResult(await getLeaderboard(tgSessionString)))
-			setRanking(fromResult(await getRanking(tgSessionString)))
+			setRanking(fromResult(await getRanking(tgSessionString, space)))
 		})()
-	}, [tgSessionString])
+	}, [tgSessionString, space])
 	return (
 		<Layouts isSinglePage isBackgroundBlue>
 			{ranking ? <Banner {...ranking}/> : ''} 

@@ -17,7 +17,7 @@
   "cloudflare": true,
   "createDB": true,
   "caches": null,
-  "topics": null,
+  "topics": [],
   "queues": [
     {
       "name": "jobs",
@@ -40,6 +40,10 @@
     },
     {
       "name": "BACKUP_PASSWORD",
+      "variable": false
+    },
+    {
+      "name": "SESSION_PASSWORD",
       "variable": false
     }
   ],

@@ -17,10 +17,11 @@ import { JobStorage } from '@/api'
 import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
-import { createJob, findJob, listJobs, removeJob } from './server'
+import { createJob, findJob, listJobs, login, removeJob } from './server'
 import { create as createJobStorage} from '@/lib/store/jobs'
 import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
 import { fromResult } from '@/lib/errorhandling'
+import { parseWithUIntArrays } from '@/lib/utils'
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -39,6 +40,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function Root(props: PropsWithChildren) {
+
 	const didMount = useDidMount()
 	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString} = useGlobal()
 
@@ -89,6 +91,8 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 	const [jobs, setJobs] = useState<JobStorage>()
 
 	useEffect(() => {
+
+		let eventSource : EventSource
 		if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
 			return
 		}
@@ -104,13 +108,18 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			await storacha.setCurrentSpace(space)
 
+			await login({
+				telegramAuth: {
+					session: tgSessionString,
+					initData: launchParams.initDataRaw || '',
+				},
+				spaceDID: space
+			})
+
 			const jobs = await createJobStorage({
-				spaceDID: space,
 				serverDID: serverDID,
 				storacha,
-				launchParams,
 				encryptionPassword,
-				session: tgSessionString,
 				jobClient: {
 					createJob: async (jr) => fromResult(await createJob(jr)),
 					findJob: async(jr) => fromResult(await findJob(jr)),
@@ -118,8 +127,19 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 					removeJob: async(jr) => fromResult(await removeJob(jr))
 				}
 			})
+			// setup a remove listener for async updates
+			eventSource = new EventSource("/api/jobs")
+			eventSource.addEventListener('replace', (evt) => {
+					const job = parseWithUIntArrays(evt.data)
+					jobs.dispatchEvent(new CustomEvent('replace', { detail: job}))
+				})
 			setJobs(jobs)
 		})()
+		return () => {
+			if (eventSource) {
+				eventSource.close()
+			}
+		}
 	}, [storacha, tgSessionString, isStorachaAuthorized, space])
 
 	return (

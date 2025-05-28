@@ -1,8 +1,7 @@
 'use server'
 
-import { create as createJobServer } from '@/lib/server/server'
-import Queue from 'p-queue'
-import { CreateJobRequest, DialogInfo, ExecuteJobRequest, FindJobRequest, Job, LeaderboardUser, ListJobsRequest, Ranking, RemoveJobRequest } from '@/api'
+import { after } from 'next/server'
+import { CreateJobRequest, DialogInfo, ExecuteJobRequest,  Job, LeaderboardUser, Ranking } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
 import { Api, TelegramClient } from 'telegram'
 import { decodeStrippedThumb, stringifyWithUIntArrays, toJPGDataURL } from '@/lib/utils'
@@ -11,15 +10,25 @@ import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
 import { toResultFn } from '@/lib/errorhandling'
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
-
+import { 
+	login as jobsLoginJob,
+	createJob as jobsCreateJob, 
+	findJob as jobsFindJob, 
+	listJobs as jobsListJob, 
+	removeJob as jobsRemoveJob
+} from '@/lib/server/jobs'
+import { SpaceDID } from '@storacha/access'
 const queueURL = process.env.JOBS_QUEUE_ID
 
 const localQueueFn = () => {
-	const queue = new Queue({concurrency: 1})
-	return (jr: ExecuteJobRequest) => {
-      return queue.add(async () => {
-        await server.handleJob(jr)
-      })
+	return async (jr: ExecuteJobRequest) => {
+      after(async () => {
+				console.log("initiate job", jr.jobID)
+				fetch(process.env.LOCAL_URL + "/api/jobs", {
+					method: 'POST',
+					body: JSON.stringify({ body: stringifyWithUIntArrays(jr) })
+				})
+			})
     }
 }
 
@@ -36,14 +45,13 @@ const sqsQueueFn = () => {
 	}
 }
 
-const server = await createJobServer({
-    queueFn: queueURL ? sqsQueueFn() : localQueueFn()
-})
+const queueFn = queueURL ? sqsQueueFn() : localQueueFn()
 
-export const createJob = toResultFn(async (jr: CreateJobRequest) : Promise<Job> => server.createJob(jr))
-export const findJob = toResultFn(async (jr: FindJobRequest) : Promise<Job> => server.findJob(jr))
-export const listJobs = toResultFn(async (jr: ListJobsRequest) : Promise<Job[]> => server.listJobs(jr))
-export const removeJob = toResultFn(async (jr: RemoveJobRequest) : Promise<Job> => server.removeJob(jr))
+export const login = toResultFn(jobsLoginJob)
+export const createJob = toResultFn(async (jr: CreateJobRequest) : Promise<Job> => jobsCreateJob(jr, queueFn))
+export const findJob = toResultFn(jobsFindJob)
+export const listJobs = toResultFn(jobsListJob)
+export const removeJob = toResultFn(jobsRemoveJob)
 // end TODO
 
 const withClient =  <T extends [...unknown[]], U>(fn: (client: TelegramClient, ...args: T) => Promise<U>) : ((sessionString: string, ...args: T) => Promise<U>) => {
@@ -159,7 +167,7 @@ export const getLeaderboard = toResultFn(withClient(async (client: TelegramClien
 	})
 }))
 
-export const getRanking = toResultFn(withClient(async (client: TelegramClient) : Promise<Ranking | undefined> => {
+export const getRanking = toResultFn(withClient(async (client: TelegramClient, space: SpaceDID) : Promise<Ranking | undefined> => {
 	const id = await _getMe(client)
-	return await getDB().rank(BigInt(id))
+	return await getDB().rank({ telegramId: id, storachaSpace: space})
 }))

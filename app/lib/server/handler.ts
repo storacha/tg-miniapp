@@ -1,12 +1,11 @@
 import { ExecuteJobRequest } from '@/api'
 import { Context as RunnerContext } from './runner'
-import { Context as ServerContext } from './server'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
 import { CARMetadata } from '@storacha/ui-react'
 import { mRachaPointsPerByte } from './constants'
 
-export interface Context extends RunnerContext, ServerContext {
+export interface Context extends RunnerContext {
   db: TGDatabase
   dbUser: User
 }

@@ -1,7 +1,6 @@
 import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect, useCallback } from 'react'
 import { cloudStorage} from '@telegram-apps/sdk-react'
 import { Backup, JobID, JobStorage, PendingJob, Period, RestoredBackup } from '@/api'
-import { SpaceDID } from '@storacha/ui-react'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
 import { restoreBackup as restoreBackupAction, fetchMoreMessages as fetchMoreMessagesAction} from '@/lib/backup/recoverer'
@@ -219,13 +218,10 @@ export const Provider = ({ jobs: jobStore, children }: ProviderProps): ReactNode
     jobStore.addEventListener('add', handleJobChange)
     jobStore.addEventListener('replace', handleJobChange)
     jobStore.addEventListener('remove', handleJobChange)
-    // this is in place till we can find a good mechanism to handle push server updates
-    const t = setInterval(handleJobChange, 2000)
     return () => {
       jobStore.removeEventListener('add', handleJobChange)
       jobStore.removeEventListener('replace', handleJobChange)
       jobStore.removeEventListener('remove', handleJobChange)
-      clearInterval(t)
     }
   }, [jobStore])
 

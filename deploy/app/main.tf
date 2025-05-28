@@ -44,6 +44,12 @@ resource "random_password" "backup_password" {
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
+resource "random_password" "session_password" {
+  length           = 32
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
 
 module "app" {
   source = "github.com/storacha/storoku//app?ref=v0.2.31"
@@ -70,6 +76,7 @@ module "app" {
     "NEXT_PUBLIC_TELEGRAM_API_ID" = var.next_public_telegram_api_id
     "NEXT_PUBLIC_TELEGRAM_API_HASH" = var.next_public_telegram_api_hash
     "BACKUP_PASSWORD" = random_password.backup_password.result
+    "SESSION_PASSWORD" = random_password.session_password.result
   }
   # enter any sqs queues you want to create here
   queues = [

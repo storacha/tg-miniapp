@@ -7,6 +7,8 @@ import type { Service } from '@storacha/client/types'
 let cachedServerConstants: {
   SERVER_IDENTITY_PRIVATE_KEY: string
   TELEGRAM_BOT_TOKEN: string
+  SESSION_PASSWORD: string
+  SESSION_COOKIE_NAME: string
 }
 
 
@@ -23,9 +25,23 @@ export const getServerConstants = () => {
     throw new Error('TELEGRAM_BOT_TOKEN must be set')
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 
+  if (!process.env.SESSION_PASSWORD)
+    throw new Error('SESSION_PASSWORD must be set')
+  const SESSION_PASSWORD = process.env.SESSION_PASSWORD
+
+  const DEFAULT_COOKIE_VALUE = 'bsky-backups'
+  const SESSION_COOKIE_NAME =
+    process.env.SESSION_COOKIE_NAME || DEFAULT_COOKIE_VALUE
+  if (!process.env.SESSION_COOKIE_NAME) {
+    console.warn(
+      `SESSION_COOKIE_NAME is not set - using default value of ${DEFAULT_COOKIE_VALUE}`
+    )
+  }
   cachedServerConstants = {
     SERVER_IDENTITY_PRIVATE_KEY,
-    TELEGRAM_BOT_TOKEN
+    TELEGRAM_BOT_TOKEN,
+    SESSION_COOKIE_NAME,
+    SESSION_PASSWORD
   }
   return cachedServerConstants
 }

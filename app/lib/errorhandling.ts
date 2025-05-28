@@ -51,7 +51,7 @@ export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T
         }
       }
       if (err instanceof Error) {
-        console.error(err.message)
+        console.error(err.message, err.stack)
         return { error: serializeErrorObject(err) }
       }
       if (typeof err == 'string') {
