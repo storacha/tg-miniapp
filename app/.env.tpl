@@ -35,4 +35,9 @@ PGHOST=localhost
 PGPORT=5432
 PGDATABASE=tg_backups_dev
 PGUSERNAME=admin
-PGPASSWORD=bluey
+PGPASSWORD=tarjay
+
+SESSION_COOKIE_NAME=tg-backups-dev
+SESSION_PASSWORD=changethistosomethingsecretandatleast32characterslong
+
+LOCAL_URL=http://localhost:3000

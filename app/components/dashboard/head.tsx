@@ -13,14 +13,17 @@ import { getRanking } from '../server'
 export default function Head() {
 	const router = useRouter()
 	const [{ user }] = useTelegram()
-	const { tgSessionString } = useGlobal() 
+	const { tgSessionString, space } = useGlobal() 
 	const [ranking, setRanking] = useState<Ranking | undefined>()
 	
 	useEffect(() => {
+			if (!space) {
+				return
+			}
 			(async () => {
-				setRanking(fromResult(await getRanking(tgSessionString)))
+				setRanking(fromResult(await getRanking(tgSessionString, space)))
 			})()
-		}, [tgSessionString])
+		}, [tgSessionString, space])
 
 	return (
 		<div className="bg-background rounded-sm">

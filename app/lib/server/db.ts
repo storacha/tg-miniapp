@@ -1,6 +1,7 @@
 import postgres from 'postgres'
 import { Signer } from '@aws-sdk/rds-signer'
 import { BaseJob, Job, JobStatus, Ranking, SpaceDID } from '@/api'
+import { parseWithUIntArrays, stringifyWithUIntArrays } from '../utils'
 
 const {
   PGHOST,
@@ -81,17 +82,21 @@ export interface DbJob {
   createdAt: Date
 }
 
+type JobEvent = {action: string, job: Job}
+type JobsCallback = (action: string, job: Job) => void
+type UnsubscribeFn = () => void
 type JobInput = Input<DbJob, 'id' | 'progress' | 'startedAt' | 'cause' | 'finishedAt' | 'dataCid' | 'createdAt'>
 export interface TGDatabase {
   findOrCreateUser(input: UserInput) : Promise<User>
   updateUser(id: string, input: User) : Promise<User>
   leaderboard() : Promise<User[]>
-  rank(telegramId: bigint) : Promise<Ranking | undefined>
+  rank(input: UserInput) : Promise<Ranking | undefined>
   createJob(input: JobInput) : Promise<Job>
   getJobByID(id: string, userId: string) : Promise<Job>
   getJobsByUserID(userId: string) : Promise<Job[]>
   updateJob(id: string, input: Job) : Promise<Job>
   removeJob(id: string, userId: string) : Promise<void>
+  subscribeToJobUpdates(userId: string, callback: JobsCallback) : Promise<UnsubscribeFn>
 }
 
 export function getDB() : TGDatabase {
@@ -130,9 +135,9 @@ export function getDB() : TGDatabase {
         limit 100
       `
     },
-    async rank(telegramId: bigint) {
+    async rank(input: UserInput) {
       const results = await sql<{rank : number}[]>`
-        select (select count(*) from users u2 where u2.points>=u1.points) as rank from users u1 where u1.telegram_id=${telegramId.toString()}
+        select (select count(*) from users u2 where u2.points>=u1.points) as rank from users u1 where u1.telegram_id=${input.telegramId} and u1.storacha_space=${input.storachaSpace}
       `
       if (!results[0]) {
         return undefined
@@ -147,7 +152,7 @@ export function getDB() : TGDatabase {
       }
 
       const points = await sql<{ points: number}[]>`
-        select points from users where users.telegram_id = ${telegramId.toString()}
+        select points from users where users.telegram_id = ${input.telegramId.toString()} and users.storacha_space=${input.storachaSpace}
       `
             
       if (!points[0]) {
@@ -168,7 +173,9 @@ export function getDB() : TGDatabase {
       if (!results[0]) {
         throw new Error('error inserting job')
       }
-      return fromDbJob(results[0])
+      const job = fromDbJob(results[0])
+      await sql.notify(results[0].userId, stringifyWithUIntArrays({ action: 'add' , job}))
+      return job
     },
     async getJobByID(id, userId) {
       const results = await sql<DbJob[]>`
@@ -194,17 +201,26 @@ export function getDB() : TGDatabase {
       if (!results[0]) {
         throw new Error('error updating job')
       }
-      return fromDbJob(results[0])
+      const job = fromDbJob(results[0])
+      await sql.notify(results[0].userId, stringifyWithUIntArrays({ action: 'replace', job}))
+      return job
     },
     async removeJob(id, userId) {
-       const result = await sql`
-        delete from jobs where id = ${id} and user_id = ${userId}
+       const results = await sql<DbJob[]>`
+        delete from jobs where id = ${id} and user_id = ${userId} returning *
        `
-       if (result.count == 0) {
+       if (!results[0]) {
         throw new Error('error removing job')
        }
-       return
+       await sql.notify(results[0].userId, stringifyWithUIntArrays({ action: 'remove', job: fromDbJob(results[0]) }))
     },
+    async subscribeToJobUpdates(userId, callback) {
+      const result = await sql.listen(userId, (value) => {
+        const {action, job} = parseWithUIntArrays(value) as JobEvent
+        callback(action, job)
+      })
+      return result.unlisten
+    }
   }
 }
 

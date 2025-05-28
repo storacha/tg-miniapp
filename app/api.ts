@@ -110,16 +110,16 @@ export interface TelegramAuth {
   initData: string
 }
 
-export interface Auth {
+export interface LoginRequest {
   spaceDID: SpaceDID
   telegramAuth: TelegramAuth
 }
 
-export interface ExecuteAuth extends Auth {
+export interface ExecuteAuth {
   spaceDelegation: Uint8Array
   encryptionPassword: string
 }
-export interface ExecuteJobRequest extends ExecuteAuth {
+export interface ExecuteJobRequest extends ExecuteAuth, LoginRequest {
   jobID: JobID
 }
 
@@ -128,13 +128,13 @@ export interface CreateJobRequest extends ExecuteAuth {
   period: Period
 }
 
-export interface ListJobsRequest extends Auth {}
+export interface ListJobsRequest{}
 
-export interface FindJobRequest extends Auth {
+export interface FindJobRequest {
   jobID: JobID
 }
 
-export interface RemoveJobRequest extends Auth {
+export interface RemoveJobRequest {
   jobID: JobID
 }
 
