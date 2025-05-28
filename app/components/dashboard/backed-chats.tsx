@@ -45,9 +45,7 @@ export default function BackedChats() {
 			<h1 className="px-5">Chats</h1>
 			{error ? (
 				<p className="text-red-600 text-center text-xs my-2">{error.message}</p>
-			) : (
-				<>
-					{backups.items.length === 0 && loadingDialogs && (
+			) : backups.items.length === 0 ? (
 						<div className="flex flex-col justify-center items-center px-10 pt-20 gap-2">
 							<div className="text-foreground/40 p-2">
 								<ShieldCheck size={30} />
@@ -55,8 +53,7 @@ export default function BackedChats() {
 							<p className="text-lg font-semibold text-foreground/40">Storacha is Safe</p>
 							<p className="text-center text-sm text-foreground/40">Secure your data today with our encrypted storage.</p>
 						</div>
-					)}
-					{backups.items.length > 0 && (
+					) : (
 						<div className="flex flex-col">
 							{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
 							{!loadingDialogs && dialogs.map(d => {
@@ -74,9 +71,8 @@ export default function BackedChats() {
 							<div ref={observerRef} className="h-10" />
 							{loadingDialogs && <p className='text-center'>Loading chats...</p>}
 						</div>
-					)}
-				</>
-			)}
+					)
+			}
 		</div>
 	)
 }
