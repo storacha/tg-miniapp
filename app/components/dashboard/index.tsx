@@ -1,15 +1,56 @@
+import { useState } from 'react'
 import { X } from 'lucide-react'
-// import Head from './head'
-import BackedChats from './backed-chats'
-import { Button } from '../ui/button'
 import { useRouter } from 'next/navigation'
-import { useBackups } from '@/providers/backup'
+import { useW3 as useStoracha } from '@storacha/ui-react'
+import { email as parseEmail } from '@storacha/did-mailto'
 import { JobID, PendingJob } from '@/api'
-import Head from './head'
+import { useGlobal } from '@/zustand/global'
+import { useBackups } from '@/providers/backup'
+import { useTelegram } from '@/providers/telegram'
+import Head from '@/components/dashboard/head'
+import { Button } from '@/components/ui/button'
+import { StorachaConnect } from '@/components/backup/connect'
+import BackedChats from '@/components/dashboard/backed-chats'
+
+const spaceNamePrefix = 'Telegram Backups'
 
 export default function Dashboard() {
 	const router = useRouter()
+	const [{ user }] = useTelegram()
+	const [{ client }] = useStoracha()
 	const [{ jobs }, { removeBackupJob }] = useBackups()
+	const { isStorachaAuthorized, setIsStorachaAuthorized, setSpace } = useGlobal()
+	
+	const [email, setEmail] = useState('')
+	const [connErr, setConnErr] = useState<Error>()
+	const [verifying, setVerifying] = useState(false)
+
+		const handleConnectSubmit = async () => {
+			try {
+				if (!client) throw new Error('missing Storacha client instance')
+				setConnErr(undefined)
+				setVerifying(true)
+	
+				const spaceName = `${spaceNamePrefix} (${user?.id})`
+				const account = await client.login(parseEmail(email))
+				const space = client.spaces().find(s => s.name === spaceName)
+				if (space) {
+					await client.setCurrentSpace(space.did())
+					setSpace(space.did())
+				} else {
+					await account.plan.wait()
+					const space = await client.createSpace(spaceName, { account })
+					await client.setCurrentSpace(space.did())
+					setSpace(space.did())
+				}
+				setIsStorachaAuthorized(true)
+			} catch (err) {
+				console.error(err)
+				setConnErr(err as Error)
+			} finally {
+				setVerifying(false)
+			}
+		}
 
 	return (
 		<div className="w-full flex items-center flex-col h-full">
@@ -21,9 +62,21 @@ export default function Dashboard() {
 				<BackedChats />
 			</div>
 			<div className="sticky bottom-0 bg-white w-full px-5 pb-5">
-				<Button className="w-full" onClick={() => router.push('/backup')}>
-					Start New Backup
-				</Button>
+				{ isStorachaAuthorized ?
+					<Button className="w-full" onClick={() => router.push('/backup')}>
+						Start New Backup
+					</Button>
+				: (
+					<StorachaConnect
+						open={!isStorachaAuthorized}
+						email={email}
+						onEmailChange={setEmail}
+						onConnect={handleConnectSubmit}
+						error={connErr}
+						verifying={verifying}
+						onErrorDismiss={() => setConnErr(undefined)}
+					/>
+				)}
 			</div>
 		</div>
 	)

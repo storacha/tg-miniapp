@@ -15,16 +15,15 @@ export interface ConnectProps {
 	email: string
 	onEmailChange: (value: string) => unknown
 	onSubmit: () => unknown
-	onDismiss: () => unknown
 }
 
-export function Connect({ open, email, onEmailChange, onSubmit, onDismiss }: ConnectProps) {
+export function Connect({ open, email, onEmailChange, onSubmit}: ConnectProps) {
 	const handleSubmit: FormEventHandler = e => {
 		e.preventDefault()
 		onSubmit()
 	}
 	return (
-		<Drawer open={open} onClose={onDismiss}>
+		<Drawer open={open} >
 			<DrawerContent>
 				<DrawerHeader>
 					<DrawerTitle>Connect Your Storacha Account</DrawerTitle>
@@ -47,12 +46,11 @@ export function Connect({ open, email, onEmailChange, onSubmit, onDismiss }: Con
 export interface VerifyProps {
 	open: boolean
 	email: string
-	onDismiss: () => unknown
 }
 
-export const Verify = ({ open, email, onDismiss }: VerifyProps) => {
+export const Verify = ({ open, email }: VerifyProps) => {
 	return (
-		<Drawer open={open} onClose={onDismiss}>
+		<Drawer open={open}>
 			<DrawerContent>
 				<DrawerHeader>
 					<DrawerTitle>Verify your email address</DrawerTitle>
@@ -90,4 +88,53 @@ export const ConnectError = ({ open, error, onDismiss }: ConnectErrorProps) => {
 			</DrawerContent>
 		</Drawer>
 	)
+}
+
+export interface StorachaConnectProps {
+  email: string
+  onEmailChange: (value: string) => void
+  onConnect: () => Promise<void>
+  error?: Error
+  verifying: boolean
+  onErrorDismiss: () => void
+  open: boolean
+}
+
+export const StorachaConnect = ({
+  email,
+  onEmailChange,
+  onConnect,
+  error,
+  verifying,
+  onErrorDismiss,
+  open
+}: StorachaConnectProps) => {
+
+  if (open && error) {
+    return (
+      <ConnectError
+        open={true}
+        error={error}
+        onDismiss={onErrorDismiss}
+      />
+    )
+  }
+
+  if (open && verifying) {
+    return (
+      <Verify
+        open={true}
+        email={email}
+      />
+    )
+  }
+
+  return (
+    <Connect
+      open={open}
+      email={email}
+      onEmailChange={onEmailChange}
+      onSubmit={onConnect}
+    />
+  )
 }
