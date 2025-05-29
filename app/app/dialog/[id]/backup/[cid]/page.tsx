@@ -253,7 +253,7 @@ export default function Page () {
 
       {restoredBackup.loading || !userId ? (
         <div className="flex flex-col items-center justify-center h-screen">
-          <p className="text-lg font-semibold text-center"><Loading /></p>
+          <div className="text-lg font-semibold text-center"><Loading /></div>
         </div>
       ) : restoredBackup.item ? (
         <BackupDialog

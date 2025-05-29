@@ -118,7 +118,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 							</div>
 						)
 					})}
-					{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
+					{loadingDialogs && <div className='text-center'><Loading text={"Loading chats..."} /></div>}
 					<div ref={observerRef} className="h-10" />
 					{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
 				</div>

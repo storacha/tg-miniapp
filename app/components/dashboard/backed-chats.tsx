@@ -53,7 +53,7 @@ export default function BackedChats() {
 					</div>
 				) : (
 					<div className="flex flex-col">
-						{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
+						{loadingDialogs && <div className='text-center'><Loading text={"Loading chats..."} /></div>}
 						{!loadingDialogs && dialogs.map(d => {
 							const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
 							if (!latestBackup) return null
