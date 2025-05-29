@@ -37,7 +37,7 @@ const deserializeErrorObject = (err: ErrorObjectError) : Error => {
   return new Error(err.message, { cause: err.cause ? deserializeErrorObject(err.cause) : undefined })
 }
 
-type PromiseFn<T extends [unknown, ...unknown[]], U> = (...args:T) => Promise<U>
+export type PromiseFn<T extends [unknown, ...unknown[]], U> = (...args:T) => Promise<U>
 export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T, U>): ((...args: T) => Promise<Result<U, SerializedError>>) => 
   async (...r: T) : Promise<Result<U, SerializedError>> => {
     try {
@@ -64,6 +64,21 @@ export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T
       throw err
     }
   }
+
+export const parseResult = <T>(result: Result<T, SerializedError>) : Result<T, string> => { 
+  if (result.error) {
+    const err = result.error
+    switch (err.kind) {
+      case 'telegram':
+        return { error: err.errorMessage }
+      case 'string':
+        return { error: err.value }
+      case 'errorObject':
+        return { error: err.message }
+    }
+  }
+  return { ok: result.ok }
+}
 
 export const fromResult = <T>(result: Result<T, SerializedError>) : T => { 
   if (result.error) {

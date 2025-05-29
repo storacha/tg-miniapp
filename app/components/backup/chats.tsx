@@ -31,7 +31,7 @@ export interface ChatsProps {
 export default function Chats({ selections, onSelectionsChange, onSubmit }: ChatsProps) {
 	const [{ backups }] = useBackups()
 	const [searchTerm, setSearchTerm] = useState('')
-	const [{ dialogs, loadingDialogs, error }, { loadMoreDialogs }] = useTelegram()
+	const [{ dialogs, loadingDialogs }, { loadMoreDialogs }] = useTelegram()
 
 	const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
 	const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
@@ -109,24 +109,18 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 					</Button>
 				</div>
 				<div className="flex flex-col min-h-screen">
-					{error ? (
-						<p className="text-red-600 text-center text-xs my-2">{error.message}</p>
-					) : (
-						<>
-							{items.map((d: DialogInfo) => {
-								const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
-								return (
-									<div key={d.id} className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={d.id} onClick={handleDialogItemClick}>
-										<Checkbox checked={selections.has(BigInt(d.id || 0))} />
-										<DialogItem dialog={d} latestBackup={latestBackup} />
-									</div>
-								)
-							})}
-							{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
-							<div ref={observerRef} className="h-10" />
-							{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
-						</>
-					)}
+					{items.map((d: DialogInfo) => {
+						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
+						return (
+							<div key={d.id} className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={d.id} onClick={handleDialogItemClick}>
+								<Checkbox checked={selections.has(BigInt(d.id || 0))} />
+								<DialogItem dialog={d} latestBackup={latestBackup} />
+							</div>
+						)
+					})}
+					{loadingDialogs && <p className='text-center'><Loading text={"Loading chats..."} /></p>}
+					<div ref={observerRef} className="h-10" />
+					{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">
