@@ -14,7 +14,7 @@ export interface ContextState {
 }
 
 export interface ContextActions {
-  getMe: () => Promise<string>
+  getMe: () => Promise<string | undefined>
   loadMoreDialogs: () => Promise<void>
 }
 
@@ -89,12 +89,13 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
 
   const getMe = useCallback(
     async () => {
-      if (!tgSessionString) return '0'
+      if (!tgSessionString) return undefined
       const getMeRes =  parseResult(await getMeRequest(tgSessionString))
       if (getMeRes.error) {
         setError(getMeRes.error)
+        return undefined
       } 
-      return getMeRes.ok  || '0'
+      return getMeRes.ok
     },
     []
   )

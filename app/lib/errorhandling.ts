@@ -94,3 +94,16 @@ export const fromResult = <T>(result: Result<T, SerializedError>) : T => {
   }
   return result.ok
 }
+
+export const getErrorMessage = (err: unknown) => {
+  if (err instanceof Error) {
+    return err.message
+  }
+  if (typeof err === 'string') {
+    return err
+  }
+  if (typeof err === 'object' && err && 'errorMessage' in err) {
+    return String(err.errorMessage)
+  }
+  return 'Unknown error'
+}

@@ -224,14 +224,10 @@ export default function Page () {
     const normalizedId = getNormalizedEntityId(id, type)
 
     const fetchBackup = async () => {
-      try {
         const userId = await getMe()
+        if(!userId) return 
         setUserId(userId)
-
         await restoreBackup(backupCid!, normalizedId, 50)
-      } catch (error) {
-        console.error('Error in useEffect:', error)
-      }
     }
 
     fetchBackup()
