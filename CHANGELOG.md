@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/storacha/tg-miniapp/compare/v2.0.2...v2.1.0) (2025-05-30)
+
+
+### Features
+
+* add x-client header ([#103](https://github.com/storacha/tg-miniapp/issues/103)) ([04f99c3](https://github.com/storacha/tg-miniapp/commit/04f99c3c75603ed1548c07c3e6f1b1f3db1d878e))
+
 ## [2.0.2](https://github.com/storacha/tg-miniapp/compare/v2.0.1...v2.0.2) (2025-05-28)
 
 
