@@ -6,22 +6,32 @@ import { useRouter } from 'next/navigation'
 import { useTelegram } from '@/providers/telegram'
 import { useEffect, useState } from 'react'
 import { Ranking } from '@/api'
-import { fromResult } from '@/lib/errorhandling'
+import { parseResult } from '@/lib/errorhandling'
 import { useGlobal } from '@/zustand/global'
 import { getRanking } from '../server'
+import { useError } from '@/providers/error'
 
 export default function Head() {
 	const router = useRouter()
 	const [{ user }] = useTelegram()
 	const { tgSessionString, space } = useGlobal() 
 	const [ranking, setRanking] = useState<Ranking | undefined>()
+	const { setError } = useError()
 	
 	useEffect(() => {
 			if (!space) {
 				return
 			}
 			(async () => {
-				setRanking(fromResult(await getRanking(tgSessionString, space)))
+				const rankingRes = parseResult(await getRanking(tgSessionString, space))
+
+				if (rankingRes.error) {
+					setError(rankingRes.error)
+					setRanking(undefined)
+				} else {
+					setRanking(rankingRes.ok)
+				}
+							
 			})()
 		}, [tgSessionString, space])
 

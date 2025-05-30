@@ -5,6 +5,8 @@ import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
 import { restoreBackup as restoreBackupAction, fetchMoreMessages as fetchMoreMessagesAction} from '@/lib/backup/recoverer'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
+import { useError } from './error'
+import { getErrorMessage } from '@/lib/errorhandling'
 
 export interface Result<T> {
   items: T[]
@@ -34,7 +36,7 @@ export interface ContextState {
 }
 
 export interface ContextActions {
-  addBackupJob: (chats: Set<bigint>, period: Period) => Promise<JobID>
+  addBackupJob: (chats: Set<bigint>, period: Period) => Promise<JobID | undefined>
   removeBackupJob: (job: JobID) => Promise<void>
   restoreBackup: ( backupCid: string, dialogId: string, limit: number ) => Promise<void>
   fetchMoreMessages: ( offset: number, limit: number ) => Promise<void>
@@ -73,6 +75,7 @@ export interface ProviderProps extends PropsWithChildren {
  * Provider that enables initiating and tracking current and exiting backups.
  */
 export const Provider = ({ jobs: jobStore, children }: ProviderProps): ReactNode => {
+  const { setError } = useError()
   const [jobs, setJobs] = useState<PendingJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(false)
   const [jobsError, setJobsError] = useState<Error>()
@@ -158,18 +161,37 @@ export const Provider = ({ jobs: jobStore, children }: ProviderProps): ReactNode
   }
 
   const addBackupJob = useCallback(
-    async (dialogs: Set<bigint>, period: Period) => {
-      if (!jobStore) throw new Error('missing job store')
+   async (dialogs: Set<bigint>, period: Period): Promise<string | undefined> => {
+    if (!jobStore) {
+      setError('missing job store')
+      return undefined
+    }
+    try {
       const job = await jobStore.add(dialogs, period)
       return job.id
+    } catch (error: any) {
+      const msg = 'Error adding backup job!'
+      console.error(msg, error)
+      setError(getErrorMessage(error), { title: msg })
+      return undefined
+    }
     },
     [jobStore]
   )
 
   const removeBackupJob = useCallback(
-    (id: JobID) => {
-      if (!jobStore) throw new Error('missing job manager')
-      return jobStore.remove(id)
+    async (id: JobID) => {
+       if (!jobStore) {
+        setError('missing job store')
+        return 
+      }
+      try {
+        await jobStore.remove(id)
+      } catch (error: any) {
+        const msg = 'Error removing backup job!'
+        console.error(msg, error)
+        setError(getErrorMessage(error), { title: msg })
+      }
     },
     [jobStore]
   )

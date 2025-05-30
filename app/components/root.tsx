@@ -3,7 +3,7 @@
 import { useEffect, useState, type PropsWithChildren } from 'react'
 import { useDidMount } from '../hooks/useDidMount'
 import { ErrorBoundary } from './error-boundary'
-import { ErrorPage } from './error-page'
+import { ErrorPage } from './error'
 import LogoSplash from './svgs/logo-splash'
 import { Provider as TelegramProvider, useTelegram } from '@/providers/telegram'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
@@ -12,7 +12,6 @@ import { uploadServiceConnection, defaultHeaders } from '@storacha/client/servic
 import { parse as parseDID } from '@ipld/dag-ucan/did'
 import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
-//import { create as createJobStorage } from '@/lib/store/jobs'
 import { JobStorage } from '@/api'
 import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
@@ -20,8 +19,9 @@ import { useGlobal } from '@/zustand/global'
 import { createJob, findJob, listJobs, login, removeJob } from './server'
 import { create as createJobStorage} from '@/lib/store/jobs'
 import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
-import { fromResult } from '@/lib/errorhandling'
+import { parseResult, fromResult } from '@/lib/errorhandling'
 import { parseWithUIntArrays } from '@/lib/utils'
+import { ErrorProvider, useError } from '@/providers/error'
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -68,17 +68,19 @@ export function Root(props: PropsWithChildren) {
 
 	return (
 		<ErrorBoundary fallback={ErrorPage}>
-			<TelegramProvider>
-				{isTgAuthorized ? (
-					<StorachaProvider servicePrincipal={serviceID} connection={connection}>
-						<BackupProviderContainer>
-							<div {...props} />
-						</BackupProviderContainer>
-					</StorachaProvider>
-				) : (
-					<TelegramAuth />
-				)}
-			</TelegramProvider>
+			<ErrorProvider>
+				<TelegramProvider>
+					{isTgAuthorized ? (
+						<StorachaProvider servicePrincipal={serviceID} connection={connection}>
+							<BackupProviderContainer>
+								<div {...props} />
+							</BackupProviderContainer>
+						</StorachaProvider>
+					) : (
+						<TelegramAuth />
+					)}
+				</TelegramProvider>
+			</ErrorProvider>
 		</ErrorBoundary>
 	)
 }
@@ -88,7 +90,8 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 	const [{ client: storacha }] = useStoracha()
 	const [{ launchParams }] = useTelegram()
 	const { isStorachaAuthorized, space, tgSessionString } = useGlobal()
-	const [jobs, setJobs] = useState<JobStorage>()
+	const [ jobs, setJobs ] = useState<JobStorage>()
+	const { setError } = useError()
 
 	useEffect(() => {
 
@@ -108,13 +111,17 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			await storacha.setCurrentSpace(space)
 
-			fromResult(await login({
+			const loginRes = parseResult(await login({
 				telegramAuth: {
 					session: tgSessionString,
 					initData: launchParams.initDataRaw || '',
 				},
 				spaceDID: space
 			}))
+			if (loginRes.error) {
+				setError(loginRes.error)
+				return
+			}
 
 			const jobs = await createJobStorage({
 				serverDID: serverDID,

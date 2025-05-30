@@ -3,18 +3,18 @@ import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@teleg
 import { listDialogs as listDialogsRequest, getMe as getMeRequest } from '../components/server'
 import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
-import { fromResult } from '@/lib/errorhandling'
+import { parseResult } from '@/lib/errorhandling'
+import { useError } from './error'
 
 export interface ContextState {
   launchParams: LaunchParams
   user?: User
   dialogs: DialogInfo[]
   loadingDialogs: boolean
-  error: Error | null
 }
 
 export interface ContextActions {
-  getMe: () => Promise<string>
+  getMe: () => Promise<string | undefined>
   loadMoreDialogs: () => Promise<void>
 }
 
@@ -26,7 +26,6 @@ export const ContextDefaultValue: ContextValue = [
     user: undefined,
     dialogs: [],
     loadingDialogs: false,
-    error: null
   },
   {
     getMe: () => Promise.reject(new Error('provider not setup')),
@@ -48,12 +47,16 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const [offsetParams, setOffsetParams] = useState<{limit: number, offsetId?: number, offsetDate?: number, offsetPeer?: string}>({ limit: 20 })
 	const [hasMore, setHasMore] = useState(true)
   const [loadingDialogs, setLoadingDialogs] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
+  const { setError } = useError()
 
   const listDialogs = useCallback(
     async (paginationParams = { limit: 10 }) => {
       if (!tgSessionString) return { chats: [], offsetParams: {} }
-      return fromResult(await listDialogsRequest(tgSessionString, paginationParams ))
+      const listDialogsRes = parseResult(await listDialogsRequest(tgSessionString, paginationParams))
+      if (listDialogsRes.error) {
+			  setError(listDialogsRes.error)
+			}
+      return listDialogsRes.ok || { chats: [], offsetParams: {}}
     },
     [tgSessionString]
   )
@@ -70,7 +73,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       setHasMore(chats.length > 0)
     } catch (err: any) {
       console.error('Failed to fetch dialogs:', err)
-      setError(new Error('Failed to load dialogs. Please try again.', { cause: err }))
+      setError(`Failed to load dialogs. Please try again. ${err.message || err}`)
     } finally {
       setLoadingDialogs(false)
     }
@@ -86,14 +89,19 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
 
   const getMe = useCallback(
     async () => {
-      if (!tgSessionString) return '0'
-      return fromResult(await getMeRequest(tgSessionString))
+      if (!tgSessionString) return undefined
+      const getMeRes =  parseResult(await getMeRequest(tgSessionString))
+      if (getMeRes.error) {
+        setError(getMeRes.error)
+        return undefined
+      } 
+      return getMeRes.ok
     },
     []
   )
 
   return (
-    <Context.Provider value={[{ user, launchParams, dialogs, loadingDialogs, error}, { getMe, loadMoreDialogs }]}>
+    <Context.Provider value={[{ user, launchParams, dialogs, loadingDialogs }, { getMe, loadMoreDialogs }]}>
       {children}
     </Context.Provider>
   )
