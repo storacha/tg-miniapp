@@ -48,6 +48,7 @@ const saveSessionToString = (session?:  Session | string ) => {
   }
 
 interface GlobalState {
+	isFirstLogin: boolean
 	isOnboarded: boolean
 	isTgAuthorized: boolean
 	isStorachaAuthorized: boolean
@@ -56,6 +57,7 @@ interface GlobalState {
 	space: SpaceDID | null
 	tgSessionString: string
 
+	setIsFirstLogin: (isFirstLogin: boolean) => void
 	setIsOnboarded: (isOnboarded: boolean) => void
 	setIsTgAuthorized: (isTgAuthorized: boolean) => void
 	setIsStorachaAuthorized: (isStorachaAuthorized: boolean) => void
@@ -68,6 +70,7 @@ interface GlobalState {
 export const useGlobal = create<GlobalState>()(
 	persist(
 		(set) => ({
+			isFirstLogin: true,
 			isOnboarded: false,
 			isTgAuthorized: false,
 			isStorachaAuthorized: false,
@@ -75,6 +78,7 @@ export const useGlobal = create<GlobalState>()(
 			phoneNumber: '',
 			space: null,
 			tgSessionString: '',
+			setIsFirstLogin: (isFirstLogin) => set({ isFirstLogin }),
 			setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
 			setIsTgAuthorized: (isTgAuthorized) => set({ isTgAuthorized }),
 			setIsStorachaAuthorized: (isStorachaAuthorized) => set({ isStorachaAuthorized }),

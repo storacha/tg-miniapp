@@ -11,8 +11,6 @@ let cachedServerConstants: {
   SESSION_COOKIE_NAME: string
 }
 
-
-
 export const getServerConstants = () => {
   if (cachedServerConstants) {
     return cachedServerConstants
