@@ -31,6 +31,7 @@ NEXT_PUBLIC_IDENTITY_AUTHORITY=did:web:up.storacha.network
 # these lines make their way into a deployment.
 #NEXT_PUBLIC_SERVER_DID='did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi'
 #SERVER_IDENTITY_PRIVATE_KEY=MgCZT5vOnYZoVAeyjnzuJIVY9J4LNtJ+f8Js0cTPuKUpFne0BVEDJjEu6quFIU8yp91/TY/+MYK8GvlKoTDnqOCovCVM=
+TELEGRAM_BOT_TOKEN=
 PGHOST=localhost
 PGPORT=5432
 PGDATABASE=tg_backups_dev
