@@ -52,7 +52,6 @@ export const createJob = toResultFn(async (jr: CreateJobRequest) : Promise<Job> 
 export const findJob = toResultFn(jobsFindJob)
 export const listJobs = toResultFn(jobsListJob)
 export const removeJob = toResultFn(jobsRemoveJob)
-// end TODO
 
 const withClient =  <T extends [...unknown[]], U>(fn: (client: TelegramClient, ...args: T) => Promise<U>) : ((sessionString: string, ...args: T) => Promise<U>) => {
 	return async (sessionString: string, ...args: T) => {

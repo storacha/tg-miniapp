@@ -42,7 +42,7 @@ if (typeof window !== 'undefined') {
 export function Root(props: PropsWithChildren) {
 
 	const didMount = useDidMount()
-	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString} = useGlobal()
+	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString } = useGlobal()
 
 	useEffect(() => {
 		if(isTgAuthorized && !tgSessionString) {
@@ -87,17 +87,23 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 	const [{ client: storacha }] = useStoracha()
 	const [{ launchParams }] = useTelegram()
-	const { isStorachaAuthorized, space, tgSessionString } = useGlobal()
+	const { isStorachaAuthorized, space, tgSessionString, setIsFirstLogin } = useGlobal()
 	const [jobs, setJobs] = useState<JobStorage>()
 
 	useEffect(() => {
-
 		let eventSource : EventSource
+
+		let encryptionPassword = '';
+		(async () => {
+			encryptionPassword = await cloudStorage.getItem('encryption-password')
+			setIsFirstLogin(!encryptionPassword)
+		})()
+
 		if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
 			return
 		}
+		
 		;(async () => {
-			let encryptionPassword = await cloudStorage.getItem('encryption-password')
 			if (encryptionPassword === '') {
 				console.log('creating new encryption password')
 				encryptionPassword = generateRandomPassword()

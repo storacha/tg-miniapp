@@ -1,3 +1,5 @@
+import { useW3 as useStoracha } from '@storacha/ui-react'
+import { email as parseEmail } from '@storacha/did-mailto'
 import {
 	Drawer,
 	DrawerContent,
@@ -8,17 +10,20 @@ import {
 } from '@/components/ui/drawer'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { FormEventHandler } from 'react'
+import { FormEventHandler, useState } from 'react'
+import { useGlobal } from '@/zustand/global'
+import { useTelegram } from '@/providers/telegram'
 
+const spaceNamePrefix = 'Telegram Backups'
 export interface ConnectProps {
 	open: boolean
 	email: string
 	onEmailChange: (value: string) => unknown
 	onSubmit: () => unknown
-	onDismiss: () => unknown
+	onDismiss?: () => void
 }
 
-export function Connect({ open, email, onEmailChange, onSubmit, onDismiss }: ConnectProps) {
+export function Connect({ open, email, onEmailChange, onSubmit, onDismiss}: ConnectProps) {
 	const handleSubmit: FormEventHandler = e => {
 		e.preventDefault()
 		onSubmit()
@@ -47,7 +52,7 @@ export function Connect({ open, email, onEmailChange, onSubmit, onDismiss }: Con
 export interface VerifyProps {
 	open: boolean
 	email: string
-	onDismiss: () => unknown
+	onDismiss?: () => void
 }
 
 export const Verify = ({ open, email, onDismiss }: VerifyProps) => {
@@ -90,4 +95,74 @@ export const ConnectError = ({ open, error, onDismiss }: ConnectErrorProps) => {
 			</DrawerContent>
 		</Drawer>
 	)
+}
+
+export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?: () => void  }) => {
+	const [{ user }] = useTelegram()
+	const [{ client }] = useStoracha()
+	const { setIsStorachaAuthorized, setSpace } = useGlobal()
+
+	const [email, setEmail] = useState('')
+	const [connErr, setConnErr] = useState<Error>()
+	const [verifying, setVerifying] = useState(false)
+	
+	const handleConnectSubmit = async () => {
+		try {
+			if (!client) throw new Error('missing Storacha client instance')
+			setConnErr(undefined)
+			setVerifying(true)
+
+			const spaceName = `${spaceNamePrefix} (${user?.id})`
+			const account = await client.login(parseEmail(email))
+			const space = client.spaces().find(s => s.name === spaceName)
+			if (space) {
+				await client.setCurrentSpace(space.did())
+				setSpace(space.did())
+			} else {
+				await account.plan.wait()
+				const space = await client.createSpace(spaceName, { account })
+				await client.setCurrentSpace(space.did())
+				setSpace(space.did())
+			}
+			setIsStorachaAuthorized(true)
+		} catch (err) {
+			console.error(err)
+			setConnErr(err as Error)
+		} finally {
+			setVerifying(false)
+		}
+	}
+
+  if (open && connErr) {
+    return (
+      <ConnectError
+        open={true}
+        error={connErr}
+		onDismiss={() => {
+		  setConnErr(undefined)
+		  if (onDismiss) onDismiss()
+		}}
+      />
+    )
+  }
+
+  if (open && verifying) {
+    return (
+      <Verify
+        open={true}
+        email={email}
+		onDismiss={onDismiss}
+      />
+    )
+  }
+
+  return (
+    <Connect
+      open={open}
+      email={email}
+      onEmailChange={setEmail}
+      onSubmit={handleConnectSubmit}
+	  onDismiss={onDismiss}
+    />
+  )
 }
