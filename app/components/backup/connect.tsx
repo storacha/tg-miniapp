@@ -13,6 +13,8 @@ import { Input } from '../ui/input'
 import { FormEventHandler, useState } from 'react'
 import { useGlobal } from '@/zustand/global'
 import { useTelegram } from '@/providers/telegram'
+import { PlanGate } from '@/components/backup/plan-gate'
+import { Account } from '@storacha/client'
 
 const spaceNamePrefix = 'Telegram Backups'
 export interface ConnectProps {
@@ -99,12 +101,16 @@ export const ConnectError = ({ open, error, onDismiss }: ConnectErrorProps) => {
 
 export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?: () => void  }) => {
 	const [{ user }] = useTelegram()
-	const [{ client }] = useStoracha()
+	const [{ accounts, client }] = useStoracha()
 	const { setIsStorachaAuthorized, setSpace } = useGlobal()
 
 	const [email, setEmail] = useState('')
 	const [connErr, setConnErr] = useState<Error>()
 	const [verifying, setVerifying] = useState(false)
+	const [isPlanGateOpen, setIsPlanGateOpen] = useState(false)
+
+	const account = accounts[0]
+	const spaceName = `${spaceNamePrefix} (${user?.id})`
 	
 	const handleConnectSubmit = async () => {
 		try {
@@ -112,19 +118,24 @@ export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?
 			setConnErr(undefined)
 			setVerifying(true)
 
-			const spaceName = `${spaceNamePrefix} (${user?.id})`
 			const account = await client.login(parseEmail(email))
-			const space = client.spaces().find(s => s.name === spaceName)
-			if (space) {
-				await client.setCurrentSpace(space.did())
-				setSpace(space.did())
+			const plan = await account.plan.get()
+
+			if(plan.ok?.product) {
+				const space = client.spaces().find(s => s.name === spaceName)
+				if (space) {
+					await client.setCurrentSpace(space.did())
+					setSpace(space.did())
+				} else {
+					const space = await client.createSpace(spaceName, { account })
+					await client.setCurrentSpace(space.did())
+					setSpace(space.did())
+				}
+				setIsStorachaAuthorized(true)
 			} else {
-				await account.plan.wait()
-				const space = await client.createSpace(spaceName, { account })
-				await client.setCurrentSpace(space.did())
-				setSpace(space.did())
+				console.log('waiting for account plan to be ready...')
+				setIsPlanGateOpen(true)
 			}
-			setIsStorachaAuthorized(true)
 		} catch (err) {
 			console.error(err)
 			setConnErr(err as Error)
@@ -133,36 +144,103 @@ export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?
 		}
 	}
 
-  if (open && connErr) {
-    return (
-      <ConnectError
-        open={true}
-        error={connErr}
-		onDismiss={() => {
-		  setConnErr(undefined)
-		  if (onDismiss) onDismiss()
-		}}
-      />
-    )
-  }
+	// temporary code to wait for plan selection until the account.plan.wait() is correctly implemented
+	interface PlanSelectionOptions {
+		interval?: number
+		timeout?: number
+		signal?: AbortSignal
+	}
 
-  if (open && verifying) {
-    return (
-      <Verify
-        open={true}
-        email={email}
-		onDismiss={onDismiss}
-      />
-    )
-  }
+	const planSelectionWait = async (account: Account.Account, options?: PlanSelectionOptions) => {
+		const startTime = Date.now() 
+        const interval = options?.interval || 1000 // 1 second
+        const timeout = options?.timeout || 60 * 15 * 1000  // 15 minutes
+		// eslint-disable-next-line no-constant-condition
+		while (true) {
+			const res = await account.plan.get()
+			if (res.ok) return res.ok
+			if (res.error) {
+				if (res.error.name === 'PlanNotFound'){
+					console.log('No plan has been selected yet...')
+					continue
+				}
+				console.error('Plan get error:', res.error)
+				throw new Error(`Error retrieving payment plan: ${JSON.stringify(res.error)}`)
+			}
 
-  return (
-    <Connect
-      open={open}
-      email={email}
-      onEmailChange={setEmail}
-      onSubmit={handleConnectSubmit}
-	  onDismiss={onDismiss}
-    />
-  )
+			if (Date.now() - startTime > timeout) {
+				throw new Error('Timeout: Payment plan selection took too long.')
+			}
+
+			if (options?.signal?.aborted) {
+				throw new Error('Aborted: Payment plan selection was aborted.')
+			}
+
+			console.log('Waiting for payment plan to be selected...')
+			await new Promise((resolve) => setTimeout(resolve, interval))
+		}
+	}
+
+	const waitForPlanSetup = async () => {
+		console.log('waiting for plan setup...')
+		try {
+			if (!client) throw new Error('missing Storacha client instance')
+			if (!account) throw new Error('missing account')
+
+			await planSelectionWait(account)
+			// await account.plan.wait() // TODO: not working
+			const space = await client.createSpace(spaceName, { account })
+			await client.setCurrentSpace(space.did())
+			setSpace(space.did())
+
+			setIsStorachaAuthorized(true)
+			setIsPlanGateOpen(false)
+		} catch (err) {
+			console.error(err)
+			setConnErr(err as Error)
+		}
+	}
+
+	if (open && connErr) {
+		return (
+		<ConnectError
+			open={true}
+			error={connErr}
+			onDismiss={() => {
+				setConnErr(undefined)
+				if (onDismiss) onDismiss()
+			}}
+		/>
+		)
+	}
+
+	if (open && verifying) {
+		return (
+		<Verify
+			open={true}
+			email={email}
+			onDismiss={onDismiss}
+		/>
+		)
+	}
+
+	if(open && isPlanGateOpen) {
+		return (
+			<PlanGate 
+				open={true} 
+				onSubmit={waitForPlanSetup} 
+				onDismiss={onDismiss}
+			/>
+		)
+	}
+
+	return (
+		<Connect
+			open={open}
+			email={email}
+			onEmailChange={setEmail}
+			onSubmit={handleConnectSubmit}
+			onDismiss={onDismiss}
+		/>
+	)
 }
