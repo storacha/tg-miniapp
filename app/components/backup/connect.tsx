@@ -14,7 +14,6 @@ import { FormEventHandler, useState } from 'react'
 import { useGlobal } from '@/zustand/global'
 import { useTelegram } from '@/providers/telegram'
 import { PlanGate } from '@/components/backup/plan-gate'
-import { Account } from '@storacha/client'
 
 const spaceNamePrefix = 'Telegram Backups'
 export interface ConnectProps {
@@ -144,51 +143,13 @@ export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?
 		}
 	}
 
-	// temporary code to wait for plan selection until the account.plan.wait() is correctly implemented
-	interface PlanSelectionOptions {
-		interval?: number
-		timeout?: number
-		signal?: AbortSignal
-	}
-
-	const planSelectionWait = async (account: Account.Account, options?: PlanSelectionOptions) => {
-		const startTime = Date.now() 
-        const interval = options?.interval || 1000 // 1 second
-        const timeout = options?.timeout || 60 * 15 * 1000  // 15 minutes
-		// eslint-disable-next-line no-constant-condition
-		while (true) {
-			const res = await account.plan.get()
-			if (res.ok) return res.ok
-			if (res.error) {
-				if (res.error.name === 'PlanNotFound'){
-					console.log('No plan has been selected yet...')
-					continue
-				}
-				console.error('Plan get error:', res.error)
-				throw new Error(`Error retrieving payment plan: ${JSON.stringify(res.error)}`)
-			}
-
-			if (Date.now() - startTime > timeout) {
-				throw new Error('Timeout: Payment plan selection took too long.')
-			}
-
-			if (options?.signal?.aborted) {
-				throw new Error('Aborted: Payment plan selection was aborted.')
-			}
-
-			console.log('Waiting for payment plan to be selected...')
-			await new Promise((resolve) => setTimeout(resolve, interval))
-		}
-	}
-
 	const waitForPlanSetup = async () => {
 		console.log('waiting for plan setup...')
 		try {
 			if (!client) throw new Error('missing Storacha client instance')
 			if (!account) throw new Error('missing account')
 
-			await planSelectionWait(account)
-			// await account.plan.wait() // TODO: not working
+			await account.plan.wait() 
 			const space = await client.createSpace(spaceName, { account })
 			await client.setCurrentSpace(space.did())
 			setSpace(space.did())

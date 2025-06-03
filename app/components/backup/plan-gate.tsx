@@ -21,14 +21,14 @@ export function PlanGate ({ open, onSubmit, onDismiss }: { open: boolean; onSubm
     <Drawer open={open} onClose={onDismiss}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle>Welcome!</DrawerTitle>
+          <DrawerTitle>Almost there!</DrawerTitle>
           <DrawerDescription> 
-            To back up your Telegram chats, you need a Storacha subscription.
+            To unlock free storage and back up your Telegram chats, we just need to verify you&apos;re human.
           </DrawerDescription>
         </DrawerHeader>
         <DrawerFooter>
             <p className="text-xs text-muted-foreground text-center">
-              Or, prove you&apos;re human to get free storage, no credit card required!
+              This quick face check takes seconds — no account, no credit card, <strong>and no biometric data is stored. Ever.</strong>
             </p>
             <HumanodeAuthLink className="text-center" onClick={onSubmit}/>
         </DrawerFooter>
@@ -92,7 +92,7 @@ export function HumanodeAuthLink ({ onClick, className }: { className?: string; 
   return (
     <Button asChild type="button" className={className}>
       <a href={link} target="_blank" rel="noopener noreferrer" onClick={onClick}>
-        Prove my Humanity!
+        Show I&apos;m Not a Bot
       </a>
     </Button>
   )
