@@ -3,7 +3,7 @@ import { LaunchParams, useLaunchParams, initData, User, useSignal } from '@teleg
 import { listDialogs as listDialogsRequest, getMe as getMeRequest } from '../components/server'
 import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
-import { parseResult } from '@/lib/errorhandling'
+import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { useError } from './error'
 
 export interface ContextState {
@@ -52,11 +52,13 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const listDialogs = useCallback(
     async (paginationParams = { limit: 10 }) => {
       if (!tgSessionString) return { chats: [], offsetParams: {} }
-      const listDialogsRes = parseResult(await listDialogsRequest(tgSessionString, paginationParams))
-      if (listDialogsRes.error) {
-			  setError(listDialogsRes.error)
-			}
-      return listDialogsRes.ok || { chats: [], offsetParams: {}}
+       try {
+        const { chats, offsetParams } = fromResult(await listDialogsRequest(tgSessionString, paginationParams))
+        return { chats, offsetParams }
+      } catch (err) {
+        setError(getErrorMessage(err), { title: 'Error fetching dialogs' })
+        return { chats: [], offsetParams: {} }
+      }
     },
     [tgSessionString]
   )
@@ -90,12 +92,13 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const getMe = useCallback(
     async () => {
       if (!tgSessionString) return undefined
-      const getMeRes =  parseResult(await getMeRequest(tgSessionString))
-      if (getMeRes.error) {
-        setError(getMeRes.error)
+      try {
+        const me = fromResult(await getMeRequest(tgSessionString))
+        return me
+      } catch (err) {
+        setError(getErrorMessage(err))
         return undefined
-      } 
-      return getMeRes.ok
+      }
     },
     []
   )

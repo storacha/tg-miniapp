@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useTelegram } from '@/providers/telegram'
 import { useEffect, useState } from 'react'
 import { Ranking } from '@/api'
-import { parseResult } from '@/lib/errorhandling'
+import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { useGlobal } from '@/zustand/global'
 import { getRanking } from '../server'
 import { useError } from '@/providers/error'
@@ -23,13 +23,12 @@ export default function Head() {
 				return
 			}
 			(async () => {
-				const rankingRes = parseResult(await getRanking(tgSessionString, space))
-
-				if (rankingRes.error) {
-					setError(rankingRes.error)
+				try {
+					const ranking = fromResult(await getRanking(tgSessionString, space))
+					setRanking(ranking)
+				} catch (error) {
+					setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
 					setRanking(undefined)
-				} else {
-					setRanking(rankingRes.ok)
 				}
 							
 			})()

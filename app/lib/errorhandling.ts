@@ -65,21 +65,6 @@ export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T
     }
   }
 
-export const parseResult = <T>(result: Result<T, SerializedError>) : Result<T, string> => { 
-  if (result.error) {
-    const err = result.error
-    switch (err.kind) {
-      case 'telegram':
-        return { error: err.errorMessage }
-      case 'string':
-        return { error: err.value }
-      case 'errorObject':
-        return { error: err.message }
-    }
-  }
-  return { ok: result.ok }
-}
-
 export const fromResult = <T>(result: Result<T, SerializedError>) : T => { 
   if (result.error) {
     const err = result.error
@@ -96,14 +81,18 @@ export const fromResult = <T>(result: Result<T, SerializedError>) : T => {
 }
 
 export const getErrorMessage = (err: unknown) => {
+
   if (err instanceof Error) {
     return err.message
   }
+
   if (typeof err === 'string') {
     return err
   }
-  if (typeof err === 'object' && err && 'errorMessage' in err) {
-    return String(err.errorMessage)
+  
+  if (err instanceof Api.RpcError) {
+    return `${err.errorCode}: ${err.errorMessage}`
   }
+
   return 'Unknown error'
 }

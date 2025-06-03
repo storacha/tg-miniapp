@@ -19,7 +19,7 @@ import { useGlobal } from '@/zustand/global'
 import { createJob, findJob, listJobs, login, removeJob } from './server'
 import { create as createJobStorage} from '@/lib/store/jobs'
 import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
-import { parseResult, fromResult } from '@/lib/errorhandling'
+import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { parseWithUIntArrays } from '@/lib/utils'
 import { ErrorProvider, useError } from '@/providers/error'
 
@@ -117,15 +117,16 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 			await storacha.setCurrentSpace(space)
 
-			const loginRes = parseResult(await login({
-				telegramAuth: {
-					session: tgSessionString,
-					initData: launchParams.initDataRaw || '',
-				},
-				spaceDID: space
-			}))
-			if (loginRes.error) {
-				setError(loginRes.error)
+			try {
+				fromResult(await login({
+					telegramAuth: {
+						session: tgSessionString,
+						initData: launchParams.initDataRaw || '',
+					},
+					spaceDID: space
+				}))
+			} catch (err) {
+				setError(getErrorMessage(err), { title: 'Error logging in!' })
 				return
 			}
 

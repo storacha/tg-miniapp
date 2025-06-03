@@ -9,7 +9,7 @@ import Users from '@/components/leaderboard/users'
 import { Banner } from '@/components/leaderboard/banner'
 import { Podium } from '@/components/leaderboard/podium'
 import { getLeaderboard, getRanking } from '@/components/server'
-import { parseResult } from '@/lib/errorhandling'
+import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 
 export default function Page() {
 	const { tgSessionString, space } = useGlobal()
@@ -20,21 +20,20 @@ export default function Page() {
 	useEffect(() => {
 		if (!space) return
 		;(async () => {
-			const leaderboardRes = parseResult(await getLeaderboard(tgSessionString))
-			const rankingRes = parseResult(await getRanking(tgSessionString, space))
-			
-			if (leaderboardRes.error) {
-				setError(leaderboardRes.error)
+			try {
+				const leaderboard = fromResult(await getLeaderboard(tgSessionString))
+				setLeaderboard(leaderboard)
+			} catch (error) {
+				setError(getErrorMessage(error), { title: 'Error fetching leaderboard!' })
 				setLeaderboard([])
-      			return
 			}
-			setLeaderboard(leaderboardRes.ok || [])
-		
-			if (rankingRes.error) {
-				setError(rankingRes.error)
+
+			try {
+				const ranking = fromResult(await getRanking(tgSessionString, space))
+				setRanking(ranking)
+			} catch (error) {
+				setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
 				setRanking(undefined)
-			} else {
-				setRanking(rankingRes.ok)
 			}
 		})()
 	}, [tgSessionString, space])
