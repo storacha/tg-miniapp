@@ -37,7 +37,7 @@ const deserializeErrorObject = (err: ErrorObjectError) : Error => {
   return new Error(err.message, { cause: err.cause ? deserializeErrorObject(err.cause) : undefined })
 }
 
-type PromiseFn<T extends [unknown, ...unknown[]], U> = (...args:T) => Promise<U>
+export type PromiseFn<T extends [unknown, ...unknown[]], U> = (...args:T) => Promise<U>
 export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T, U>): ((...args: T) => Promise<Result<U, SerializedError>>) => 
   async (...r: T) : Promise<Result<U, SerializedError>> => {
     try {
@@ -78,4 +78,21 @@ export const fromResult = <T>(result: Result<T, SerializedError>) : T => {
     }
   }
   return result.ok
+}
+
+export const getErrorMessage = (err: unknown) => {
+
+  if (err instanceof Error) {
+    return err.message
+  }
+
+  if (typeof err === 'string') {
+    return err
+  }
+  
+  if (err instanceof Api.RpcError) {
+    return `${err.errorCode}: ${err.errorMessage}`
+  }
+
+  return 'Unknown error'
 }

@@ -224,14 +224,10 @@ export default function Page () {
     const normalizedId = getNormalizedEntityId(id, type)
 
     const fetchBackup = async () => {
-      try {
         const userId = await getMe()
+        if(!userId) return 
         setUserId(userId)
-
         await restoreBackup(backupCid!, normalizedId, 50)
-      } catch (error) {
-        console.error('Error in useEffect:', error)
-      }
     }
 
     fetchBackup()
@@ -253,7 +249,7 @@ export default function Page () {
 
       {restoredBackup.loading || !userId ? (
         <div className="flex flex-col items-center justify-center h-screen">
-          <p className="text-lg font-semibold text-center"><Loading /></p>
+          <div className="text-lg font-semibold text-center"><Loading /></div>
         </div>
       ) : restoredBackup.item ? (
         <BackupDialog
