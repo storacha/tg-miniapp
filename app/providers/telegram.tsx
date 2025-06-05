@@ -75,7 +75,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       setHasMore(chats.length > 0)
     } catch (err: any) {
       console.error('Failed to fetch dialogs:', err)
-      setError(`Failed to load dialogs. Please try again. ${err.message || err}`)
+      setError(getErrorMessage(err), {title: 'Failed to load dialogs!'})
     } finally {
       setLoadingDialogs(false)
     }
@@ -96,7 +96,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
         const me = fromResult(await getMeRequest(tgSessionString))
         return me
       } catch (err) {
-        setError(getErrorMessage(err))
+        setError(getErrorMessage(err), { title: 'Error fetching user info' })
         return undefined
       }
     },

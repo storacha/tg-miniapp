@@ -30,9 +30,14 @@ export function ErrorProvider({ children }: { children: ReactNode }) {
     const [error, setErrorState] = useState<ErrorState | null>(null)
 
     const setError = (msg: string | null, options: ErrorOptions = {}) => {
+        if (!msg) {
+            setErrorState(null)
+            return
+        }
+
         const { title, autoClose = false, duration = 5000, onClose } = options
         setErrorState({
-            message: msg || '',
+            message: msg,
             title,
             onClose: () => {
                 if (onClose) onClose()
