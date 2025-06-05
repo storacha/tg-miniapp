@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.1.0](https://github.com/storacha/tg-miniapp/compare/v2.0.2...v2.1.0) (2025-06-05)
+
+
+### Features
+
+* add x-client header ([#103](https://github.com/storacha/tg-miniapp/issues/103)) ([04f99c3](https://github.com/storacha/tg-miniapp/commit/04f99c3c75603ed1548c07c3e6f1b1f3db1d878e))
+
+
+### Bug Fixes
+
+* add missing check to chat entity ([3a98051](https://github.com/storacha/tg-miniapp/commit/3a98051052af47b89557a1cbacd9626f67ff6df5))
+* allow setError(null) to properly clear and close the error dialog ([a92a9b6](https://github.com/storacha/tg-miniapp/commit/a92a9b663568273693a22384af6492344323be54))
+* isolate telegram client per session ([9fbfd2b](https://github.com/storacha/tg-miniapp/commit/9fbfd2bc1477079b98e6d399ec3b1a0b0f36bc1e))
+
 ## [2.0.2](https://github.com/storacha/tg-miniapp/compare/v2.0.1...v2.0.2) (2025-05-28)
 
 
