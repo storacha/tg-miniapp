@@ -93,7 +93,7 @@ export const listDialogs = toResultFn(withClient(async (client: TelegramClient, 
 			thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
 		}
 
-		const isPublic = chat.entity?.className === 'Channel' && !!chat.entity.username ? true : false
+		const isPublic = chat.entity?.className === 'Channel' && !!chat.entity?.username ? true : false
 
 		const type = chat.entity ? getEntityType(chat.entity) : 'unknown'
 
