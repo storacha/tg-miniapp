@@ -41,3 +41,8 @@ SESSION_COOKIE_NAME=tg-backups-dev
 SESSION_PASSWORD=changethistosomethingsecretandatleast32characterslong
 
 LOCAL_URL=http://localhost:3000
+
+# set this to enable Humanode identity auth as a way to pick plans
+NEXT_PUBLIC_HUMANODE_AUTH_URL=https://auth.demo-storacha-2025-03-31.oauth2.humanode.io/oauth2/auth
+NEXT_PUBLIC_HUMANODE_CLIENT_ID=e9756297-b2d1-4bbe-a139-a9ad1cdc43ee
+NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL=https://staging.up.web3.storage/oauth/humanode/callback
