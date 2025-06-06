@@ -38,6 +38,7 @@ export default function Dashboard() {
 
 const JobItem = ({ job, onRemove }: { job: PendingJob, onRemove: (id: JobID) => unknown }) => {
 	const progress = job.status === 'running' || job.status === 'failed' ? job.progress : 0
+	const DialogsLength = Object.keys(job.params.dialogs).length
 	return (
 		<div className="w-full px-5 mb-5">
 			<div className="w-full bg-background rounded-sm border">
@@ -53,7 +54,7 @@ const JobItem = ({ job, onRemove }: { job: PendingJob, onRemove: (id: JobID) => 
 				</div>
 				<div className="flex justify-between items-center px-3 pb-4">
 					<span className="text-muted-foreground text-xs">{Math.floor(progress * 100)}% Completed</span>
-					<span className="text-muted-foreground text-xs">{job.params.dialogs.length} Chat{job.params.dialogs.length > 1 ? 's' : ''} Backing Up</span>
+					<span className="text-muted-foreground text-xs">{DialogsLength} Chat{DialogsLength > 1 ? 's' : ''} Backing Up</span>
 				</div>
 			</div>
 		</div>
