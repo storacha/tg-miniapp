@@ -7,8 +7,14 @@ import { ErrorPage } from './error'
 import LogoSplash from './svgs/logo-splash'
 import { Provider as TelegramProvider, useTelegram } from '@/providers/telegram'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
-import { Provider as StorachaProvider, useW3 as useStoracha } from '@storacha/ui-react'
-import { uploadServiceConnection, defaultHeaders } from '@storacha/client/service'
+import {
+  Provider as StorachaProvider,
+  useW3 as useStoracha,
+} from '@storacha/ui-react'
+import {
+  uploadServiceConnection,
+  defaultHeaders,
+} from '@storacha/client/service'
 import { parse as parseDID } from '@ipld/dag-ucan/did'
 import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
@@ -17,8 +23,8 @@ import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
 import { createJob, findJob, listJobs, login, removeJob } from './server'
-import { create as createJobStorage} from '@/lib/store/jobs'
-import { StringSession, StoreSession } from "@/vendor/telegram/sessions"
+import { create as createJobStorage } from '@/lib/store/jobs'
+import { StringSession, StoreSession } from '@/vendor/telegram/sessions'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { parseWithUIntArrays } from '@/lib/utils'
 import { ErrorProvider, useError } from '@/providers/error'
@@ -35,130 +41,133 @@ defaultHeaders['X-Client'] += ` tg-miniapp/${version.split('.')[0]}`
 
 // Initialize telegram react SDK
 if (typeof window !== 'undefined') {
-	init()
-	restoreInitData()
+  init()
+  restoreInitData()
 }
 
 export function Root(props: PropsWithChildren) {
+  const didMount = useDidMount()
+  const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString } =
+    useGlobal()
 
-	const didMount = useDidMount()
-	const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString } = useGlobal()
+  useEffect(() => {
+    if (isTgAuthorized && !tgSessionString) {
+      console.log('setting session')
+      const defaultSessionName = 'tg-session'
+      const session =
+        typeof localStorage !== 'undefined'
+          ? new StoreSession(defaultSessionName)
+          : new StringSession()
+      setTgSessionString(session)
+    }
+  }, [tgSessionString])
 
-	useEffect(() => {
-		if(isTgAuthorized && !tgSessionString) {
-			console.log('setting session')
-			const defaultSessionName = 'tg-session'
-			const session = (typeof localStorage !== 'undefined' ? new StoreSession(defaultSessionName) : new StringSession())
-			setTgSessionString(session)
-		}
-		
-	}, [tgSessionString])
+  if (!didMount) {
+    return (
+      <div className="h-screen flex justify-center items-center bg-primary">
+        <LogoSplash />
+      </div>
+    )
+  }
 
-	if (!didMount) {
-		return (
-			<div className="h-screen flex justify-center items-center bg-primary">
-				<LogoSplash />
-			</div>
-		)
-	}
+  if (!isOnboarded) {
+    return <Onboarding />
+  }
 
-	if (!isOnboarded) {
-		return <Onboarding />
-	}
-
-	return (
-		<ErrorBoundary fallback={ErrorPage}>
-			<ErrorProvider>
-				<TelegramProvider>
-					{isTgAuthorized ? (
-						<StorachaProvider servicePrincipal={serviceID} connection={connection}>
-							<BackupProviderContainer>
-								<div {...props} />
-							</BackupProviderContainer>
-						</StorachaProvider>
-					) : (
-						<TelegramAuth />
-					)}
-				</TelegramProvider>
-			</ErrorProvider>
-		</ErrorBoundary>
-	)
+  return (
+    <ErrorBoundary fallback={ErrorPage}>
+      <ErrorProvider>
+        <TelegramProvider>
+          {isTgAuthorized ? (
+            <StorachaProvider
+              servicePrincipal={serviceID}
+              connection={connection}
+            >
+              <BackupProviderContainer>
+                <div {...props} />
+              </BackupProviderContainer>
+            </StorachaProvider>
+          ) : (
+            <TelegramAuth />
+          )}
+        </TelegramProvider>
+      </ErrorProvider>
+    </ErrorBoundary>
+  )
 }
 
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
+  const [{ client: storacha }] = useStoracha()
+  const [{ launchParams }] = useTelegram()
+  const { isStorachaAuthorized, space, tgSessionString, setIsFirstLogin } =
+    useGlobal()
+  const [jobs, setJobs] = useState<JobStorage>()
+  const { setError } = useError()
 
-	const [{ client: storacha }] = useStoracha()
-	const [{ launchParams }] = useTelegram()
-	const { isStorachaAuthorized, space, tgSessionString, setIsFirstLogin } = useGlobal()
-	const [ jobs, setJobs ] = useState<JobStorage>()
-	const { setError } = useError()
+  useEffect(() => {
+    let eventSource: EventSource
 
-	useEffect(() => {
-		let eventSource : EventSource
+    let encryptionPassword = ''
+    ;(async () => {
+      encryptionPassword = await cloudStorage.getItem('encryption-password')
+      setIsFirstLogin(!encryptionPassword)
+    })()
 
-		let encryptionPassword = '';
-		(async () => {
-			encryptionPassword = await cloudStorage.getItem('encryption-password')
-			setIsFirstLogin(!encryptionPassword)
-		})()
+    if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
+      return
+    }
 
-		if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
-			return
-		}
-		
-		;(async () => {
-			if (encryptionPassword === '') {
-				console.log('creating new encryption password')
-				encryptionPassword = generateRandomPassword()
-				await cloudStorage.setItem('encryption-password', encryptionPassword)
-			} else {
-				console.log('found existing encryption password')
-			}
+    ;(async () => {
+      if (encryptionPassword === '') {
+        console.log('creating new encryption password')
+        encryptionPassword = generateRandomPassword()
+        await cloudStorage.setItem('encryption-password', encryptionPassword)
+      } else {
+        console.log('found existing encryption password')
+      }
 
-			await storacha.setCurrentSpace(space)
+      await storacha.setCurrentSpace(space)
 
-			try {
-				fromResult(await login({
-					telegramAuth: {
-						session: tgSessionString,
-						initData: launchParams.initDataRaw || '',
-					},
-					spaceDID: space
-				}))
-			} catch (err) {
-				setError(getErrorMessage(err), { title: 'Error logging in!' })
-				return
-			}
+      try {
+        fromResult(
+          await login({
+            telegramAuth: {
+              session: tgSessionString,
+              initData: launchParams.initDataRaw || '',
+            },
+            spaceDID: space,
+          })
+        )
+      } catch (err) {
+        setError(getErrorMessage(err), { title: 'Error logging in!' })
+        return
+      }
 
-			const jobs = await createJobStorage({
-				serverDID: serverDID,
-				storacha,
-				encryptionPassword,
-				jobClient: {
-					createJob: async (jr) => fromResult(await createJob(jr)),
-					findJob: async(jr) => fromResult(await findJob(jr)),
-					listJobs: async(jr) => fromResult(await listJobs(jr)),
-					removeJob: async(jr) => fromResult(await removeJob(jr))
-				}
-			})
-			// setup a remove listener for async updates
-			eventSource = new EventSource("/api/jobs")
-			eventSource.addEventListener('replace', (evt) => {
-					const job = parseWithUIntArrays(evt.data)
-					jobs.dispatchEvent(new CustomEvent('replace', { detail: job}))
-				})
-			setJobs(jobs)
-		})()
-		return () => {
-			if (eventSource) {
-				eventSource.close()
-			}
-		}
-	}, [storacha, tgSessionString, isStorachaAuthorized, space])
+      const jobs = await createJobStorage({
+        serverDID: serverDID,
+        storacha,
+        encryptionPassword,
+        jobClient: {
+          createJob: async (jr) => fromResult(await createJob(jr)),
+          findJob: async (jr) => fromResult(await findJob(jr)),
+          listJobs: async (jr) => fromResult(await listJobs(jr)),
+          removeJob: async (jr) => fromResult(await removeJob(jr)),
+        },
+      })
+      // setup a remove listener for async updates
+      eventSource = new EventSource('/api/jobs')
+      eventSource.addEventListener('replace', (evt) => {
+        const job = parseWithUIntArrays(evt.data)
+        jobs.dispatchEvent(new CustomEvent('replace', { detail: job }))
+      })
+      setJobs(jobs)
+    })()
+    return () => {
+      if (eventSource) {
+        eventSource.close()
+      }
+    }
+  }, [storacha, tgSessionString, isStorachaAuthorized, space])
 
-	return (
-		<BackupProvider jobs={jobs}>
-			{children}
-		</BackupProvider>
-	)
+  return <BackupProvider jobs={jobs}>{children}</BackupProvider>
 }

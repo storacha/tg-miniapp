@@ -55,7 +55,7 @@ export interface User {
   storachaSpace: string
   points: number
   createdAt: Date
-} 
+}
 
 type Input<
   T,
@@ -82,24 +82,36 @@ export interface DbJob {
   createdAt: Date
 }
 
-type JobEvent = {action: string, job: Job}
+type JobEvent = { action: string; job: Job }
 type JobsCallback = (action: string, job: Job) => void
 type UnsubscribeFn = () => void
-type JobInput = Input<DbJob, 'id' | 'progress' | 'startedAt' | 'cause' | 'finishedAt' | 'dataCid' | 'createdAt'>
+type JobInput = Input<
+  DbJob,
+  | 'id'
+  | 'progress'
+  | 'startedAt'
+  | 'cause'
+  | 'finishedAt'
+  | 'dataCid'
+  | 'createdAt'
+>
 export interface TGDatabase {
-  findOrCreateUser(input: UserInput) : Promise<User>
-  updateUser(id: string, input: User) : Promise<User>
-  leaderboard() : Promise<User[]>
-  rank(input: UserInput) : Promise<Ranking | undefined>
-  createJob(input: JobInput) : Promise<Job>
-  getJobByID(id: string, userId: string) : Promise<Job>
-  getJobsByUserID(userId: string) : Promise<Job[]>
-  updateJob(id: string, input: Job) : Promise<Job>
-  removeJob(id: string, userId: string) : Promise<void>
-  subscribeToJobUpdates(userId: string, callback: JobsCallback) : Promise<UnsubscribeFn>
+  findOrCreateUser(input: UserInput): Promise<User>
+  updateUser(id: string, input: User): Promise<User>
+  leaderboard(): Promise<User[]>
+  rank(input: UserInput): Promise<Ranking | undefined>
+  createJob(input: JobInput): Promise<Job>
+  getJobByID(id: string, userId: string): Promise<Job>
+  getJobsByUserID(userId: string): Promise<Job[]>
+  updateJob(id: string, input: Job): Promise<Job>
+  removeJob(id: string, userId: string): Promise<void>
+  subscribeToJobUpdates(
+    userId: string,
+    callback: JobsCallback
+  ): Promise<UnsubscribeFn>
 }
 
-export function getDB() : TGDatabase {
+export function getDB(): TGDatabase {
   return {
     async findOrCreateUser(input) {
       const results = await sql<User[]>`
@@ -110,7 +122,9 @@ export function getDB() : TGDatabase {
         select * from ins
         union
         select * from users
-        where telegram_id = ${input.telegramId} and storacha_space = ${input.storachaSpace} 
+        where telegram_id = ${input.telegramId} and storacha_space = ${
+          input.storachaSpace
+        } 
       `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
@@ -136,33 +150,35 @@ export function getDB() : TGDatabase {
       `
     },
     async rank(input: UserInput) {
-      const results = await sql<{rank : number}[]>`
+      const results = await sql<{ rank: number }[]>`
         select (select count(*) from users u2 where u2.points>=u1.points) as rank from users u1 where u1.telegram_id=${input.telegramId} and u1.storacha_space=${input.storachaSpace}
       `
       if (!results[0]) {
         return undefined
       }
-      
-      const totals = await sql<{ total: number}[]>`
+
+      const totals = await sql<{ total: number }[]>`
         select count(*) as total from users
       `
-      
+
       if (!totals[0]) {
-        throw new Error("error getting total")
+        throw new Error('error getting total')
       }
 
-      const points = await sql<{ points: number}[]>`
-        select points from users where users.telegram_id = ${input.telegramId.toString()} and users.storacha_space=${input.storachaSpace}
+      const points = await sql<{ points: number }[]>`
+        select points from users where users.telegram_id = ${input.telegramId.toString()} and users.storacha_space=${
+          input.storachaSpace
+        }
       `
-            
+
       if (!points[0]) {
-        throw new Error("error getting points")
+        throw new Error('error getting points')
       }
 
       return {
         rank: results[0].rank,
-        percentile: (results[0].rank*100)/(totals[0].total),
-        points: points[0].points
+        percentile: (results[0].rank * 100) / totals[0].total,
+        points: points[0].points,
       }
     },
     async createJob(input) {
@@ -174,7 +190,10 @@ export function getDB() : TGDatabase {
         throw new Error('error inserting job')
       }
       const job = fromDbJob(results[0])
-      await sql.notify(results[0].userId, stringifyWithUIntArrays({ action: 'add' , job}))
+      await sql.notify(
+        results[0].userId,
+        stringifyWithUIntArrays({ action: 'add', job })
+      )
       return job
     },
     async getJobByID(id, userId) {
@@ -202,31 +221,40 @@ export function getDB() : TGDatabase {
         throw new Error('error updating job')
       }
       const job = fromDbJob(results[0])
-      await sql.notify(results[0].userId, stringifyWithUIntArrays({ action: 'replace', job}))
+      await sql.notify(
+        results[0].userId,
+        stringifyWithUIntArrays({ action: 'replace', job })
+      )
       return job
     },
     async removeJob(id, userId) {
-       const results = await sql<DbJob[]>`
+      const results = await sql<DbJob[]>`
         delete from jobs where id = ${id} and user_id = ${userId} returning *
        `
-       if (!results[0]) {
+      if (!results[0]) {
         throw new Error('error removing job')
-       }
-       await sql.notify(results[0].userId, stringifyWithUIntArrays({ action: 'remove', job: fromDbJob(results[0]) }))
+      }
+      await sql.notify(
+        results[0].userId,
+        stringifyWithUIntArrays({
+          action: 'remove',
+          job: fromDbJob(results[0]),
+        })
+      )
     },
     async subscribeToJobUpdates(userId, callback) {
       const result = await sql.listen(userId, (value) => {
-        const {action, job} = parseWithUIntArrays(value) as JobEvent
+        const { action, job } = parseWithUIntArrays(value) as JobEvent
         callback(action, job)
       })
       return result.unlisten
-    }
+    },
   }
 }
 
 type DbJobParams = Omit<DbJob, 'userId'>
-const toDbJobParams = (job: Job) : DbJobParams =>{
-  const baseDbJob : DbJobParams = {
+const toDbJobParams = (job: Job): DbJobParams => {
+  const baseDbJob: DbJobParams = {
     id: job.id,
     status: job.status,
     space: job.params.space,
@@ -238,7 +266,7 @@ const toDbJobParams = (job: Job) : DbJobParams =>{
     cause: null,
     finishedAt: null,
     dataCid: null,
-    createdAt: new Date(job.created)
+    createdAt: new Date(job.created),
   }
   switch (job.status) {
     case 'waiting':
@@ -246,59 +274,92 @@ const toDbJobParams = (job: Job) : DbJobParams =>{
     case 'queued':
       return baseDbJob
     case 'running':
-      return { ...baseDbJob, progress: job.progress, startedAt: new Date(job.started)}
+      return {
+        ...baseDbJob,
+        progress: job.progress,
+        startedAt: new Date(job.started),
+      }
     case 'failed':
-      return { ...baseDbJob, progress: job.progress, cause: job.cause, startedAt: job.started ? new Date(job.started) : null, finishedAt: new Date(job.finished)}
+      return {
+        ...baseDbJob,
+        progress: job.progress,
+        cause: job.cause,
+        startedAt: job.started ? new Date(job.started) : null,
+        finishedAt: new Date(job.finished),
+      }
     case 'completed':
-      return { ...baseDbJob, startedAt: new Date(job.started), finishedAt: new Date(job.finished), dataCid: job.data}
+      return {
+        ...baseDbJob,
+        startedAt: new Date(job.started),
+        finishedAt: new Date(job.finished),
+        dataCid: job.data,
+      }
   }
 }
 
-const fromDbJob = (dbJob: DbJob) : Job =>{
-  const baseJob : BaseJob = {
+const fromDbJob = (dbJob: DbJob): Job => {
+  const baseJob: BaseJob = {
     id: dbJob.id,
     status: dbJob.status,
     params: {
       space: dbJob.space,
       dialogs: dbJob.dialogs,
-      period: [dbJob.periodFrom, dbJob.periodTo]
+      period: [dbJob.periodFrom, dbJob.periodTo],
     },
-    created: dbJob.createdAt.getTime()
+    created: dbJob.createdAt.getTime(),
   }
   switch (dbJob.status) {
     case 'waiting':
-      return {...baseJob, status: 'waiting'}
+      return { ...baseJob, status: 'waiting' }
     case 'queued':
-      return  {...baseJob, status: 'queued'}
+      return { ...baseJob, status: 'queued' }
     case 'running':
       if (dbJob.progress == null) {
-        throw new Error("progress should not be null on running job")
+        throw new Error('progress should not be null on running job')
       }
       if (dbJob.startedAt == null) {
-        throw new Error("started at should not be null on running job")
+        throw new Error('started at should not be null on running job')
       }
-      return { ...baseJob, status: 'running', progress: dbJob.progress, started: dbJob.startedAt.getTime()}
+      return {
+        ...baseJob,
+        status: 'running',
+        progress: dbJob.progress,
+        started: dbJob.startedAt.getTime(),
+      }
     case 'failed':
       if (dbJob.progress == null) {
-        throw new Error("progress should not be null on failed job")
+        throw new Error('progress should not be null on failed job')
       }
       if (dbJob.cause == null) {
-        throw new Error("cause should not be null on failed job")
+        throw new Error('cause should not be null on failed job')
       }
       if (dbJob.finishedAt == null) {
-        throw new Error("finishedAt should not be null on failed job")
+        throw new Error('finishedAt should not be null on failed job')
       }
-      return { ...baseJob, status: 'failed', progress: dbJob.progress, cause: dbJob.cause, started: dbJob.startedAt?.getDate(), finished: dbJob.finishedAt.getDate()}
+      return {
+        ...baseJob,
+        status: 'failed',
+        progress: dbJob.progress,
+        cause: dbJob.cause,
+        started: dbJob.startedAt?.getDate(),
+        finished: dbJob.finishedAt.getDate(),
+      }
     case 'completed':
       if (dbJob.startedAt == null) {
-        throw new Error("started at should not be null on completed job")
+        throw new Error('started at should not be null on completed job')
       }
       if (dbJob.finishedAt == null) {
-        throw new Error("finishedAt should not be null on completed job")
+        throw new Error('finishedAt should not be null on completed job')
       }
       if (dbJob.dataCid == null) {
-        throw new Error("dataCid should not be null on completed job")
+        throw new Error('dataCid should not be null on completed job')
       }
-      return { ...baseJob, status: 'completed', started: dbJob.startedAt.getTime(), finished: dbJob.finishedAt.getDate(), data: dbJob.dataCid}
+      return {
+        ...baseJob,
+        status: 'completed',
+        started: dbJob.startedAt.getTime(),
+        finished: dbJob.finishedAt.getDate(),
+        data: dbJob.dataCid,
+      }
   }
 }
