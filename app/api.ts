@@ -23,11 +23,12 @@ export type Period = AbsolutePeriod | [from: number]
 
 export type JobID = string
 
+export type DialogInfoMap = Record<string, Omit<DialogInfo, 'id'>>
 export interface JobParams {
   /** The space the data is being saved to. */
   space: SpaceDID
   /** The dialogs that will be backed up. */
-  dialogs: Array<ToString<EntityID>>
+  dialogs: DialogInfoMap
   /** Time period this backup covers. */
   period: AbsolutePeriod
 }
@@ -111,7 +112,7 @@ export interface JobStorage extends EventTarget {
     Page<WaitingJob | QueuedJob | RunningJob | FailedJob>
   >
   listCompleted: () => Promise<Page<CompletedJob>>
-  add: (dialogs: Set<bigint>, period: Period) => Promise<Job>
+  add: (dialogs: DialogInfoMap, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
 }
 
@@ -134,7 +135,7 @@ export interface ExecuteJobRequest extends ExecuteAuth, LoginRequest {
 }
 
 export interface CreateJobRequest extends ExecuteAuth {
-  dialogs: Set<bigint>
+  dialogs: DialogInfoMap
   period: Period
 }
 

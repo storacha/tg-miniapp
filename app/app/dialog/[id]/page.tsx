@@ -12,9 +12,7 @@ export default function BackupSelectionPage() {
   const searchParams = useSearchParams()
   const type = searchParams.get('type')
 
-  const dialogBackups = backups.items.filter((b) =>
-    b.params.dialogs.includes(id)
-  )
+  const dialogBackups = backups.items.filter((b) => b.params.dialogs[id])
 
   const handleBackupClick = (e: React.MouseEvent, backupCid: string) => {
     e.preventDefault()

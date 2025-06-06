@@ -1,6 +1,6 @@
 import postgres from 'postgres'
 import { Signer } from '@aws-sdk/rds-signer'
-import { BaseJob, Job, JobStatus, Ranking, SpaceDID } from '@/api'
+import { BaseJob, DialogInfoMap, Job, JobStatus, Ranking, SpaceDID } from '@/api'
 import { parseWithUIntArrays, stringifyWithUIntArrays } from '../utils'
 
 const {
@@ -71,7 +71,7 @@ export interface DbJob {
   userId: string
   status: JobStatus
   space: SpaceDID
-  dialogs: string[]
+  dialogs: DialogInfoMap
   periodFrom: number
   periodTo: number
   progress: number | null

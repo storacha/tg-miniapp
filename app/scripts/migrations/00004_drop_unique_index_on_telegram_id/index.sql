@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS users_telegram_id_index;

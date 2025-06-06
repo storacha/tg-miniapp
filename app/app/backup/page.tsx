@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Period } from '@/api'
+import { DialogInfoMap, Period } from '@/api'
 import { useGlobal } from '@/zustand/global'
 import { useBackups } from '@/providers/backup'
 import Dates from '@/components/backup/dates'
@@ -12,13 +12,13 @@ import { Summary } from '@/components/backup/summary'
 import { StorachaConnect } from '@/components/backup/connect'
 
 export default function Page() {
-  const router = useRouter()
-  const { isStorachaAuthorized, space } = useGlobal()
-  const [, { addBackupJob }] = useBackups()
-  const [step, setStep] = useState(0)
-  const [starting, setStarting] = useState(false)
-  const [period, setPeriod] = useState<Period>([0])
-  const [chats, setChats] = useState<Set<bigint>>(new Set())
+	const router = useRouter()
+	const { isStorachaAuthorized, space } = useGlobal()
+	const [, { addBackupJob }] = useBackups()
+	const [step, setStep] = useState(0)
+	const [starting, setStarting] = useState(false)
+	const [period, setPeriod] = useState<Period>([0])
+	const [chats, setChats] = useState<DialogInfoMap>({})
 
   function handleBack() {
     if (step === 0) {

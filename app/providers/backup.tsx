@@ -1,21 +1,6 @@
-import {
-  createContext,
-  useContext,
-  ReactNode,
-  PropsWithChildren,
-  useState,
-  useEffect,
-  useCallback,
-} from 'react'
-import { cloudStorage } from '@telegram-apps/sdk-react'
-import {
-  Backup,
-  JobID,
-  JobStorage,
-  PendingJob,
-  Period,
-  RestoredBackup,
-} from '@/api'
+import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect, useCallback } from 'react'
+import { cloudStorage} from '@telegram-apps/sdk-react'
+import { Backup, DialogInfoMap, JobID, JobStorage, PendingJob, Period, RestoredBackup } from '@/api'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
 import {
@@ -54,10 +39,7 @@ export interface ContextState {
 }
 
 export interface ContextActions {
-  addBackupJob: (
-    chats: Set<bigint>,
-    period: Period
-  ) => Promise<JobID | undefined>
+  addBackupJob: (chats: DialogInfoMap, period: Period) => Promise<JobID | undefined>
   removeBackupJob: (job: JobID) => Promise<void>
   restoreBackup: (
     backupCid: string,
@@ -205,23 +187,20 @@ export const Provider = ({
   }
 
   const addBackupJob = useCallback(
-    async (
-      dialogs: Set<bigint>,
-      period: Period
-    ): Promise<string | undefined> => {
-      if (!jobStore) {
-        setError('missing job store')
-        return undefined
-      }
-      try {
-        const job = await jobStore.add(dialogs, period)
-        return job.id
-      } catch (error: any) {
-        const msg = 'Error adding backup job!'
-        console.error(msg, error)
-        setError(getErrorMessage(error), { title: msg })
-        return undefined
-      }
+   async (dialogs: DialogInfoMap, period: Period): Promise<string | undefined> => {
+    if (!jobStore) {
+      setError('missing job store')
+      return undefined
+    }
+    try {
+      const job = await jobStore.add(dialogs, period)
+      return job.id
+    } catch (error: any) {
+      const msg = 'Error adding backup job!'
+      console.error(msg, error)
+      setError(getErrorMessage(error), { title: msg })
+      return undefined
+    }
     },
     [jobStore]
   )

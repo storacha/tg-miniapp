@@ -81,15 +81,9 @@ export interface Options {
   onShardStored?: (meta: CARMetadata) => unknown
 }
 
-export const run = async (
-  ctx: Context,
-  space: SpaceDID,
-  dialogs: Set<bigint>,
-  period: AbsolutePeriod,
-  options?: Options
-): Promise<UnknownLink> => {
+export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogInfoMap, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
   const dialogDatas: BackupData['dialogs'] = {}
-  const pendingDialogIDs = Array.from(dialogs)
+  const pendingDialogIDs = Object.keys(dialogs)
 
   // null value signals that the current dialog has completed
   let dialogEntity: Entity | null = null
