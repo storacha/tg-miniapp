@@ -256,7 +256,7 @@ export default function TelegramAuth() {
 				<div className="py-10 flex flex-col items-center gap-5">
 					<h1 className="text-xl font-semibold">Authorization</h1>
 					<p className="text-center text-blue-600/80">
-						Authorise access to your Telegram chats to securely proceed with your backups.
+						Authorize access to your Telegram chats to securely proceed with your backups.
 					</p>
 					<div className="w-full">
 						<p className="text-blue-600/80 text-center my-2">
