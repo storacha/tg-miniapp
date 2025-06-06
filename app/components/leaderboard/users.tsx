@@ -21,12 +21,12 @@ function User({ user, rank }: { user: LeaderboardUser; rank: number }) {
   )
 }
 
-export default function Users({ users }: { users: LeaderboardUser[] }) {
-  return (
-    <div className="flex flex-col py-10 bg-background h-full rounded-t-xl">
-      {users.map((user, i) => (
-        <User key={user.id} user={user} rank={i} />
-      ))}
-    </div>
-  )
+export default function Users({ users } : { users: LeaderboardUser[] }) {
+	return (
+		<div className="flex flex-col py-10 bg-background h-full rounded-t-xl">
+			{
+				users.map((user, i) => <User key={user.id} user={user} rank={i+1}/>)
+			}
+		</div>
+	)
 }
