@@ -2,8 +2,8 @@
 const nextConfig = {
   output: 'standalone',
   experimental: {
-      nodeMiddleware: true,
-  }
+    nodeMiddleware: true,
+  },
 }
 
 export default nextConfig

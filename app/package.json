@@ -8,6 +8,7 @@
 		"build": "next build",
 		"start": "next start",
 		"lint": "next lint",
+    "format": "prettier --write .",
 		"test": "pnpm lint",
 		"db:migrate": "node ./scripts/migrate.mjs",
 		"pages:build": "npx @cloudflare/next-on-pages",
@@ -79,6 +80,7 @@
 		"eruda": "^3.4.1",
 		"eslint-config-next": "15.2.4",
 		"postcss": "^8",
+    "prettier": "^3.5.3",
 		"tailwindcss": "^3.4.1",
 		"typescript": "5.5.4",
 		"wrangler": "^4.6.0"

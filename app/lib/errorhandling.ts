@@ -1,9 +1,8 @@
-
 // these function serves to move erorrs over the wire for server side functions
 // why?: we generally want to transmit exceptions generated on the server to the client to display in UI
 
-import { Result } from "@ucanto/client"
-import { Api } from "@/vendor/telegram"
+import { Result } from '@ucanto/client'
+import { Api } from '@/vendor/telegram'
 
 type SerializedError = TelegramError | StringError | ErrorObjectError
 
@@ -16,7 +15,7 @@ interface TelegramError {
 interface StringError {
   kind: 'string'
   value: string
-} 
+}
 
 interface ErrorObjectError {
   kind: 'errorObject'
@@ -24,30 +23,41 @@ interface ErrorObjectError {
   cause?: ErrorObjectError
 }
 
-const serializeErrorObject = (err: Error) : ErrorObjectError => {
-  const { message, cause} = err
+const serializeErrorObject = (err: Error): ErrorObjectError => {
+  const { message, cause } = err
   return {
     kind: 'errorObject',
     message,
-    cause: cause instanceof Error ? serializeErrorObject(cause) : undefined    
+    cause: cause instanceof Error ? serializeErrorObject(cause) : undefined,
   }
 }
 
-const deserializeErrorObject = (err: ErrorObjectError) : Error => {
-  return new Error(err.message, { cause: err.cause ? deserializeErrorObject(err.cause) : undefined })
+const deserializeErrorObject = (err: ErrorObjectError): Error => {
+  return new Error(err.message, {
+    cause: err.cause ? deserializeErrorObject(err.cause) : undefined,
+  })
 }
 
-export type PromiseFn<T extends [unknown, ...unknown[]], U> = (...args:T) => Promise<U>
-export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T, U>): ((...args: T) => Promise<Result<U, SerializedError>>) => 
-  async (...r: T) : Promise<Result<U, SerializedError>> => {
+export type PromiseFn<T extends [unknown, ...unknown[]], U> = (
+  ...args: T
+) => Promise<U>
+export const toResultFn =
+  <T extends [unknown, ...unknown[]], U>(
+    fn: PromiseFn<T, U>
+  ): ((...args: T) => Promise<Result<U, SerializedError>>) =>
+  async (...r: T): Promise<Result<U, SerializedError>> => {
     try {
       const response = await fn(...r)
       return { ok: response }
     } catch (err) {
       if (err instanceof Api.RpcError) {
-        console.error("telegram error", err.errorCode, err.errorMessage)
+        console.error('telegram error', err.errorCode, err.errorMessage)
         return {
-          error: { kind: 'telegram', errorMessage: err.errorMessage, errorCode: err.errorCode}
+          error: {
+            kind: 'telegram',
+            errorMessage: err.errorMessage,
+            errorCode: err.errorCode,
+          },
         }
       }
       if (err instanceof Error) {
@@ -57,7 +67,7 @@ export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T
       if (typeof err == 'string') {
         console.error(err)
         return {
-          error: { kind: 'string', value: err }
+          error: { kind: 'string', value: err },
         }
       }
       // don't know what to do with these errors, so just rethrow
@@ -65,7 +75,7 @@ export const toResultFn = <T extends [unknown, ...unknown[]], U>(fn: PromiseFn<T
     }
   }
 
-export const fromResult = <T>(result: Result<T, SerializedError>) : T => { 
+export const fromResult = <T>(result: Result<T, SerializedError>): T => {
   if (result.error) {
     const err = result.error
     switch (err.kind) {
@@ -81,7 +91,6 @@ export const fromResult = <T>(result: Result<T, SerializedError>) : T => {
 }
 
 export const getErrorMessage = (err: unknown) => {
-
   if (err instanceof Error) {
     return err.message
   }
@@ -89,7 +98,7 @@ export const getErrorMessage = (err: unknown) => {
   if (typeof err === 'string') {
     return err
   }
-  
+
   if (err instanceof Api.RpcError) {
     return `${err.errorCode}: ${err.errorMessage}`
   }

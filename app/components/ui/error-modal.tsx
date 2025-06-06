@@ -8,7 +8,13 @@ type ErrorModalProps = {
   setOpen?: (open: boolean) => void
 }
 
-export default function ErrorModal({ title, message, onClose, open = false, setOpen }: ErrorModalProps) {
+export default function ErrorModal({
+  title,
+  message,
+  onClose,
+  open = false,
+  setOpen,
+}: ErrorModalProps) {
   if (!open) return null
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -24,9 +30,11 @@ export default function ErrorModal({ title, message, onClose, open = false, setO
     >
       <div
         className="bg-red-50 border border-red-600 rounded-xl p-6 w-11/12 max-w-sm text-center shadow-lg"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">{title || 'Oops!'}</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          {title || 'Oops!'}
+        </h2>
         <img
           src="/fail-racha.png"
           alt="Error illustration"
