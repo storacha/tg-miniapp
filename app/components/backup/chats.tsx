@@ -1,5 +1,5 @@
 import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react'
-import { DialogInfo } from '@/api'
+import { DialogInfo, DialogInfoMap } from '@/api'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
 import { Input } from '@/components/ui/input'
@@ -23,8 +23,8 @@ const toSearchFilter = (t: string) => (dialog: DialogInfo) => {
 }
 
 export interface ChatsProps {
-	selections: Set<bigint>
-	onSelectionsChange: (selections: Set<bigint>) => unknown
+	selections: DialogInfoMap
+	onSelectionsChange: (selections: DialogInfoMap) => unknown
 	onSubmit: () => unknown
 }
 
@@ -73,10 +73,17 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 	}
 
 	const handleDialogItemClick: MouseEventHandler = (e) => {
-		const id = BigInt(e.currentTarget.getAttribute('data-id') ?? 0)
-		const nextSelections = new Set(selections)
-		if (!nextSelections.delete(id)) {
-			nextSelections.add(id)
+		const id = e.currentTarget.getAttribute('data-id')
+		if (!id) return
+		const dialog = items.find(d => d.id === id)
+		if (!dialog) return
+
+		const nextSelections = { ...selections }
+		if (nextSelections[id]) {
+			delete nextSelections[id]
+		} else {
+			const { id, ...dialogInfo } = dialog
+			nextSelections[id as string] = dialogInfo
 		}
 		onSelectionsChange(nextSelections)
 	}
@@ -110,10 +117,10 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 				</div>
 				<div className="flex flex-col min-h-screen">
 					{items.map((d: DialogInfo) => {
-						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs.includes(d.id))
+						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs[d.id])
 						return (
 							<div key={d.id} className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={d.id} onClick={handleDialogItemClick}>
-								<Checkbox checked={selections.has(BigInt(d.id || 0))} />
+								<Checkbox checked={!!selections[d.id ?? '']}  />
 								<DialogItem dialog={d} latestBackup={latestBackup} />
 							</div>
 						)
@@ -124,7 +131,7 @@ export default function Chats({ selections, onSelectionsChange, onSubmit }: Chat
 				</div>
 			</div>
 			<form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">
-				<Button type="submit" className="w-full" disabled={!selections.size}>
+				<Button type="submit" className="w-full" disabled={!Object.keys(selections).length}>
 					Continue
 				</Button>
 			</form>

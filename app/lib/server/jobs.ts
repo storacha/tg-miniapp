@@ -31,7 +31,7 @@ export const createJob = async (request: CreateJobRequest, queueFn: (jr: Execute
       periodFrom: request.period[0], 
       periodTo: (request.period[1] ?? Date.now() / 1000),
       space: session.spaceDID,
-      dialogs: [...request.dialogs].map(d => d.toString())
+      dialogs: request.dialogs
     })
     await queueFn({...request, spaceDID: session.spaceDID, telegramAuth: session.telegramAuth, jobID: job.id})
     console.debug(`job store added job: ${job.id} status: ${job.status}`)
