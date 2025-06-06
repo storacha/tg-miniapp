@@ -46,21 +46,6 @@ export function HumanodeAuthLink ({ onClick, className }: { className?: string; 
   useEffect(() => {
     (async () => {
       if (client) {
-        console.log('delegation parameters: ', {
-          audience: client.agent.connection.id,
-          issuer: client.agent.issuer,
-          // agent that should be granted access
-          with: client.agent.did(),
-          // capabilities requested (account access)
-          nb: {
-            iss: account.did(),
-            att: [{ 
-              can: '*',
-            }]
-          },
-          // expire this after 15 minutes
-          expiration:  Math.floor(Date.now() / 1000) + 60 * 15
-        })
         // Create an access/authorize request that can be used as the state of the OAuth request.
         const request = await authorize.delegate({
           audience: client.agent.connection.id,
