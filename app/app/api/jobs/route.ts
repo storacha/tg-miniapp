@@ -18,7 +18,9 @@ function isJobAuthed(request: Request) {
       .split(':')
     return username === 'user' && password === process.env.BACKUP_PASSWORD
   } else {
-    console.warn("no auth password set for handling jobs, assuming authentication")
+    console.warn(
+      'no auth password set for handling jobs, assuming authentication'
+    )
     return true
   }
 }
@@ -29,63 +31,67 @@ export async function POST(request: Request) {
     console.error(`Job auth not found.`)
     return new Response('Unauthorized', { status: 401 })
   }
-  
+
   const message = await request.json()
-  
+
   await handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
   return Response.json({})
 }
 
 export async function GET() {
   console.log(`setting up notification stream for job updates`)
-    try {
-
+  try {
     const session = await getSession()
     const db = getDB()
     const telegramId = getTelegramId(session.telegramAuth)
-    const dbUser = await db.findOrCreateUser({storachaSpace: session.spaceDID, telegramId: telegramId.toString() })
-    console.log("subscribing updates for user", dbUser.id)
+    const dbUser = await db.findOrCreateUser({
+      storachaSpace: session.spaceDID,
+      telegramId: telegramId.toString(),
+    })
+    console.log('subscribing updates for user', dbUser.id)
     let unsubscribe: () => void
     // Create a new ReadableStream
     const stream = new ReadableStream({
       async start(controller) {
         try {
           // Notify client of successful connection
-          controller.enqueue(encodeSSE("init", "Connecting..."));
-          unsubscribe = await db.subscribeToJobUpdates(dbUser.id, (action, job) => {
-            console.debug("received job update", action, job.id)
-            controller.enqueue(encodeSSE(action, stringifyWithUIntArrays(job)))
-          })
+          controller.enqueue(encodeSSE('init', 'Connecting...'))
+          unsubscribe = await db.subscribeToJobUpdates(
+            dbUser.id,
+            (action, job) => {
+              console.debug('received job update', action, job.id)
+              controller.enqueue(
+                encodeSSE(action, stringifyWithUIntArrays(job))
+              )
+            }
+          )
         } catch (error) {
-          console.error("Stream error:", error);
-          controller.enqueue(encodeSSE("error", "Stream interrupted"));
-          controller.close();
+          console.error('Stream error:', error)
+          controller.enqueue(encodeSSE('error', 'Stream interrupted'))
+          controller.close()
         }
       },
 
       cancel() {
         unsubscribe()
-      }
-    });
+      },
+    })
 
     return new Response(stream, {
       headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Cache-Control": "no-cache, no-transform",
-        Connection: "keep-alive",
-        "Content-Type": "text/event-stream",
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-cache, no-transform',
+        Connection: 'keep-alive',
+        'Content-Type': 'text/event-stream',
       },
       status: 200,
-    });
+    })
   } catch (error) {
-    console.error("Server error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal Server Error" }),
-      {
-        headers: { "Content-Type": "application/json" },
-        status: 500,
-      }
-    );
+    console.error('Server error:', error)
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      headers: { 'Content-Type': 'application/json' },
+      status: 500,
+    })
   }
 }
 
@@ -96,5 +102,5 @@ export async function GET() {
  * @returns Encoded SSE string
  */
 function encodeSSE(event: string, data: string): Uint8Array {
-  return new TextEncoder().encode(`event: ${event}\ndata: ${data}\n\n`);
+  return new TextEncoder().encode(`event: ${event}\ndata: ${data}\n\n`)
 }

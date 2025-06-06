@@ -1,9 +1,17 @@
-import { Block, ByteView, Link, ToString, UnknownLink, Variant, DID } from '@ucanto/client'
+import {
+  Block,
+  ByteView,
+  Link,
+  ToString,
+  UnknownLink,
+  Variant,
+  DID,
+} from '@ucanto/client'
 import { identity } from 'multiformats/hashes/identity'
 export type { Block, ByteView, Link, ToString, UnknownLink, Variant }
 
 export type SpaceDID = DID<'key'>
-export type UnknownBlock = Block<unknown, number, number, 0|1>
+export type UnknownBlock = Block<unknown, number, number, 0 | 1>
 
 export type AbsolutePeriod = [from: number, to: number]
 
@@ -24,15 +32,15 @@ export interface JobParams {
   period: AbsolutePeriod
 }
 
-export type JobStatus = 'waiting' | 'queued' | 'running' | 'failed' | 'completed'
+export type JobStatus =
+  | 'waiting'
+  | 'queued'
+  | 'running'
+  | 'failed'
+  | 'completed'
 
 /** A backup job. */
-export type Job = 
-  | WaitingJob
-  | QueuedJob
-  | RunningJob
-  | FailedJob
-  | CompletedJob
+export type Job = WaitingJob | QueuedJob | RunningJob | FailedJob | CompletedJob
 
 /** A backup job with fields common to jobs in all statuses. */
 export interface BaseJob {
@@ -91,15 +99,17 @@ export interface CompletedJob extends BaseJob {
 /** Backups are backup jobs that have completed successfully. */
 export type Backup = CompletedJob
 
-export type PendingJob = WaitingJob|QueuedJob|RunningJob|FailedJob
+export type PendingJob = WaitingJob | QueuedJob | RunningJob | FailedJob
 
 export interface Page<T> {
   items: T[]
 }
 
 export interface JobStorage extends EventTarget {
-  find: (id: JobID) => Promise<Job|null>
-  listPending: () => Promise<Page<WaitingJob|QueuedJob|RunningJob|FailedJob>>
+  find: (id: JobID) => Promise<Job | null>
+  listPending: () => Promise<
+    Page<WaitingJob | QueuedJob | RunningJob | FailedJob>
+  >
   listCompleted: () => Promise<Page<CompletedJob>>
   add: (dialogs: Set<bigint>, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
@@ -128,7 +138,7 @@ export interface CreateJobRequest extends ExecuteAuth {
   period: Period
 }
 
-export interface ListJobsRequest{}
+export interface ListJobsRequest {}
 
 export interface FindJobRequest {
   jobID: JobID
@@ -166,13 +176,14 @@ export type MessageID = number
 
 /**
  * Some encrypted data.
- * 
+ *
  * Note: encrypted data is encoded as a UnixFS DAG.
  */
 export interface EncryptedByteView<T> extends ByteView<T> {}
 
 /** Some data tagged with an IPLD codec and encoded as a V1 CID. */
-export interface TaggedByteView<T> extends ByteView<Link<T, number, typeof identity.code, 1>> {}
+export interface TaggedByteView<T>
+  extends ByteView<Link<T, number, typeof identity.code, 1>> {}
 
 /**
  * Some encrypted data tagged with an IPLD codec and encoded as a V1 CID.
@@ -199,7 +210,9 @@ export interface DialogData extends EntityData {
    *
    * Each list has a maximum of 1,000 messages.
    */
-  messages: Array<Link<EncryptedTaggedByteView<Array<MessageData|ServiceMessageData>>>>
+  messages: Array<
+    Link<EncryptedTaggedByteView<Array<MessageData | ServiceMessageData>>>
+  >
 }
 
 export interface DialogInfo {
@@ -227,7 +240,7 @@ export interface EntityData {
     id: ToString<PhotoID>
     strippedThumb?: Uint8Array
   }
-} 
+}
 export interface PeerData {
   type: EntityType
   id: ToString<EntityID>
@@ -325,8 +338,8 @@ export type ActionData =
 
 export interface ChatCreateActionData {
   type: 'chat-create'
-  title: string;
-  users: ToString<EntityID>[];
+  title: string
+  users: ToString<EntityID>[]
 }
 
 export interface ChatEditTitleActionData {
@@ -335,9 +348,20 @@ export interface ChatEditTitleActionData {
 }
 
 /** @see https://core.telegram.org/api/files#image-thumbnail-types */
-export type ThumbType = 's'|'m'|'x'|'y'|'w'|'a'|'b'|'c'|'d'|'i'|'j'
+export type ThumbType =
+  | 's'
+  | 'm'
+  | 'x'
+  | 'y'
+  | 'w'
+  | 'a'
+  | 'b'
+  | 'c'
+  | 'd'
+  | 'i'
+  | 'j'
 
-export type PhotoSizeData = 
+export type PhotoSizeData =
   | DefaultPhotoSizeData
   | CachedPhotoSizeData
   | StrippedPhotoSizeData
@@ -412,9 +436,9 @@ export interface UnknownPhotoSizeData {
 }
 
 /** @see https://core.telegram.org/api/files#video-types */
-export type VideoType = 'u'|'v'|'f'
+export type VideoType = 'u' | 'v' | 'f'
 
-export type VideoSizeData = 
+export type VideoSizeData =
   | DefaultVideoSizeData
   | EmojiMarkupVideoSizeData
   | StickerMarkupVideoSizeData
@@ -432,16 +456,16 @@ export interface DefaultVideoSizeData {
 
 export type RGB24Color =
   | [number]
-  | [number,number]
-  | [number,number,number]
-  | [number,number,number,number]
+  | [number, number]
+  | [number, number, number]
+  | [number, number, number, number]
 
 export interface EmojiMarkupVideoSizeData {
   type: 'emoji-markup'
   /**
    * The custom emoji sticker is shown at the center of the profile picture and
    * occupies at most 67% of it.
-   * 
+   *
    * @see https://core.telegram.org/api/custom-emoji
    */
   emoji: ToString<bigint>
@@ -530,9 +554,7 @@ export interface UnknownVideoSizeData {
   type: 'unknown'
 }
 
-export type PhotoData =
-  | DefaultPhotoData
-  | UnknownPhotoData
+export type PhotoData = DefaultPhotoData | UnknownPhotoData
 
 export interface UnknownPhotoData {
   type: 'unknown'
@@ -758,7 +780,7 @@ export interface DocumentData {
   accessHash: ToString<bigint>
   fileReference: Uint8Array
   date: number
-  mimeType: string;
+  mimeType: string
   size: ToString<bigint>
   thumbs?: PhotoSizeData[]
   videoThumbs?: VideoSizeData[]
@@ -1089,7 +1111,7 @@ export interface TextWithEntitiesData {
 
 export interface GiftPremiumActionData {
   type: 'gift-premium'
-  currency: string;
+  currency: string
   amount: ToString<bigint>
   months: number
   cryptoCurrency?: string
@@ -1296,7 +1318,7 @@ export interface StarGiftActionData {
 }
 
 export interface UnknownActionData {
-   type: 'unknown'
+  type: 'unknown'
 }
 
 export interface RestoredBackup {
@@ -1307,7 +1329,7 @@ export interface RestoredBackup {
   hasMoreMessages: boolean
 }
 
-export type MediaData = 
+export type MediaData =
   | PhotoMediaData
   | GeoMediaData
   | ContactMediaData
@@ -1325,7 +1347,6 @@ export type MediaData =
   | GiveawayResultsMediaData
   | PaidMediaData
   | UnknownMediaData
-
 
 export interface PhotoMediaData {
   type: 'photo'
@@ -1432,8 +1453,8 @@ export interface WebPageAttributeStoryData {
 
 export interface WebPageAttributeStickerSetData {
   type: 'sticker'
-  emojis?: boolean;
-  textColor?: boolean;
+  emojis?: boolean
+  textColor?: boolean
   stickers: DocumentData[]
 }
 
@@ -1441,7 +1462,7 @@ export interface UnknownWebPageAttributeData {
   type: 'unknown'
 }
 
-export type WebPageData = 
+export type WebPageData =
   | WebPagePendingData
   | WebPageNotModifiedData
   | DefaultWebPageData
@@ -1879,7 +1900,7 @@ export interface UnknownWebDocumentData {
   type: 'unknown'
 }
 
-export type ExtendedMediaData = 
+export type ExtendedMediaData =
   | ExtendedMediaPreviewData
   | ExtendedMediaDefaultData
   | ExtendedMediaUnknownData
@@ -1974,7 +1995,7 @@ export interface StoryViewsData {
   // reactions?: Api.TypeReactionCount[]
 }
 
-export type StoryItemData = 
+export type StoryItemData =
   | StoryItemDeletedData
   | StoryItemSkippedData
   | StoryItemDefaultData
@@ -2050,7 +2071,7 @@ export interface GiveawayResultsMediaData {
   unclaimedCount: number
   winners: ToString<bigint>[]
   untilDate: number
-  onlyNewSubscribers?: boolean;
+  onlyNewSubscribers?: boolean
   refunded?: boolean
   additionalPeersCount?: number
   months?: number
@@ -2072,8 +2093,8 @@ export interface LeaderboardUser {
   id: string
   initials: string
   thumbSrc: string
-	name: string
-	points: number
+  name: string
+  points: number
 }
 
 export interface Podium {
@@ -2083,8 +2104,7 @@ export interface Podium {
 }
 
 export interface Ranking {
-  rank: number, 
+  rank: number
   percentile: number
   points: number
 }
-

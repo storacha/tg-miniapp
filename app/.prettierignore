@@ -1,0 +1,13 @@
+node_modules
+.next
+.wrangler
+vendor
+dist
+build
+coverage
+*.log
+*.snap
+.env
+.env.*
+out
+public

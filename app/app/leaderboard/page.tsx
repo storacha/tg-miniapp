@@ -12,41 +12,43 @@ import { getLeaderboard, getRanking } from '@/components/server'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 
 export default function Page() {
-	const { tgSessionString, space } = useGlobal()
-	const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
-	const [ranking, setRanking] = useState<Ranking | undefined>()
-	const { setError } = useError()
-	
-	useEffect(() => {
-		if (!space) return
-		;(async () => {
-			try {
-				const leaderboard = fromResult(await getLeaderboard(tgSessionString))
-				setLeaderboard(leaderboard)
-			} catch (error) {
-				setError(getErrorMessage(error), { title: 'Error fetching leaderboard!' })
-				setLeaderboard([])
-			}
+  const { tgSessionString, space } = useGlobal()
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
+  const [ranking, setRanking] = useState<Ranking | undefined>()
+  const { setError } = useError()
 
-			try {
-				const ranking = fromResult(await getRanking(tgSessionString, space))
-				setRanking(ranking)
-			} catch (error) {
-				setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
-				setRanking(undefined)
-			}
-		})()
-	}, [tgSessionString, space])
+  useEffect(() => {
+    if (!space) return
+    ;(async () => {
+      try {
+        const leaderboard = fromResult(await getLeaderboard(tgSessionString))
+        setLeaderboard(leaderboard)
+      } catch (error) {
+        setError(getErrorMessage(error), {
+          title: 'Error fetching leaderboard!',
+        })
+        setLeaderboard([])
+      }
 
-	return (
-		<Layouts isSinglePage isBackgroundBlue>
-			{ranking ? <Banner {...ranking}/> : ''} 
-			<Podium 
-				firstPlace={leaderboard.length > 0 ? leaderboard[0] : undefined}
-				secondPlace={leaderboard.length > 1 ? leaderboard[1] : undefined}
-				thirdPlace={leaderboard.length > 2 ? leaderboard[2] : undefined}
-			/>
-			<Users users={leaderboard} />
-		</Layouts>
-	)
+      try {
+        const ranking = fromResult(await getRanking(tgSessionString, space))
+        setRanking(ranking)
+      } catch (error) {
+        setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
+        setRanking(undefined)
+      }
+    })()
+  }, [tgSessionString, space])
+
+  return (
+    <Layouts isSinglePage isBackgroundBlue>
+      {ranking ? <Banner {...ranking} /> : ''}
+      <Podium
+        firstPlace={leaderboard.length > 0 ? leaderboard[0] : undefined}
+        secondPlace={leaderboard.length > 1 ? leaderboard[1] : undefined}
+        thirdPlace={leaderboard.length > 2 ? leaderboard[2] : undefined}
+      />
+      <Users users={leaderboard} />
+    </Layouts>
+  )
 }
