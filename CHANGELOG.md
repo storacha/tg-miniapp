@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.1](https://github.com/storacha/tg-miniapp/compare/v2.1.0...v2.1.1) (2025-06-06)
+
+
+### Bug Fixes
+
+* telegram auth message ([45924c3](https://github.com/storacha/tg-miniapp/commit/45924c3f86702bf94651b3ae3a9c861a07b825a6))
+* telegram auth message typo ([02159dc](https://github.com/storacha/tg-miniapp/commit/02159dcf15eeda0a6eb3c4232efeb9319c7afbcb))
+
 ## [2.1.0](https://github.com/storacha/tg-miniapp/compare/v2.0.2...v2.1.0) (2025-06-05)
 
 
