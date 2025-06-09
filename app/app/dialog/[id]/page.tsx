@@ -42,7 +42,7 @@ export default function BackupSelectionPage() {
                 className={`flex justify-between items-center px-5 py-3 border-b border-border cursor-pointer hover:bg-muted ${
                   index === 0 ? 'rounded-t-lg' : ''
                 } ${index === dialogBackups.length - 1 ? 'rounded-b-lg' : ''}`}
-                onClick={(e) => handleBackupClick(e, backup.data.toString())}
+                onClick={(e) => handleBackupClick(e, backup.data)}
               >
                 <div className="flex flex-col">
                   <p className="text-sm text-foreground/60">{`from: ${fromDate}`}</p>

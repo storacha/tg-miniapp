@@ -165,7 +165,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogInf
         entities = {}
 
         const dialogData: DialogData = {
-          ...toEntityData(dialogEntity),
+          ...toEntityData(dialogEntity), // TODO: need to update this since we don't need to have the entity
           entities: entitiesRoot,
           messages: messageLinks,
         }
@@ -209,9 +209,8 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogInf
            */
           fromID = peerID
         }
-
-        entities[fromID] =
-          entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID))
+       
+        entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID)) // TODO: change this to get the sender
 
         let mediaRoot
         if (message.media && isDownloadableMedia(message.media)) {
