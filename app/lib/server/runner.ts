@@ -210,7 +210,17 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogInf
           fromID = peerID
         }
        
-        entities[fromID] = entities[fromID] ?? toEntityData(await ctx.telegram.getEntity(fromID)) // TODO: change this to get the sender
+        entities[fromID] = entities[fromID]
+        if(!entities[fromID]){
+          try {
+            const sender = await message.getSender()
+            if (sender) {
+              entities[fromID] = toEntityData(sender)
+            }
+          } catch (e) {
+            console.error(`Failed to get entity for fromId: ${fromID}`, e)
+          }
+        }
 
         let mediaRoot
         if (message.media && isDownloadableMedia(message.media)) {
