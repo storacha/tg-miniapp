@@ -6,7 +6,6 @@ This is a full-stack app built with [Next.js](https://nextjs.org/) using Node.js
 
 If you're submitting a pull request, be sure to follow our [commit message guidelines](#how-should-i-write-my-commits).
 
-
 ## 🛠️ Local Development Setup
 
 ### 1. Clone the repo and install dependencies
@@ -30,7 +29,6 @@ Edit the `.env` file with your credentials as needed.
 pnpm dev
 ```
 
-
 ### 🌐 Run it inside Telegram
 
 Since this app needs to be launched within Telegram, you'll need a bot and a Mini App configured with Telegram.
@@ -45,8 +43,6 @@ ngrok http 3000 --url spicy-rooster-fondly.ngrok-free.app
 
 > ⚠️ Tip: Use a static domain to avoid updating your Telegram app settings every time the URL changes.
 
-
-
 ### 🤖 Set up the Telegram Bot
 
 ### 5. Use Telegram’s test environment
@@ -55,25 +51,24 @@ Since this is for development, it's best to start with Telegram’s test environ
 
 ### 6. Create a bot using [BotFather](https://t.me/botfather)
 
-* Start a chat with BotFather.
-* Use the `/newbot` command.
-* Follow the instructions to create your bot and get your **bot token**.
-
+- Start a chat with BotFather.
+- Use the `/newbot` command.
+- Follow the instructions to create your bot and get your **bot token**.
 
 ### 🧩 Create a Telegram Mini App (TMA)
 
 ### 7. Link your bot to the Mini App
 
-* In the BotFather chat, send `/newapp`.
-* Follow the steps to:
+- In the BotFather chat, send `/newapp`.
+- Follow the steps to:
 
-  * Link your bot.
-  * Set your `ngrok` URL as the app endpoint.
-* Your app will be available at:
+  - Link your bot.
+  - Set your `ngrok` URL as the app endpoint.
+
+- Your app will be available at:
   `https://t.me/<your_bot_username>/<your_app_name>`
 
 🔗 Extra reference: [Creating a new app – Telegram Docs](https://docs.telegram-mini-apps.com/platform/creating-new-app)
-
 
 ## 🔐 Telegram API Access (for chat backup)
 
@@ -88,6 +83,29 @@ While the Bot API lets you interact with your own bot, it **does not** provide a
 
 These credentials allow your app to authenticate as a user (not just a bot) and access messages and chat history through TDLib.
 
+### Database Setup
+
+We use PostgreSQL for data storage. The easiest way to get started is using Docker Compose (optional):
+
+```bash
+# From the root directory of the project
+docker compose up -d
+```
+
+This will start a PostgreSQL server with the following configuration:
+
+- Host: localhost
+- Port: 5432
+- Username: admin
+- Password: tarjay
+- Database: tg_backups_dev
+
+Run database migrations with:
+
+```bash
+cd app
+pnpm db:migrate
+```
 
 ## 📝 How should I write my commits?
 
@@ -95,6 +113,6 @@ We use [Conventional Commits](https://www.conventionalcommits.org/) to power aut
 
 ### Use these prefixes:
 
-* `fix:` – Bug fixes → *SemVer patch*
-* `feat:` – New features → *SemVer minor*
-* `feat!:`, `fix!:`, etc. – Breaking changes → *SemVer major*
+- `fix:` – Bug fixes → _SemVer patch_
+- `feat:` – New features → _SemVer minor_
+- `feat!:`, `fix!:`, etc. – Breaking changes → _SemVer major_
