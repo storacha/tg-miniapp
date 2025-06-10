@@ -23,7 +23,9 @@ export default function Page() {
 				const leaderboard = fromResult(await getLeaderboard(tgSessionString))
 				setLeaderboard(leaderboard)
 			} catch (error) {
-				setError(getErrorMessage(error), { title: 'Error fetching leaderboard!' })
+				const title = 'Error fetching leaderboard!' 
+				console.error(title, error)
+				setError(getErrorMessage(error), { title })
 				setLeaderboard([])
 			}
 
@@ -32,7 +34,9 @@ export default function Page() {
 					const ranking = fromResult(await getRanking(tgSessionString, space))	
 					setRanking(ranking)
 				} catch (error) {
-					setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
+					const title = 'Error fetching ranking!'
+					console.error(title, error)
+					setError(getErrorMessage(error), { title})
 					setRanking(undefined)
 				}
 			}

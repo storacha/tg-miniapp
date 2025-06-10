@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DialogInfoMap, Period } from '@/api'
+import { DialogsById, Period } from '@/api'
 import { useGlobal } from '@/zustand/global'
 import { useBackups } from '@/providers/backup'
 import Dates from '@/components/backup/dates'
@@ -18,7 +18,7 @@ export default function Page() {
 	const [step, setStep] = useState(0)
 	const [starting, setStarting] = useState(false)
 	const [period, setPeriod] = useState<Period>([0])
-	const [chats, setChats] = useState<DialogInfoMap>({})
+	const [chats, setChats] = useState<DialogsById>({})
 
   function handleBack() {
     if (step === 0) {

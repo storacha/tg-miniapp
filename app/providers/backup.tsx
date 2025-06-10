@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode, PropsWithChildren, useState, useEffect, useCallback } from 'react'
 import { cloudStorage} from '@telegram-apps/sdk-react'
-import { Backup, DialogInfoMap, JobID, JobStorage, PendingJob, Period, RestoredBackup } from '@/api'
+import { Backup, DialogsById, JobID, JobStorage, PendingJob, Period, RestoredBackup } from '@/api'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
 import {
@@ -39,7 +39,7 @@ export interface ContextState {
 }
 
 export interface ContextActions {
-  addBackupJob: (chats: DialogInfoMap, period: Period) => Promise<JobID | undefined>
+  addBackupJob: (chats: DialogsById, period: Period) => Promise<JobID | undefined>
   removeBackupJob: (job: JobID) => Promise<void>
   restoreBackup: (
     backupCid: string,
@@ -187,7 +187,7 @@ export const Provider = ({
   }
 
   const addBackupJob = useCallback(
-   async (dialogs: DialogInfoMap, period: Period): Promise<string | undefined> => {
+   async (dialogs: DialogsById, period: Period): Promise<string | undefined> => {
     if (!jobStore) {
       setError('missing job store')
       return undefined

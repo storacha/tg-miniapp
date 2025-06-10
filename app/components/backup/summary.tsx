@@ -1,11 +1,11 @@
 import { SpaceDID } from '@storacha/ui-react'
-import { DialogInfoMap, Period } from '@/api'
+import { DialogsById, Period } from '@/api'
 import { Button } from '../ui/button'
 import { FormEventHandler } from 'react'
 import { useBackups } from '@/providers/backup'
 
 export interface SummaryProps {
-	chats: DialogInfoMap
+	chats: DialogsById
 	space: SpaceDID
   period: Period
   starting: boolean

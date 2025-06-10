@@ -1,5 +1,5 @@
 import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react'
-import { DialogInfo, DialogInfoMap } from '@/api'
+import { DialogInfo, DialogsById } from '@/api'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
 import { Input } from '@/components/ui/input'
@@ -26,8 +26,8 @@ const toSearchFilter = (t: string) => (dialog: DialogInfo) => {
 }
 
 export interface ChatsProps {
-	selections: DialogInfoMap
-	onSelectionsChange: (selections: DialogInfoMap) => unknown
+	selections: DialogsById
+	onSelectionsChange: (selections: DialogsById) => unknown
 	onSubmit: () => unknown
 }
 

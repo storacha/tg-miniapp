@@ -82,7 +82,7 @@ export interface Options {
   onShardStored?: (meta: CARMetadata) => unknown
 }
 
-export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogInfoMap, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
+export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsById, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
   const dialogDatas: BackupData['dialogs'] = {}
   const pendingDialogIDs = Object.keys(dialogs)
 
@@ -190,7 +190,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogInf
       while (true) {
         let message, done
         try {
-          ({ value: message, done } = await messageIterator!.next())
+          ({ value: message, done } = await messageIterator.next())
         } catch (error) {
           if (error instanceof Error && error.message?.includes("Could not find the input entity for ")) {
             await syncDialogEntity(ctx.telegram, dialogEntity.id)

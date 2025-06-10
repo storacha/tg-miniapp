@@ -1,6 +1,6 @@
 import postgres from 'postgres'
 import { Signer } from '@aws-sdk/rds-signer'
-import { BaseJob, DialogInfoMap, Job, JobStatus, Ranking, SpaceDID } from '@/api'
+import { BaseJob, DialogsById, Job, JobStatus, Ranking, SpaceDID } from '@/api'
 import { parseWithUIntArrays, stringifyWithUIntArrays } from '../utils'
 
 const {
@@ -71,7 +71,7 @@ export interface DbJob {
   userId: string
   status: JobStatus
   space: SpaceDID
-  dialogs: DialogInfoMap
+  dialogs: DialogsById
   periodFrom: number
   periodTo: number
   progress: number | null
@@ -305,12 +305,8 @@ const objectToUint8Array = (obj: Record<string, number>) => {
    return new Uint8Array(Object.values(obj))
 }
 
-const objectToUint8Array = (obj: Record<string, number>) => {
-   return new Uint8Array(Object.values(obj))
-}
-
-const fixDialogInfoMap = (dialogs: DialogInfoMap): DialogInfoMap => {
-  const fixed: DialogInfoMap = {};
+const fixDialogInfoMap = (dialogs: DialogsById): DialogsById => {
+  const fixed: DialogsById = {};
   for (const [id, info] of Object.entries(dialogs)) {
     if (info.photo?.strippedThumb && !(info.photo.strippedThumb instanceof Uint8Array)) {
       info.photo.strippedThumb = objectToUint8Array(info.photo.strippedThumb)
