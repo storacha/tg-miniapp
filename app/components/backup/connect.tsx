@@ -136,97 +136,103 @@ export const ConnectError = ({ open, error, onDismiss }: ConnectErrorProps) => {
   )
 }
 
-export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?: () => void  }) => {
-	const [{ user }] = useTelegram()
-	const [{ accounts, client }] = useStoracha()
-	const { setIsStorachaAuthorized, setSpace } = useGlobal()
+export const StorachaConnect = ({
+  open,
+  onDismiss,
+}: {
+  open: boolean
+  onDismiss?: () => void
+}) => {
+  const [{ user }] = useTelegram()
+  const [{ accounts, client }] = useStoracha()
+  const { setIsStorachaAuthorized, setSpace } = useGlobal()
 
-	const [email, setEmail] = useState('')
-	const [connErr, setConnErr] = useState<Error>()
-	const [verifying, setVerifying] = useState(false)
-	const [isPlanGateOpen, setIsPlanGateOpen] = useState(false)
+  const [email, setEmail] = useState('')
+  const [connErr, setConnErr] = useState<Error>()
+  const [verifying, setVerifying] = useState(false)
+  const [isPlanGateOpen, setIsPlanGateOpen] = useState(false)
 
-	const account = accounts[0]
-	const spaceName = `${spaceNamePrefix} (${user?.id})`
-	
-	const handleConnectSubmit = async () => {
-		try {
-			if (!client) throw new Error('missing Storacha client instance')
-			setConnErr(undefined)
-			setVerifying(true)
+  const account = accounts[0]
+  const spaceName = `${spaceNamePrefix} (${user?.id})`
 
-			const account = await client.login(parseEmail(email))
-			const plan = await account.plan.get()
+  const handleConnectSubmit = async () => {
+    try {
+      if (!client) throw new Error('missing Storacha client instance')
+      setConnErr(undefined)
+      setVerifying(true)
 
-			if(plan.ok?.product) {
-				const space = client.spaces().find(s => s.name === spaceName)
-				if (space) {
-					await client.setCurrentSpace(space.did())
-					setSpace(space.did())
-				} else {
-					const space = await client.createSpace(spaceName, { account })
-					await client.setCurrentSpace(space.did())
-					setSpace(space.did())
-				}
-				setIsStorachaAuthorized(true)
-			} else {
-				console.log('waiting for account plan to be ready...')
-				setIsPlanGateOpen(true)
-			}
-		} catch (err) {
-			console.error(err)
-			setConnErr(err as Error)
-		} finally {
-			setVerifying(false)
-		}
-	}
+      const account = await client.login(parseEmail(email))
+      const plan = await account.plan.get()
 
-	const waitForPlanSetup = async () => {
-		console.log('waiting for plan setup...')
-		try {
-			if (!client) throw new Error('missing Storacha client instance')
-			if (!account) throw new Error('missing account')
+      if (plan.ok?.product) {
+        const space = client.spaces().find((s) => s.name === spaceName)
+        if (space) {
+          await client.setCurrentSpace(space.did())
+          setSpace(space.did())
+        } else {
+          const space = await client.createSpace(spaceName, { account })
+          await client.setCurrentSpace(space.did())
+          setSpace(space.did())
+        }
+        setIsStorachaAuthorized(true)
+      } else {
+        console.log('waiting for account plan to be ready...')
+        setIsPlanGateOpen(true)
+      }
+    } catch (err) {
+      console.error(err)
+      setConnErr(err as Error)
+    } finally {
+      setVerifying(false)
+    }
+  }
 
-			await account.plan.wait() 
-			const space = await client.createSpace(spaceName, { account })
-			await client.setCurrentSpace(space.did())
-			setSpace(space.did())
+  const waitForPlanSetup = async () => {
+    console.log('waiting for plan setup...')
+    try {
+      if (!client) throw new Error('missing Storacha client instance')
+      if (!account) throw new Error('missing account')
 
-			setIsStorachaAuthorized(true)
-			setIsPlanGateOpen(false)
-		} catch (err) {
-			console.error(err)
-			setConnErr(err as Error)
-		}
-	}
+      await account.plan.wait()
+      const space = await client.createSpace(spaceName, { account })
+      await client.setCurrentSpace(space.did())
+      setSpace(space.did())
 
-	return (
-        <>
-            <ConnectError
-                open={!!(open && connErr)}
-                error={connErr}
-                onDismiss={() => {
-                    setConnErr(undefined)
-                    if (onDismiss) onDismiss()
-                }}
-            />
-            <Verify
-                open={!!(open && verifying)}
-                email={email}
-                onDismiss={onDismiss}
-            />
-            <PlanGate 
-                open={!!(open && isPlanGateOpen)}
-                onSubmit={waitForPlanSetup}
-                onDismiss={onDismiss}
-            />
-            <Connect
-                open={!!(open && !connErr && !verifying && !isPlanGateOpen)}
-                email={email}
-                onEmailChange={setEmail}
-                onSubmit={handleConnectSubmit}
-                onDismiss={onDismiss}
-            />
-        </>
-    )
+      setIsStorachaAuthorized(true)
+      setIsPlanGateOpen(false)
+    } catch (err) {
+      console.error(err)
+      setConnErr(err as Error)
+    }
+  }
+
+  return (
+    <>
+      <ConnectError
+        open={!!(open && connErr)}
+        error={connErr}
+        onDismiss={() => {
+          setConnErr(undefined)
+          if (onDismiss) onDismiss()
+        }}
+      />
+      <Verify
+        open={!!(open && verifying)}
+        email={email}
+        onDismiss={onDismiss}
+      />
+      <PlanGate
+        open={!!(open && isPlanGateOpen)}
+        onSubmit={waitForPlanSetup}
+        onDismiss={onDismiss}
+      />
+      <Connect
+        open={!!(open && !connErr && !verifying && !isPlanGateOpen)}
+        email={email}
+        onEmailChange={setEmail}
+        onSubmit={handleConnectSubmit}
+        onDismiss={onDismiss}
+      />
+    </>
+  )
 }

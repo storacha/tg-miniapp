@@ -172,7 +172,7 @@ importers:
         version: 2.5.5
       tailwindcss-animate:
         specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.1(ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)))
+        version: 1.0.7(tailwindcss@3.4.1(ts-node@9.1.1(typescript@5.5.4)))
       telegram:
         specifier: 2.26.8
         version: 2.26.8
@@ -191,7 +191,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: ^1.13.8
-        version: 1.13.12(bufferutil@4.0.9)(utf-8-validate@6.0.5)(vercel@42.3.0(@swc/core@1.11.29(@swc/helpers@0.5.17))(encoding@0.1.13))(wrangler@4.10.0(bufferutil@4.0.9)(utf-8-validate@6.0.5))
+        version: 1.13.12(bufferutil@4.0.9)(utf-8-validate@5.0.10)(vercel@42.3.0(@swc/core@1.11.29(@swc/helpers@0.5.17))(encoding@0.1.13))(wrangler@4.10.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
       '@types/jsonwebtoken':
         specifier: ^9.0.9
         version: 9.0.9
@@ -218,13 +218,13 @@ importers:
         version: 3.5.3
       tailwindcss:
         specifier: ^3.4.1
-        version: 3.4.1(ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))
+        version: 3.4.1(ts-node@9.1.1(typescript@5.5.4))
       typescript:
         specifier: 5.5.4
         version: 5.5.4
       wrangler:
         specifier: ^4.6.0
-        version: 4.10.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+        version: 4.10.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
   app/vendor/telegram:
     dependencies:
@@ -270,7 +270,7 @@ importers:
         version: 4.0.9
       utf-8-validate:
         specifier: ^5.0.5
-        version: 6.0.5
+        version: 5.0.10
     devDependencies:
       '@babel/core':
         specifier: ^7.12.13
@@ -5571,6 +5571,10 @@ packages:
   lodash.once@4.1.1:
     resolution: {integrity: sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==}
 
+  log-update@6.1.0:
+    resolution: {integrity: sha512-9ie8ItPR6tjY5uYJh8K/Zrv/RMZ5VOlOWvtZdEHYSTFKZfIBPQa9tOAEeAWhd+AnIneLJ22w5fjOYtoutpWq5w==}
+    engines: {node: '>=18'}
+
   long@5.3.2:
     resolution: {integrity: sha512-mNAgZ1GmyNhD7AuqnTG3/VQ26o760+ZYBPKjPvugO8+nLbYfX6TVpJPseBvopbdY+qpZ/lKUnmEc1LeZYS3QAA==}
 
@@ -5831,6 +5835,10 @@ packages:
 
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
+
+  nano-spawn@1.0.2:
+    resolution: {integrity: sha512-21t+ozMQDAL/UGgQVBbZ/xXvNO10++ZPuTmKRO8k9V3AClVRht49ahtDjfY8l1q6nSHOrE5ASfthzH3ol6R/hg==}
+    engines: {node: '>=20.17'}
 
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
@@ -7174,10 +7182,6 @@ packages:
 
   utf-8-validate@5.0.10:
     resolution: {integrity: sha512-Z6czzLq4u8fPOyx7TU6X3dvUZVvoJmxSQ+IcrlmagKhilxlhZgxPK6C5Jqbkw1IDUmFTM+cz9QDnnLTwDz/2gQ==}
-    engines: {node: '>=6.14.2'}
-
-  utf-8-validate@6.0.5:
-    resolution: {integrity: sha512-EYZR+OpIXp9Y1eG1iueg8KRsY8TuT8VNgnanZ0uA3STqhHQTLwbl+WX76/9X5OY12yQubymBpaBSmMPkSTQcKA==}
     engines: {node: '>=6.14.2'}
 
   util-deprecate@1.0.2:
@@ -9331,7 +9335,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.13.12(bufferutil@4.0.9)(utf-8-validate@6.0.5)(vercel@42.3.0(@swc/core@1.11.29(@swc/helpers@0.5.17))(encoding@0.1.13))(wrangler@4.10.0(bufferutil@4.0.9)(utf-8-validate@6.0.5))':
+  '@cloudflare/next-on-pages@1.13.12(bufferutil@4.0.9)(utf-8-validate@5.0.10)(vercel@42.3.0(@swc/core@1.11.29(@swc/helpers@0.5.17))(encoding@0.1.13))(wrangler@4.10.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
     dependencies:
       acorn: 8.14.0
       ast-types: 0.14.2
@@ -9341,12 +9345,12 @@ snapshots:
       cookie: 0.5.0
       esbuild: 0.15.18
       js-yaml: 4.1.0
-      miniflare: 3.20250408.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      miniflare: 3.20250408.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       package-manager-manager: 0.2.0
       pcre-to-regexp: 1.1.0
       semver: 7.7.1
       vercel: 42.3.0(@swc/core@1.11.29(@swc/helpers@0.5.17))(encoding@0.1.13)
-      wrangler: 4.10.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      wrangler: 4.10.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -9824,7 +9828,7 @@ snapshots:
 
   '@jest/pattern@30.0.0-beta.3':
     dependencies:
-      '@types/node': 15.14.9
+      '@types/node': 22.13.4
       jest-regex-util: 30.0.0-beta.3
     optional: true
 
@@ -9942,7 +9946,7 @@ snapshots:
       '@jest/schemas': 30.0.0-beta.3
       '@types/istanbul-lib-coverage': 2.0.6
       '@types/istanbul-reports': 3.0.4
-      '@types/node': 15.14.9
+      '@types/node': 22.13.4
       '@types/yargs': 17.0.33
       chalk: 4.1.2
     optional: true
@@ -14024,7 +14028,7 @@ snapshots:
   jest-haste-map@30.0.0-beta.3:
     dependencies:
       '@jest/types': 30.0.0-beta.3
-      '@types/node': 15.14.9
+      '@types/node': 22.13.4
       anymatch: 3.1.3
       fb-watchman: 2.0.2
       graceful-fs: 4.2.11
@@ -14185,7 +14189,7 @@ snapshots:
   jest-util@30.0.0-beta.3:
     dependencies:
       '@jest/types': 30.0.0-beta.3
-      '@types/node': 15.14.9
+      '@types/node': 22.13.4
       chalk: 4.1.2
       ci-info: 4.2.0
       graceful-fs: 4.2.11
@@ -14227,7 +14231,7 @@ snapshots:
 
   jest-worker@30.0.0-beta.3:
     dependencies:
-      '@types/node': 15.14.9
+      '@types/node': 22.13.4
       '@ungap/structured-clone': 1.3.0
       jest-util: 30.0.0-beta.3
       merge-stream: 2.0.0
@@ -14426,6 +14430,14 @@ snapshots:
 
   lodash.once@4.1.1: {}
 
+  log-update@6.1.0:
+    dependencies:
+      ansi-escapes: 7.0.0
+      cli-cursor: 5.0.0
+      slice-ansi: 7.1.0
+      strip-ansi: 7.1.0
+      wrap-ansi: 9.0.0
+
   long@5.3.2: {}
 
   loose-envify@1.4.0:
@@ -14532,7 +14544,7 @@ snapshots:
   mimic-response@3.1.0:
     optional: true
 
-  miniflare@3.20250408.0(bufferutil@4.0.9)(utf-8-validate@6.0.5):
+  miniflare@3.20250408.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       acorn: 8.14.0
@@ -14542,14 +14554,14 @@ snapshots:
       stoppable: 1.1.0
       undici: 5.29.0
       workerd: 1.20250408.0
-      ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       youch: 3.3.4
       zod: 3.22.3
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  miniflare@4.20250409.0(bufferutil@4.0.9)(utf-8-validate@6.0.5):
+  miniflare@4.20250409.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       acorn: 8.14.0
@@ -14559,7 +14571,7 @@ snapshots:
       stoppable: 1.1.0
       undici: 5.29.0
       workerd: 1.20250409.0
-      ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       youch: 3.3.4
       zod: 3.22.3
     transitivePeerDependencies:
@@ -14670,6 +14682,8 @@ snapshots:
       any-promise: 1.3.0
       object-assign: 4.1.1
       thenify-all: 1.6.0
+
+  nano-spawn@1.0.2: {}
 
   nanoid@3.3.11: {}
 
@@ -14992,13 +15006,13 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.5.2
 
-  postcss-load-config@4.0.2(postcss@8.5.2)(ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)):
+  postcss-load-config@4.0.2(postcss@8.5.2)(ts-node@9.1.1(typescript@5.5.4)):
     dependencies:
       lilconfig: 3.1.3
       yaml: 2.7.0
     optionalDependencies:
       postcss: 8.5.2
-      ts-node: 10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)
+      ts-node: 9.1.1(typescript@5.5.4)
 
   postcss-nested@6.2.0(postcss@8.5.2):
     dependencies:
@@ -15708,11 +15722,11 @@ snapshots:
 
   tailwind-merge@2.5.5: {}
 
-  tailwindcss-animate@1.0.7(tailwindcss@3.4.1(ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))):
+  tailwindcss-animate@1.0.7(tailwindcss@3.4.1(ts-node@9.1.1(typescript@5.5.4))):
     dependencies:
-      tailwindcss: 3.4.1(ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))
+      tailwindcss: 3.4.1(ts-node@9.1.1(typescript@5.5.4))
 
-  tailwindcss@3.4.1(ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)):
+  tailwindcss@3.4.1(ts-node@9.1.1(typescript@5.5.4)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -15731,7 +15745,7 @@ snapshots:
       postcss: 8.5.2
       postcss-import: 15.1.0(postcss@8.5.2)
       postcss-js: 4.0.1(postcss@8.5.2)
-      postcss-load-config: 4.0.2(postcss@8.5.2)(ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))
+      postcss-load-config: 4.0.2(postcss@8.5.2)(ts-node@9.1.1(typescript@5.5.4))
       postcss-nested: 6.2.0(postcss@8.5.2)
       postcss-selector-parser: 6.1.2
       resolve: 1.22.10
@@ -15927,16 +15941,8 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.11.29(@swc/helpers@0.5.17)
 
-  ts-node@10.9.2(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4):
+  ts-node@9.1.1(typescript@4.9.5):
     dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.11
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 20.0.0
-      acorn: 8.14.1
-      acorn-walk: 8.3.4
       arg: 4.1.3
       create-require: 1.1.1
       diff: 4.0.2
@@ -15944,9 +15950,6 @@ snapshots:
       source-map-support: 0.5.21
       typescript: 4.9.5
       yn: 3.1.1
-    optionalDependencies:
-      '@swc/core': 1.11.29(@swc/helpers@0.5.17)
-    optional: true
 
   ts-node@9.1.1(typescript@5.5.4):
     dependencies:
@@ -16150,11 +16153,6 @@ snapshots:
   utf-8-validate@5.0.10:
     dependencies:
       node-gyp-build: 4.8.4
-
-  utf-8-validate@6.0.5:
-    dependencies:
-      node-gyp-build: 4.8.4
-    optional: true
 
   util-deprecate@1.0.2: {}
 
@@ -16387,13 +16385,13 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20250409.0
       '@cloudflare/workerd-windows-64': 1.20250409.0
 
-  wrangler@4.10.0(bufferutil@4.0.9)(utf-8-validate@6.0.5):
+  wrangler@4.10.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.0
       '@cloudflare/unenv-preset': 2.3.1(unenv@2.0.0-rc.15)(workerd@1.20250409.0)
       blake3-wasm: 2.1.5
       esbuild: 0.24.2
-      miniflare: 4.20250409.0(bufferutil@4.0.9)(utf-8-validate@6.0.5)
+      miniflare: 4.20250409.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       path-to-regexp: 6.3.0
       unenv: 2.0.0-rc.15
       workerd: 1.20250409.0
@@ -16441,10 +16439,10 @@ snapshots:
       signal-exit: 4.1.0
     optional: true
 
-  ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@6.0.5):
+  ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10):
     optionalDependencies:
       bufferutil: 4.0.9
-      utf-8-validate: 6.0.5
+      utf-8-validate: 5.0.10
 
   xdg-app-paths@5.1.0:
     dependencies:

@@ -20,7 +20,7 @@
   "lint-staged": {
     "app/**/*.{ts,tsx}": [
       "prettier --write",
-      "next lint --fix"
+      "cd app && pnpm lint --fix"
     ],
     "!app/vendor/**/*": [],
     "*.{json,md}": [
