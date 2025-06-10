@@ -183,7 +183,9 @@ export function getDB(): TGDatabase {
     },
     async createJob(input) {
       const results = await sql<DbJob[]>`
-        insert into jobs ${sql(input)}
+        insert into jobs ${sql(
+          // @ts-expect-error Uint8Array is automatically converted to object
+          input)} 
         returning *
       `
       if (!results[0]) {
@@ -213,7 +215,9 @@ export function getDB(): TGDatabase {
     },
     async updateJob(id, input) {
       const results = await sql<DbJob[]>`
-        update jobs set ${sql(toDbJobParams(input))}
+        update jobs set ${sql(
+          // @ts-expect-error Uint8Array is automatically converted to object
+          toDbJobParams(input))}
         where id = ${id}
         returning *
       `
@@ -297,14 +301,33 @@ const toDbJobParams = (job: Job): DbJobParams => {
   }
 }
 
-const fromDbJob = (dbJob: DbJob): Job => {
-  const baseJob: BaseJob = {
+const objectToUint8Array = (obj: Record<string, number>) => {
+   return new Uint8Array(Object.values(obj))
+}
+
+const objectToUint8Array = (obj: Record<string, number>) => {
+   return new Uint8Array(Object.values(obj))
+}
+
+const fixDialogInfoMap = (dialogs: DialogInfoMap): DialogInfoMap => {
+  const fixed: DialogInfoMap = {};
+  for (const [id, info] of Object.entries(dialogs)) {
+    if (info.photo?.strippedThumb && !(info.photo.strippedThumb instanceof Uint8Array)) {
+      info.photo.strippedThumb = objectToUint8Array(info.photo.strippedThumb)
+    }
+    fixed[id] = info
+  }
+  return fixed
+}
+
+const fromDbJob = (dbJob: DbJob) : Job =>{
+  const baseJob : BaseJob = {
     id: dbJob.id,
     status: dbJob.status,
     params: {
       space: dbJob.space,
-      dialogs: dbJob.dialogs,
-      period: [dbJob.periodFrom, dbJob.periodTo],
+      dialogs: fixDialogInfoMap(dbJob.dialogs),
+      period: [dbJob.periodFrom, dbJob.periodTo]
     },
     created: dbJob.createdAt.getTime(),
   }

@@ -216,14 +216,11 @@ export interface DialogData extends EntityData {
   >
 }
 
-export interface DialogInfo {
-  id?: ToString<EntityID>
-  title: string
+export interface DialogInfo extends EntityData {
   initials: string
-  thumbSrc: string
   isPublic: boolean
-  type: EntityType
-  entityId?: ToString<EntityID>
+  dialogId?: ToString<EntityID> // This is the entity ID + a prefix indicating the type of dialog
+  accessHash?: string
 }
 
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>

@@ -22,7 +22,7 @@ const filterPublic = (dialog: DialogInfo) => dialog.isPublic
 const noFilter = () => true
 
 const toSearchFilter = (t: string) => (dialog: DialogInfo) => {
-  return dialog.title.toLowerCase().includes(t.toLowerCase())
+	return dialog.name.toLowerCase().includes(t.toLowerCase())
 }
 
 export interface ChatsProps {
