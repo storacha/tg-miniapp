@@ -66,7 +66,7 @@ export function HumanodeAuthLink ({ onClick, className }: { className?: string; 
         if (archive?.ok) {
           setState(base64url.encode(archive.ok))
         } else {
-          console.warn('could not create auth delegation')
+          console.warn('Could not create auth delegation.', archive.error)
         }
       }
     })()

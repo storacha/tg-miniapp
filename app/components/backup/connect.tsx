@@ -162,46 +162,33 @@ export const StorachaConnect = ({ open, onDismiss }: { open: boolean, onDismiss?
 		}
 	}
 
-	if (open && connErr) {
-		return (
-		<ConnectError
-			open={true}
-			error={connErr}
-			onDismiss={() => {
-				setConnErr(undefined)
-				if (onDismiss) onDismiss()
-			}}
-		/>
-		)
-	}
-
-	if (open && verifying) {
-		return (
-		<Verify
-			open={true}
-			email={email}
-			onDismiss={onDismiss}
-		/>
-		)
-	}
-
-	if(open && isPlanGateOpen) {
-		return (
-			<PlanGate 
-				open={true} 
-				onSubmit={waitForPlanSetup} 
-				onDismiss={onDismiss}
-			/>
-		)
-	}
-
 	return (
-		<Connect
-			open={open}
-			email={email}
-			onEmailChange={setEmail}
-			onSubmit={handleConnectSubmit}
-			onDismiss={onDismiss}
-		/>
-	)
+        <>
+            <ConnectError
+                open={!!(open && connErr)}
+                error={connErr}
+                onDismiss={() => {
+                    setConnErr(undefined)
+                    if (onDismiss) onDismiss()
+                }}
+            />
+            <Verify
+                open={!!(open && verifying)}
+                email={email}
+                onDismiss={onDismiss}
+            />
+            <PlanGate 
+                open={!!(open && isPlanGateOpen)}
+                onSubmit={waitForPlanSetup}
+                onDismiss={onDismiss}
+            />
+            <Connect
+                open={!!(open && !connErr && !verifying && !isPlanGateOpen)}
+                email={email}
+                onEmailChange={setEmail}
+                onSubmit={handleConnectSubmit}
+                onDismiss={onDismiss}
+            />
+        </>
+    )
 }
