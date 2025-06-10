@@ -39,7 +39,7 @@ export const getServerConstants = () => {
     SERVER_IDENTITY_PRIVATE_KEY,
     TELEGRAM_BOT_TOKEN,
     SESSION_COOKIE_NAME,
-    SESSION_PASSWORD
+    SESSION_PASSWORD,
   }
   return cachedServerConstants
 }
@@ -113,12 +113,20 @@ export const serviceConnection = connect<Service>({
     url: serviceURL,
     method: 'POST',
     headers: {
-      'X-Client': `Storacha/1 (js; browser) TelegramMiniapp/${version.split('.')[0]}`,
+      'X-Client': `Storacha/1 (js; browser) TelegramMiniapp/${
+        version.split('.')[0]
+      }`,
     },
   }),
 })
 
-export const telegramAPIID = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? die('NEXT_PUBLIC_TELEGRAM_API_ID'))
-export const telegramAPIHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? die('NEXT_PUBLIC_TELEGRAM_API_HASH')
+export const telegramAPIID = parseInt(
+  process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? die('NEXT_PUBLIC_TELEGRAM_API_ID')
+)
+export const telegramAPIHash =
+  process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ??
+  die('NEXT_PUBLIC_TELEGRAM_API_HASH')
 
-export const mRachaPointsPerByte = parseFloat(process.env.NEXT_PUBLIC_POINTS_PER_BYTE ?? die('NEXT_PUBLIC_POINTS_PER_BYTE'))
+export const mRachaPointsPerByte = parseFloat(
+  process.env.NEXT_PUBLIC_POINTS_PER_BYTE ?? die('NEXT_PUBLIC_POINTS_PER_BYTE')
+)

@@ -1,17 +1,30 @@
 {
-	"name": "tg-mini-app",
-	"private": true,
-	"scripts": {
-		"app:dev": "pnpm --filter app dev"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
-		"@types/node": "^22.10.2",
-		"typescript": "^5.7.2"
-	},
-	"packageManager": "pnpm@9.0.0",
-	"engines": {
-		"node": ">=18"
-	},
-	"version": "2.1.1"
+  "name": "tg-mini-app",
+  "private": true,
+  "scripts": {
+    "app:dev": "pnpm --filter app dev",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "^22.10.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.0",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "version": "2.1.1",
+  "lint-staged": {
+    "app/**/*.{ts,tsx}": [
+      "prettier --write",
+      "cd app && pnpm lint --fix"
+    ],
+    "!app/vendor/**/*": [],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
 }

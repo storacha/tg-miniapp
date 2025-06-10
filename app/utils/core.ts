@@ -6,26 +6,26 @@ import {
   initData,
   $debug,
   init as initSDK,
-} from "@telegram-apps/sdk-react";
+} from '@telegram-apps/sdk-react'
 
 export function init(debug: boolean): void {
-  $debug.set(debug);
+  $debug.set(debug)
 
-  initSDK();
+  initSDK()
 
   if (backButton.isSupported()) {
-    backButton.mount();
+    backButton.mount()
   }
 
-  miniApp.mount();
-  themeParams.mount();
-  initData.restore();
+  miniApp.mount()
+  themeParams.mount()
+  initData.restore()
 
   void viewport.mount().catch((e) => {
-    console.error("Something went wrong mounting the viewport", e);
-  });
+    console.error('Something went wrong mounting the viewport', e)
+  })
 
   if (debug) {
-    import("eruda").then((lib) => lib.default.init()).catch(console.error);
+    import('eruda').then((lib) => lib.default.init()).catch(console.error)
   }
 }

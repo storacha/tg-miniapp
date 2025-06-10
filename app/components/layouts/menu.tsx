@@ -1,4 +1,9 @@
-import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from '@/components/ui/drawer'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerTrigger,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { AlignJustify, LogOut } from 'lucide-react'
 import { useTelegram } from '@/providers/telegram'
@@ -7,50 +12,61 @@ import { MouseEventHandler } from 'react'
 import { useW3 as useStoracha } from '@storacha/ui-react'
 
 export function Menu() {
-	const [{ user }] = useTelegram()
-	const [, { logout }] = useStoracha()
-	const { phoneNumber, setIsTgAuthorized, setIsStorachaAuthorized, setPhoneNumber, setSpace, setTgSessionString } = useGlobal()
-	const initials = user?.firstName ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase() : ''
+  const [{ user }] = useTelegram()
+  const [, { logout }] = useStoracha()
+  const {
+    phoneNumber,
+    setIsTgAuthorized,
+    setIsStorachaAuthorized,
+    setPhoneNumber,
+    setSpace,
+    setTgSessionString,
+  } = useGlobal()
+  const initials = user?.firstName
+    ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase()
+    : ''
 
-	const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async e => {
-		e.preventDefault()
-		if (!confirm('Are you sure you want to log out?')) return
-		setPhoneNumber('')
-		setSpace(null)
-		setTgSessionString('')
-		// TODO: remove other stuff in global?
-		// TODO: I don't think this actually does anything 😱
-		// There's no client logout method (there is in Python)
-		setIsTgAuthorized(false)
-		await logout()
-		setIsStorachaAuthorized(false)
-	}
+  const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async (e) => {
+    e.preventDefault()
+    if (!confirm('Are you sure you want to log out?')) return
+    setPhoneNumber('')
+    setSpace(null)
+    setTgSessionString('')
+    // TODO: remove other stuff in global?
+    // TODO: I don't think this actually does anything 😱
+    // There's no client logout method (there is in Python)
+    setIsTgAuthorized(false)
+    await logout()
+    setIsStorachaAuthorized(false)
+  }
 
-	return (
-		<Drawer>
-			<DrawerTrigger>
-				<AlignJustify />
-			</DrawerTrigger>
-			<DrawerContent className="bg-blue-100 ">
-				<DrawerTitle>
-					<div className="px-5 flex justify-between items-center">
-						<div className="flex items-center gap-2 py-5">
-							<Avatar className="h-12 w-12">
-								<AvatarImage src={user?.photoUrl} />
-								<AvatarFallback>{initials}</AvatarFallback>
-							</Avatar>
-							<div className="flex flex-col justify-center">
-								<p className="text-base">{user?.firstName} {user?.lastName ?? ''}</p>
-								<p className="text-sm text-blue-600">{phoneNumber}</p>
-							</div>
-						</div>
-						<button type="button" onClick={handleLogOutClick}>
-							<LogOut />
-						</button>
-					</div>
-				</DrawerTitle>
+  return (
+    <Drawer>
+      <DrawerTrigger>
+        <AlignJustify />
+      </DrawerTrigger>
+      <DrawerContent className="bg-blue-100 ">
+        <DrawerTitle>
+          <div className="px-5 flex justify-between items-center">
+            <div className="flex items-center gap-2 py-5">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={user?.photoUrl} />
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col justify-center">
+                <p className="text-base">
+                  {user?.firstName} {user?.lastName ?? ''}
+                </p>
+                <p className="text-sm text-blue-600">{phoneNumber}</p>
+              </div>
+            </div>
+            <button type="button" onClick={handleLogOutClick}>
+              <LogOut />
+            </button>
+          </div>
+        </DrawerTitle>
 
-				{/* <div className="bg-background">
+        {/* <div className="bg-background">
 					<div className="py-5 px-5 flex flex-col gap-2 border-b border-foreground/10">
 						<p className="text-base text-foreground/80">Storage</p>
 						<Progress value={55} className="w-full" />
@@ -68,7 +84,7 @@ export function Menu() {
 						</div>
 					</div>
 				</div> */}
-			</DrawerContent>
-		</Drawer>
-	)
+      </DrawerContent>
+    </Drawer>
+  )
 }
