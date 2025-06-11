@@ -176,26 +176,34 @@ export const getLeaderboard = toResultFn(
   withClient(async (client: TelegramClient): Promise<LeaderboardUser[]> => {
     const dbUsers = await getDB().leaderboard()
     const leaderboard: LeaderboardUser[] = []
-    let i = 0
-    for (const dbUser of dbUsers) {
-      let name, thumbSrc
-      try {
-        const tgUser = await client.getEntity(bigInt(dbUser.telegramId))
-        if (tgUser.className !== 'User') {
-          throw new Error(`${tgUser.className} is not a User`)
+    let nameIndex = 0
+    for (let i = 0; i < dbUsers.length; i++) {
+      const dbUser = dbUsers[i]
+
+      let name
+      let thumbSrc = ''
+      if (i < 3) {
+        try {
+          const tgUser = await client.getEntity(bigInt(dbUser.telegramId))
+          if (tgUser.className !== 'User') {
+            throw new Error(`${tgUser.className} is not a User`)
+          }
+          name = [tgUser.firstName, tgUser.lastName]
+            .filter((s) => !!s)
+            .join(' ')
+          thumbSrc = getThumbSrc(
+            tgUser.photo?.className === 'UserProfilePhoto' &&
+              tgUser.photo.strippedThumb
+              ? new Uint8Array(tgUser.photo.strippedThumb)
+              : undefined
+          )
+        } catch (err: any) {
+          console.warn(`failed to get leaderboard user: ${err.message}`)
         }
-        name = [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ')
-        thumbSrc = getThumbSrc(
-          tgUser.photo?.className === 'UserProfilePhoto' &&
-            tgUser.photo.strippedThumb
-            ? new Uint8Array(tgUser.photo.strippedThumb)
-            : undefined
-        )
-      } catch (err: any) {
-        console.warn(`failed to get leaderboard user: ${err.message}`)
-        name = names[i]
-        thumbSrc = ''
-        i++
+      }
+      if (!name) {
+        name = names[nameIndex]
+        nameIndex++
       }
 
       leaderboard.push({
