@@ -22,7 +22,14 @@ import { JobStorage } from '@/api'
 import Onboarding from '@/components/onboarding'
 import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
-import { createJob, findJob, listJobs, login, removeJob } from './server'
+import {
+  createJob,
+  findJob,
+  listJobs,
+  login,
+  removeJob,
+  cancelJob,
+} from './server'
 import { create as createJobStorage } from '@/lib/store/jobs'
 import { StringSession, StoreSession } from '@/vendor/telegram/sessions'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
@@ -107,22 +114,22 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     let eventSource: EventSource
 
-		(async () => {
-			let encryptionPassword = await cloudStorage.getItem('encryption-password')
+    ;(async () => {
+      let encryptionPassword = await cloudStorage.getItem('encryption-password')
       console.log('encryption password: ', encryptionPassword)
-			setIsFirstLogin(!encryptionPassword)
-		
-			if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
-				return
-			}
-		
-			if (!encryptionPassword) {
-				console.log('creating new encryption password')
-				encryptionPassword = generateRandomPassword()
-				await cloudStorage.setItem('encryption-password', encryptionPassword)
-			} else {
-				console.log('found existing encryption password')
-			}
+      setIsFirstLogin(!encryptionPassword)
+
+      if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
+        return
+      }
+
+      if (!encryptionPassword) {
+        console.log('creating new encryption password')
+        encryptionPassword = generateRandomPassword()
+        await cloudStorage.setItem('encryption-password', encryptionPassword)
+      } else {
+        console.log('found existing encryption password')
+      }
 
       await storacha.setCurrentSpace(space)
 
@@ -150,6 +157,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
           findJob: async (jr) => fromResult(await findJob(jr)),
           listJobs: async (jr) => fromResult(await listJobs(jr)),
           removeJob: async (jr) => fromResult(await removeJob(jr)),
+          cancelJob: async (jr) => fromResult(await cancelJob(jr)),
         },
       })
       // setup a remove listener for async updates

@@ -38,10 +38,17 @@ export type JobStatus =
   | 'queued'
   | 'running'
   | 'failed'
+  | 'canceled'
   | 'completed'
 
 /** A backup job. */
-export type Job = WaitingJob | QueuedJob | RunningJob | FailedJob | CompletedJob
+export type Job =
+  | WaitingJob
+  | QueuedJob
+  | RunningJob
+  | FailedJob
+  | CompletedJob
+  | CanceledJob
 
 /** A backup job with fields common to jobs in all statuses. */
 export interface BaseJob {
@@ -52,6 +59,8 @@ export interface BaseJob {
   params: JobParams
   /** Timestamp of when this backup job was created. */
   created: number
+  /** Timestamp of when this backup job was last updated. */
+  updated: number
 }
 
 /** A backup job that is waiting to be queued and run. */
@@ -62,6 +71,17 @@ export interface WaitingJob extends BaseJob {
 /** A backup job that has been queued for running. */
 export interface QueuedJob extends BaseJob {
   status: 'queued'
+}
+
+/** A backup job that is canceled by the user. */
+export interface CanceledJob extends BaseJob {
+  status: 'canceled'
+  /** Indication of completion progress - a number between 0 and 1 or null. */
+  progress?: number
+  /** Timestamp of when this backup was started. I may not exist. */
+  started?: number
+  /** Timestamp of when this backup was canceled. */
+  finished: number
 }
 
 /** A running backup job. */
@@ -100,7 +120,12 @@ export interface CompletedJob extends BaseJob {
 /** Backups are backup jobs that have completed successfully. */
 export type Backup = CompletedJob
 
-export type PendingJob = WaitingJob | QueuedJob | RunningJob | FailedJob
+export type PendingJob =
+  | WaitingJob
+  | QueuedJob
+  | RunningJob
+  | FailedJob
+  | CanceledJob
 
 export interface Page<T> {
   items: T[]
@@ -114,6 +139,7 @@ export interface JobStorage extends EventTarget {
   listCompleted: () => Promise<Page<CompletedJob>>
   add: (dialogs: DialogsById, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
+  cancel: (id: JobID) => Promise<void>
 }
 
 export interface TelegramAuth {
@@ -149,11 +175,16 @@ export interface RemoveJobRequest {
   jobID: JobID
 }
 
+export interface CancelJobRequest {
+  jobID: JobID
+}
+
 export interface JobClient {
   createJob: (jr: CreateJobRequest) => Promise<Job>
   findJob: (jr: FindJobRequest) => Promise<Job>
   listJobs: (jr: ListJobsRequest) => Promise<Job[]>
   removeJob: (jr: RemoveJobRequest) => Promise<Job>
+  cancelJob: (jr: CancelJobRequest) => Promise<Job>
 }
 
 export interface Encrypter {

@@ -60,7 +60,7 @@ export interface User {
 type Input<
   T,
   NoInput extends keyof T,
-  OptionalInput extends keyof T = never
+  OptionalInput extends keyof T = never,
 > = Omit<Omit<T, NoInput>, OptionalInput> &
   Partial<Omit<Pick<T, OptionalInput>, NoInput>>
 
@@ -80,6 +80,7 @@ export interface DbJob {
   finishedAt: Date | null
   dataCid: string | null
   createdAt: Date
+  updatedAt: Date
 }
 
 type JobEvent = { action: string; job: Job }
@@ -94,6 +95,7 @@ type JobInput = Input<
   | 'finishedAt'
   | 'dataCid'
   | 'createdAt'
+  | 'updatedAt'
 >
 export interface TGDatabase {
   findOrCreateUser(input: UserInput): Promise<User>
@@ -123,8 +125,8 @@ export function getDB(): TGDatabase {
         union
         select * from users
         where telegram_id = ${input.telegramId} and storacha_space = ${
-        input.storachaSpace
-      } 
+          input.storachaSpace
+        } 
       `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
@@ -167,8 +169,8 @@ export function getDB(): TGDatabase {
 
       const points = await sql<{ points: number }[]>`
         select points from users where users.telegram_id = ${input.telegramId.toString()} and users.storacha_space=${
-        input.storachaSpace
-      }
+          input.storachaSpace
+        }
       `
 
       if (!points[0]) {
@@ -220,7 +222,7 @@ export function getDB(): TGDatabase {
           // @ts-expect-error Uint8Array is automatically converted to object
           toDbJobParams(input)
         )}
-        where id = ${id}
+        where id = ${id} and (status != 'canceled' or ${input.status} = 'canceled')
         returning *
       `
       if (!results[0]) {
@@ -273,12 +275,21 @@ const toDbJobParams = (job: Job): DbJobParams => {
     finishedAt: null,
     dataCid: null,
     createdAt: new Date(job.created),
+    updatedAt: new Date(job.updated),
   }
   switch (job.status) {
     case 'waiting':
       return baseDbJob
     case 'queued':
       return baseDbJob
+    case 'canceled':
+      // Preserve any fields that exist on the job
+      return {
+        ...baseDbJob,
+        finishedAt: new Date(job.finished),
+        progress: job.progress ?? null,
+        startedAt: job.started ? new Date(job.started) : null,
+      }
     case 'running':
       return {
         ...baseDbJob,
@@ -331,12 +342,26 @@ const fromDbJob = (dbJob: DbJob): Job => {
       period: [dbJob.periodFrom, dbJob.periodTo],
     },
     created: dbJob.createdAt.getTime(),
+    updated: dbJob.updatedAt.getTime(),
   }
   switch (dbJob.status) {
     case 'waiting':
       return { ...baseJob, status: 'waiting' }
     case 'queued':
       return { ...baseJob, status: 'queued' }
+    case 'canceled':
+      if (dbJob.finishedAt == null) {
+        throw new Error('finishedAt should not be null on canceled job')
+      }
+      return {
+        ...baseJob,
+        status: 'canceled',
+        finished: dbJob.finishedAt.getDate(),
+        ...(dbJob.progress != null ? { progress: dbJob.progress } : {}),
+        ...(dbJob.startedAt != null
+          ? { started: dbJob.startedAt.getTime() }
+          : {}),
+      }
     case 'running':
       if (dbJob.progress == null) {
         throw new Error('progress should not be null on running job')
