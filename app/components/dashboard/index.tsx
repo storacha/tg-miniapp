@@ -54,7 +54,7 @@ const JobItem = ({
   const progress =
     job.status === 'running' || job.status === 'failed' ? job.progress : 0
 
-  const STUCK_JOB_TIMEOUT_MS = 24 * 60 * 60 * 1000
+  const STUCK_JOB_TIMEOUT_MS = 3 * 60 * 60 * 1000
   const isStuck =
     (job.status === 'running' || job.status === 'waiting') &&
     Date.now() - job.updated > STUCK_JOB_TIMEOUT_MS
