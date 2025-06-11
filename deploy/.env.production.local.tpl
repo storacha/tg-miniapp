@@ -40,3 +40,7 @@ NEXT_PUBLIC_POINTS_PER_BYTE=0.000009313225746
 # NEXT_PUBLIC_SERVER_DID='did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi'
 # Server did
 NEXT_PUBLIC_SERVER_DID=<%= $TF_VAR_did %>
+
+NEXT_PUBLIC_HUMANODE_CLIENT_ID=<%= $TF_VAR_next_public_humanode_client_id %>
+NEXT_PUBLIC_HUMANODE_AUTH_URL=<%= $TF_VAR_next_public_humanode_auth_url %>
+NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL=<%= $TF_VAR_next_public_humanode_oauth_callback_url %>

@@ -45,6 +45,9 @@ jobs:
       telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       next-public-telegram-api-id: ${{ secrets.TELEGRAM_API_ID }}
       next-public-telegram-api-hash: ${{ secrets.TELEGRAM_API_HASH }}
+      next-public-humanode-auth-url: ${{ secrets.HUMANODE_AUTH_URL }}
+      next-public-humanode-oauth-callback-url: ${{ secrets.HUMANODE_OAUTH_CALLBACK_URL }}
+      next-public-humanode-client-id: ${{ secrets.HUMANODE_CLIENT_ID }} 
       cloudflare-zone-id: ${{ secrets.STAGING_CLOUDFLARE_ZONE_ID }}
       cloudflare-api-token: ${{ secrets.STAGING_CLOUDFLARE_API_TOKEN }}
 
@@ -68,5 +71,8 @@ jobs:
       telegram-bot-token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       next-public-telegram-api-id: ${{ secrets.TELEGRAM_API_ID }}
       next-public-telegram-api-hash: ${{ secrets.TELEGRAM_API_HASH }}
+      next-public-humanode-auth-url: ${{ secrets.HUMANODE_AUTH_URL }}
+      next-public-humanode-oauth-callback-url: ${{ secrets.HUMANODE_OAUTH_CALLBACK_URL }}
+      next-public-humanode-client-id: ${{ secrets.HUMANODE_CLIENT_ID }}
       cloudflare-zone-id: ${{ secrets.PROD_CLOUDFLARE_ZONE_ID }}
       cloudflare-api-token: ${{ secrets.PROD_CLOUDFLARE_API_TOKEN }}
