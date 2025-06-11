@@ -36,7 +36,12 @@ class Handler {
     if (job.status != 'queued') {
       return
     }
-    const { id, params, created, params: { space, dialogs, period} } = job
+    const {
+      id,
+      params,
+      created,
+      params: { space, dialogs, period },
+    } = job
     let progress = 0
     const started = Date.now()
     try {
@@ -54,7 +59,7 @@ class Handler {
         onDialogRetrieved: async () => {
           dialogsRetrieved++
           try {
-            progress = (dialogsRetrieved / Object.keys(dialogs).length) / 2.1
+            progress = dialogsRetrieved / Object.keys(dialogs).length / 2.1
             await this.#db.updateJob(id, {
               id,
               status: 'running',

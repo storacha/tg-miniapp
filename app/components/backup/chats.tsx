@@ -1,4 +1,11 @@
-import { ChangeEventHandler, FormEventHandler, MouseEventHandler, useEffect, useRef, useState } from 'react'
+import {
+  ChangeEventHandler,
+  FormEventHandler,
+  MouseEventHandler,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { DialogInfo, DialogsById } from '@/api'
 import { useBackups } from '@/providers/backup'
 import { useTelegram } from '@/providers/telegram'
@@ -22,13 +29,13 @@ const filterPublic = (dialog: DialogInfo) => dialog.isPublic
 const noFilter = () => true
 
 const toSearchFilter = (t: string) => (dialog: DialogInfo) => {
-	return dialog.name.toLowerCase().includes(t.toLowerCase())
+  return dialog.name.toLowerCase().includes(t.toLowerCase())
 }
 
 export interface ChatsProps {
-	selections: DialogsById
-	onSelectionsChange: (selections: DialogsById) => unknown
-	onSubmit: () => unknown
+  selections: DialogsById
+  onSelectionsChange: (selections: DialogsById) => unknown
+  onSubmit: () => unknown
 }
 
 export default function Chats({
@@ -80,69 +87,105 @@ export default function Chats({
     setSearchFilter(() => toSearchFilter(searchTerm))
   }
 
-	const handleDialogItemClick: MouseEventHandler = (e) => {
-		const id = e.currentTarget.getAttribute('data-id')
-		if (!id) return
-		const dialog = items.find(d => d.id === id)
-		if (!dialog) return
+  const handleDialogItemClick: MouseEventHandler = (e) => {
+    const id = e.currentTarget.getAttribute('data-id')
+    if (!id) return
+    const dialog = items.find((d) => d.id === id)
+    if (!dialog) return
 
-		const nextSelections = { ...selections }
-		if (nextSelections[id]) {
-			delete nextSelections[id]
-		} else {
-			const { id, ...dialogInfo } = dialog
-			nextSelections[id as string] = dialogInfo
-		}
-		onSelectionsChange(nextSelections)
-	}
+    const nextSelections = { ...selections }
+    if (nextSelections[id]) {
+      delete nextSelections[id]
+    } else {
+      const { id, ...dialogInfo } = dialog
+      nextSelections[id as string] = dialogInfo
+    }
+    onSelectionsChange(nextSelections)
+  }
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
     onSubmit()
   }
 
-	return (
-		<div>
-			<div className="w-full pt-0 px-5 flex flex-col text-center justify-center gap-2 pb-5">
-				<h1 className="text-lg font-semibold text-foreground text-center">Select to Backup</h1>
-			</div>
-			<div className="flex flex-col gap-5 rounded-t-xl bg-background w-full flex-grow py-2">
-				<div className="px-5">
-					<form className="relative w-full" onSubmit={handleSearchSubmit}>
-						<Input type="search" placeholder="search chats" value={searchTerm} onChange={handleSearchChange} />
-					</form>
-				</div>
-				<div className="px-5 flex gap-5">
-					<Button size="sm" variant={typeFilter === noFilter ? 'outline' : 'secondary'} onClick={() => setTypeFilter(() => noFilter)}>
-						All
-					</Button>
-					<Button size="sm" variant={typeFilter === filterPublic ? 'outline' : 'secondary'} onClick={() => setTypeFilter(() => filterPublic)}>
-						Public
-					</Button>
-					<Button size="sm" variant={typeFilter === filterPrivate ? 'outline' : 'secondary'} onClick={() => setTypeFilter(() => filterPrivate)}>
-						Private
-					</Button>
-				</div>
-				<div className="flex flex-col min-h-screen">
-					{items.map((d: DialogInfo) => {
-						const latestBackup = sortedBackups.find(b => d.id && b.params.dialogs[d.id])
-						return (
-							<div key={d.id} className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3" data-id={d.id} onClick={handleDialogItemClick}>
-								<Checkbox checked={!!selections[d.id ?? '']}  />
-								<DialogItem dialog={d} latestBackup={latestBackup} />
-							</div>
-						)
-					})}
-					{loadingDialogs && <div className='text-center'><Loading text={"Loading chats..."} /></div>}
-					<div ref={observerRef} className="h-10" />
-					{!loadingDialogs && !items.length && <p className='text-center'>No chats found!</p>}
-				</div>
-			</div>
-			<form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">
-				<Button type="submit" className="w-full" disabled={!Object.keys(selections).length}>
-					Continue
-				</Button>
-			</form>
-		</div>
-	)
+  return (
+    <div>
+      <div className="w-full pt-0 px-5 flex flex-col text-center justify-center gap-2 pb-5">
+        <h1 className="text-lg font-semibold text-foreground text-center">
+          Select to Backup
+        </h1>
+      </div>
+      <div className="flex flex-col gap-5 rounded-t-xl bg-background w-full flex-grow py-2">
+        <div className="px-5">
+          <form className="relative w-full" onSubmit={handleSearchSubmit}>
+            <Input
+              type="search"
+              placeholder="search chats"
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </form>
+        </div>
+        <div className="px-5 flex gap-5">
+          <Button
+            size="sm"
+            variant={typeFilter === noFilter ? 'outline' : 'secondary'}
+            onClick={() => setTypeFilter(() => noFilter)}
+          >
+            All
+          </Button>
+          <Button
+            size="sm"
+            variant={typeFilter === filterPublic ? 'outline' : 'secondary'}
+            onClick={() => setTypeFilter(() => filterPublic)}
+          >
+            Public
+          </Button>
+          <Button
+            size="sm"
+            variant={typeFilter === filterPrivate ? 'outline' : 'secondary'}
+            onClick={() => setTypeFilter(() => filterPrivate)}
+          >
+            Private
+          </Button>
+        </div>
+        <div className="flex flex-col min-h-screen">
+          {items.map((d: DialogInfo) => {
+            const latestBackup = sortedBackups.find(
+              (b) => d.id && b.params.dialogs[d.id]
+            )
+            return (
+              <div
+                key={d.id}
+                className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3"
+                data-id={d.id}
+                onClick={handleDialogItemClick}
+              >
+                <Checkbox checked={!!selections[d.id ?? '']} />
+                <DialogItem dialog={d} latestBackup={latestBackup} />
+              </div>
+            )
+          })}
+          {loadingDialogs && (
+            <div className="text-center">
+              <Loading text={'Loading chats...'} />
+            </div>
+          )}
+          <div ref={observerRef} className="h-10" />
+          {!loadingDialogs && !items.length && (
+            <p className="text-center">No chats found!</p>
+          )}
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className="sticky bottom-0 w-full p-5">
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={!Object.keys(selections).length}
+        >
+          Continue
+        </Button>
+      </form>
+    </div>
+  )
 }

@@ -12,37 +12,36 @@ import { getLeaderboard, getRanking } from '@/components/server'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 
 export default function Page() {
-	const { tgSessionString, space } = useGlobal()
-	const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
-	const [ranking, setRanking] = useState<Ranking | undefined>()
-	const { setError } = useError()
-	
-	useEffect(() => {
-		;(async () => {
-			try {
-				const leaderboard = fromResult(await getLeaderboard(tgSessionString))
-				setLeaderboard(leaderboard)
-			} catch (error) {
-				const title = 'Error fetching leaderboard!' 
-				console.error(title, error)
-				setError(getErrorMessage(error), { title })
-				setLeaderboard([])
-			}
+  const { tgSessionString, space } = useGlobal()
+  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
+  const [ranking, setRanking] = useState<Ranking | undefined>()
+  const { setError } = useError()
 
-			if(space) {
-				try {
-					const ranking = fromResult(await getRanking(tgSessionString, space))	
-					setRanking(ranking)
-				} catch (error) {
-					const title = 'Error fetching ranking!'
-					console.error(title, error)
-					setError(getErrorMessage(error), { title})
-					setRanking(undefined)
-				}
-			}
-			
-		})()
-	}, [tgSessionString, space])
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const leaderboard = fromResult(await getLeaderboard(tgSessionString))
+        setLeaderboard(leaderboard)
+      } catch (error) {
+        const title = 'Error fetching leaderboard!'
+        console.error(title, error)
+        setError(getErrorMessage(error), { title })
+        setLeaderboard([])
+      }
+
+      if (space) {
+        try {
+          const ranking = fromResult(await getRanking(tgSessionString, space))
+          setRanking(ranking)
+        } catch (error) {
+          const title = 'Error fetching ranking!'
+          console.error(title, error)
+          setError(getErrorMessage(error), { title })
+          setRanking(undefined)
+        }
+      }
+    })()
+  }, [tgSessionString, space])
 
   return (
     <Layouts isSinglePage isBackgroundBlue>

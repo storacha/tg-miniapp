@@ -12,13 +12,13 @@ import { Summary } from '@/components/backup/summary'
 import { StorachaConnect } from '@/components/backup/connect'
 
 export default function Page() {
-	const router = useRouter()
-	const { isStorachaAuthorized, space } = useGlobal()
-	const [, { addBackupJob }] = useBackups()
-	const [step, setStep] = useState(0)
-	const [starting, setStarting] = useState(false)
-	const [period, setPeriod] = useState<Period>([0])
-	const [chats, setChats] = useState<DialogsById>({})
+  const router = useRouter()
+  const { isStorachaAuthorized, space } = useGlobal()
+  const [, { addBackupJob }] = useBackups()
+  const [step, setStep] = useState(0)
+  const [starting, setStarting] = useState(false)
+  const [period, setPeriod] = useState<Period>([0])
+  const [chats, setChats] = useState<DialogsById>({})
 
   function handleBack() {
     if (step === 0) {

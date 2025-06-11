@@ -5,8 +5,8 @@ import { FormEventHandler } from 'react'
 import { useBackups } from '@/providers/backup'
 
 export interface SummaryProps {
-	chats: DialogsById
-	space: SpaceDID
+  chats: DialogsById
+  space: SpaceDID
   period: Period
   starting: boolean
   onSubmit: () => unknown
@@ -22,7 +22,7 @@ export const Summary = ({
     e.preventDefault()
     onSubmit()
   }
-  const [{jobsReady}, {}] = useBackups()
+  const [{ jobsReady }, {}] = useBackups()
   const chatsLength = Object.keys(chats).length
 
   return (
@@ -35,7 +35,9 @@ export const Summary = ({
       </div>
       <div className="flex flex-col gap-5 rounded-t-xl bg-background w-full flex-grow py-2">
         <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
-          <p>{chatsLength.toLocaleString()} Chat{chatsLength === 1 ? '' : 's'}</p>
+          <p>
+            {chatsLength.toLocaleString()} Chat{chatsLength === 1 ? '' : 's'}
+          </p>
         </div>
         <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
           {period[0] === 0 && period[1] == null ? (

@@ -195,7 +195,7 @@ function BackupDialog({
             const isOutgoing = msg.from === userId
 
             const sender = msg.from
-              ? (participants[msg.from]?.name ?? 'Unknown')
+              ? participants[msg.from]?.name ?? 'Unknown'
               : 'Anonymous'
 
             const showSenderHeader = !isOutgoing && lastSenderId !== msg.from

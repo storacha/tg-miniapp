@@ -50,8 +50,8 @@ import { CARWriterStream } from 'carstream'
 import { Entity } from 'telegram/define'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
 import { createEncodeAndEncryptStream } from '@/lib/crypto'
-import { DID, Link, UnknownLink} from '@ucanto/client'
-import { Client as StorachaClient} from '@storacha/client'
+import { DID, Link, UnknownLink } from '@ucanto/client'
+import { Client as StorachaClient } from '@storacha/client'
 import { CARMetadata } from '@storacha/ui-react'
 import { buildDialogInputPeer } from '../backup/utils'
 import bigInt from 'big-integer'
@@ -82,7 +82,13 @@ export interface Options {
   onShardStored?: (meta: CARMetadata) => unknown
 }
 
-export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsById, period: AbsolutePeriod, options?: Options): Promise<UnknownLink> => {
+export const run = async (
+  ctx: Context,
+  space: SpaceDID,
+  dialogs: Type.DialogsById,
+  period: AbsolutePeriod,
+  options?: Options
+): Promise<UnknownLink> => {
   const dialogDatas: BackupData['dialogs'] = {}
   const pendingDialogIDs = Object.keys(dialogs)
 
@@ -126,26 +132,33 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsBy
           controller.close()
           return
         }
-        
-        dialogEntity = { id: dialogID, ...dialogs[dialogID]}
-        const dialogInput = buildDialogInputPeer(dialogEntity) ?? bigInt(dialogID)
- 
+
+        dialogEntity = { id: dialogID, ...dialogs[dialogID] }
+        const dialogInput =
+          buildDialogInputPeer(dialogEntity) ?? bigInt(dialogID)
+
         if (period[0] > 0) {
           // if start date is not the beginning of time get the first message
           // before the start date (if there is one), and then iterate from end
           // date to first message (exclusive).
           const [firstMessage] = await callWithDialogsSync(
-            () => ctx.telegram.getMessages(dialogInput, { limit: 1, offsetDate: period[0] }),
+            () =>
+              ctx.telegram.getMessages(dialogInput, {
+                limit: 1,
+                offsetDate: period[0],
+              }),
             ctx.telegram,
             dialogID
           )
           minMsgId = firstMessage?.id
         }
 
-        messageIterator = ctx.telegram.iterMessages(dialogInput, {
-          offsetDate: period[1],
-          minId: minMsgId
-        })[Symbol.asyncIterator]()
+        messageIterator = ctx.telegram
+          .iterMessages(dialogInput, {
+            offsetDate: period[1],
+            minId: minMsgId,
+          })
+          [Symbol.asyncIterator]()
       }
 
       if (!messageIterator) {
@@ -165,7 +178,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsBy
         entities = {}
 
         const dialogData: DialogData = {
-          ...dialogEntity, 
+          ...dialogEntity,
           entities: entitiesRoot,
           messages: messageLinks,
         }
@@ -190,22 +203,26 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsBy
       while (true) {
         let message, done
         try {
-          ({ value: message, done } = await messageIterator.next())
+          ;({ value: message, done } = await messageIterator.next())
         } catch (error) {
-          if (error instanceof Error && error.message?.includes("Could not find the input entity for ")) {
+          if (
+            error instanceof Error &&
+            error.message?.includes('Could not find the input entity for ')
+          ) {
             await syncDialogEntity(ctx.telegram, dialogEntity.id)
 
-            messageIterator = ctx.telegram.iterMessages(dialogEntity.id, {
-              offsetDate: period[1],
-              minId: minMsgId
-            })[Symbol.asyncIterator]();
+            messageIterator = ctx.telegram
+              .iterMessages(dialogEntity.id, {
+                offsetDate: period[1],
+                minId: minMsgId,
+              })
+              [Symbol.asyncIterator]()
 
-            ({ value: message, done } = await messageIterator.next())
+            ;({ value: message, done } = await messageIterator.next())
           } else {
             throw error
           }
         }
-
 
         if (done) {
           messageIterator = null
@@ -228,8 +245,8 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsBy
            */
           fromID = peerID
         }
-        
-        if(entities[fromID]){
+
+        if (entities[fromID]) {
           entities[fromID] = entities[fromID]
         } else {
           try {
@@ -243,8 +260,10 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsBy
         }
 
         let mediaRoot
-        if (message.media && isDownloadableMedia(message.media)) {          
-          const mediaBytes = new Uint8Array((await message.downloadMedia()) as Buffer)
+        if (message.media && isDownloadableMedia(message.media)) {
+          const mediaBytes = new Uint8Array(
+            (await message.downloadMedia()) as Buffer
+          )
           if (mediaBytes.length === 0) throw new Error('missing media bytes')
 
           for await (const b of toAsyncIterable(
@@ -290,8 +309,7 @@ export const run = async (ctx: Context, space: SpaceDID, dialogs: Type.DialogsBy
   return root
 }
 
-
-const syncDialogEntity =  async (client: TelegramClient, entityId: string) => {
+const syncDialogEntity = async (client: TelegramClient, entityId: string) => {
   console.log(`Entity not found for ID: ${entityId}, trying to sync...`)
   for await (const dialog of client.iterDialogs()) {
     if (dialog?.entity?.id.toString() === entityId) {
@@ -301,14 +319,17 @@ const syncDialogEntity =  async (client: TelegramClient, entityId: string) => {
 }
 
 const callWithDialogsSync = async <T>(
-    fn: () => Promise<T>,
-    client: TelegramClient,
-    entityId: string
+  fn: () => Promise<T>,
+  client: TelegramClient,
+  entityId: string
 ): Promise<T> => {
   try {
     return await fn()
   } catch (error) {
-    if (error instanceof Error && error.message?.includes("Could not find the input entity for ")) {
+    if (
+      error instanceof Error &&
+      error.message?.includes('Could not find the input entity for ')
+    ) {
       await syncDialogEntity(client, entityId)
       return await fn()
     }
@@ -316,7 +337,10 @@ const callWithDialogsSync = async <T>(
   }
 }
 
-const toMessageData = (message: Api.Message | Api.MessageService, mediaRoot?: Link<EncryptedTaggedByteView<Uint8Array>>): MessageData | ServiceMessageData => {
+const toMessageData = (
+  message: Api.Message | Api.MessageService,
+  mediaRoot?: Link<EncryptedTaggedByteView<Uint8Array>>
+): MessageData | ServiceMessageData => {
   const from = message.fromId && toPeerID(message.fromId)
 
   if (message.className === 'MessageService') {

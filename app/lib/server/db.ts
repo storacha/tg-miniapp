@@ -60,7 +60,7 @@ export interface User {
 type Input<
   T,
   NoInput extends keyof T,
-  OptionalInput extends keyof T = never,
+  OptionalInput extends keyof T = never
 > = Omit<Omit<T, NoInput>, OptionalInput> &
   Partial<Omit<Pick<T, OptionalInput>, NoInput>>
 
@@ -123,8 +123,8 @@ export function getDB(): TGDatabase {
         union
         select * from users
         where telegram_id = ${input.telegramId} and storacha_space = ${
-          input.storachaSpace
-        } 
+        input.storachaSpace
+      } 
       `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
@@ -167,8 +167,8 @@ export function getDB(): TGDatabase {
 
       const points = await sql<{ points: number }[]>`
         select points from users where users.telegram_id = ${input.telegramId.toString()} and users.storacha_space=${
-          input.storachaSpace
-        }
+        input.storachaSpace
+      }
       `
 
       if (!points[0]) {
@@ -185,7 +185,8 @@ export function getDB(): TGDatabase {
       const results = await sql<DbJob[]>`
         insert into jobs ${sql(
           // @ts-expect-error Uint8Array is automatically converted to object
-          input)} 
+          input
+        )} 
         returning *
       `
       if (!results[0]) {
@@ -217,7 +218,8 @@ export function getDB(): TGDatabase {
       const results = await sql<DbJob[]>`
         update jobs set ${sql(
           // @ts-expect-error Uint8Array is automatically converted to object
-          toDbJobParams(input))}
+          toDbJobParams(input)
+        )}
         where id = ${id}
         returning *
       `
@@ -302,13 +304,16 @@ const toDbJobParams = (job: Job): DbJobParams => {
 }
 
 const objectToUint8Array = (obj: Record<string, number>) => {
-   return new Uint8Array(Object.values(obj))
+  return new Uint8Array(Object.values(obj))
 }
 
 const fixDialogInfoMap = (dialogs: DialogsById): DialogsById => {
-  const fixed: DialogsById = {};
+  const fixed: DialogsById = {}
   for (const [id, info] of Object.entries(dialogs)) {
-    if (info.photo?.strippedThumb && !(info.photo.strippedThumb instanceof Uint8Array)) {
+    if (
+      info.photo?.strippedThumb &&
+      !(info.photo.strippedThumb instanceof Uint8Array)
+    ) {
       info.photo.strippedThumb = objectToUint8Array(info.photo.strippedThumb)
     }
     fixed[id] = info
@@ -316,14 +321,14 @@ const fixDialogInfoMap = (dialogs: DialogsById): DialogsById => {
   return fixed
 }
 
-const fromDbJob = (dbJob: DbJob) : Job =>{
-  const baseJob : BaseJob = {
+const fromDbJob = (dbJob: DbJob): Job => {
+  const baseJob: BaseJob = {
     id: dbJob.id,
     status: dbJob.status,
     params: {
       space: dbJob.space,
       dialogs: fixDialogInfoMap(dbJob.dialogs),
-      period: [dbJob.periodFrom, dbJob.periodTo]
+      period: [dbJob.periodFrom, dbJob.periodTo],
     },
     created: dbJob.createdAt.getTime(),
   }

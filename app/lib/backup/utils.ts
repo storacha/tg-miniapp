@@ -1,8 +1,8 @@
 import bigInt from 'big-integer'
 import { Entity } from '@/vendor/telegram/define'
-import { DialogInfo, EntityID, EntityType, ToString } from "@/api";
+import { DialogInfo, EntityID, EntityType, ToString } from '@/api'
 import { Api } from '@/vendor/telegram'
-import { decodeStrippedThumb, toJPGDataURL } from '../utils';
+import { decodeStrippedThumb, toJPGDataURL } from '../utils'
 
 export const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
   return (
@@ -63,15 +63,17 @@ export const getNormalizedEntityId = (
 
 export const getThumbSrc = (strippedThumbBytes?: Uint8Array) => {
   let thumbSrc = ''
-	if (strippedThumbBytes) {
-		thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
-	}
+  if (strippedThumbBytes) {
+    thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
+  }
   return thumbSrc
 }
 
 export const buildDialogInputPeer = (dialogInfo: DialogInfo) => {
   const bigId = bigInt(dialogInfo.id)
-  const bigHash = dialogInfo.accessHash? bigInt(dialogInfo.accessHash): bigInt(0)
+  const bigHash = dialogInfo.accessHash
+    ? bigInt(dialogInfo.accessHash)
+    : bigInt(0)
 
   if (dialogInfo.type === 'user') {
     return new Api.InputPeerUser({ userId: bigId, accessHash: bigHash })

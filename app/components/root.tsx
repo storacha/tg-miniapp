@@ -109,6 +109,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
 		(async () => {
 			let encryptionPassword = await cloudStorage.getItem('encryption-password')
+      console.log('encryption password: ', encryptionPassword)
 			setIsFirstLogin(!encryptionPassword)
 		
 			if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {

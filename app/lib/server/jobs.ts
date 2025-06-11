@@ -35,24 +35,35 @@ export const login = async (request: LoginRequest) => {
   await session.save()
 }
 
-export const createJob = async (request: CreateJobRequest, queueFn: (jr: ExecuteJobRequest) => Promise<void>) => {
-    console.debug('adding job...')
-    const session = await getSession()
-    const telegramId = getTelegramId(session.telegramAuth)
-    const db = getDB()
-    const dbUser = await db.findOrCreateUser({ storachaSpace: session.spaceDID, telegramId: telegramId.toString() })
-    const job = await db.createJob({
-      userId: dbUser.id,
-      status: 'queued',
-      periodFrom: request.period[0], 
-      periodTo: (request.period[1] ?? Date.now() / 1000),
-      space: session.spaceDID,
-      dialogs: request.dialogs
-    })
-    await queueFn({...request, spaceDID: session.spaceDID, telegramAuth: session.telegramAuth, jobID: job.id})
-    console.debug(`job store added job: ${job.id} status: ${job.status}`)
-    return job
-  }
+export const createJob = async (
+  request: CreateJobRequest,
+  queueFn: (jr: ExecuteJobRequest) => Promise<void>
+) => {
+  console.debug('adding job...')
+  const session = await getSession()
+  const telegramId = getTelegramId(session.telegramAuth)
+  const db = getDB()
+  const dbUser = await db.findOrCreateUser({
+    storachaSpace: session.spaceDID,
+    telegramId: telegramId.toString(),
+  })
+  const job = await db.createJob({
+    userId: dbUser.id,
+    status: 'queued',
+    periodFrom: request.period[0],
+    periodTo: request.period[1] ?? Date.now() / 1000,
+    space: session.spaceDID,
+    dialogs: request.dialogs,
+  })
+  await queueFn({
+    ...request,
+    spaceDID: session.spaceDID,
+    telegramAuth: session.telegramAuth,
+    jobID: job.id,
+  })
+  console.debug(`job store added job: ${job.id} status: ${job.status}`)
+  return job
+}
 
 export const findJob = async (request: FindJobRequest) => {
   const session = await getSession()

@@ -11,7 +11,12 @@ import {
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
 import { Api, TelegramClient } from 'telegram'
-import { cleanUndef, decodeStrippedThumb, stringifyWithUIntArrays, toJPGDataURL } from '@/lib/utils'
+import {
+  cleanUndef,
+  decodeStrippedThumb,
+  stringifyWithUIntArrays,
+  toJPGDataURL,
+} from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
 import { toResultFn } from '@/lib/errorhandling'
@@ -99,37 +104,49 @@ export const listDialogs = toResultFn(
     ) => {
       console.log('list dialogs with current params: ', paginationParams)
 
-	const chats: DialogInfo[] = []
-	let lastChat 
-	for await (const chat of client.iterDialogs(paginationParams)){
-		if (!chat.entity) {
-			console.warn('skipping dialog without entity: ', chat)
-			continue
-		}
+      const chats: DialogInfo[] = []
+      let lastChat
+      for await (const chat of client.iterDialogs(paginationParams)) {
+        if (!chat.entity) {
+          console.warn('skipping dialog without entity: ', chat)
+          continue
+        }
 
-		const entityData = toEntityData(chat.entity) 
-		const parts = entityData.name.replace(/[^a-zA-Z ]/ig, '').trim().split(' ')
-		const initials = parts.length === 1 ?  entityData.name[0] : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-		const isPublic = chat.entity?.className === 'Channel' && !!chat.entity?.username ? true : false
-		
-		const info: DialogInfo = {
-			...entityData,
-			initials,
-			isPublic,
-			dialogId: chat.id?.toString(),
-			accessHash: 'accessHash' in chat.entity ? chat.entity?.accessHash?.toString() : undefined
-		}
-		
-		chats.push(cleanUndef(info))
-		lastChat = chat
-	}
-	
-	const lastMessage = lastChat?.message
-	const offsetId = lastMessage ? lastMessage.id : 0
-	const offsetDate = lastMessage ? lastMessage.date : 0
-	// @ts-expect-error the check is happening later
-	const offsetPeerUsername = lastChat?.entity?.username
-	const peer = String(lastChat?.id)
+        const entityData = toEntityData(chat.entity)
+        const parts = entityData.name
+          .replace(/[^a-zA-Z ]/gi, '')
+          .trim()
+          .split(' ')
+        const initials =
+          parts.length === 1
+            ? entityData.name[0]
+            : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        const isPublic =
+          chat.entity?.className === 'Channel' && !!chat.entity?.username
+            ? true
+            : false
+
+        const info: DialogInfo = {
+          ...entityData,
+          initials,
+          isPublic,
+          dialogId: chat.id?.toString(),
+          accessHash:
+            'accessHash' in chat.entity
+              ? chat.entity?.accessHash?.toString()
+              : undefined,
+        }
+
+        chats.push(cleanUndef(info))
+        lastChat = chat
+      }
+
+      const lastMessage = lastChat?.message
+      const offsetId = lastMessage ? lastMessage.id : 0
+      const offsetDate = lastMessage ? lastMessage.date : 0
+      // @ts-expect-error the check is happening later
+      const offsetPeerUsername = lastChat?.entity?.username
+      const peer = String(lastChat?.id)
 
       const offsetParams = {
         offsetId,
