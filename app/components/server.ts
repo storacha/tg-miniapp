@@ -174,23 +174,27 @@ export const listDialogs = toResultFn(
 
 export const getLeaderboard = toResultFn(
   withClient(async (client: TelegramClient): Promise<LeaderboardUser[]> => {
-    const dbUsers = await getDB().leaderboard()
+    const [dbUsers, me] = await Promise.all([
+      getDB().leaderboard(),
+      client.getMe(),
+    ])
     const leaderboard: LeaderboardUser[] = []
     let nameIndex = 0
     for (let i = 0; i < dbUsers.length; i++) {
-      const dbUser = dbUsers[i]
-
+      const id = dbUsers[i].telegramId
       let name
       let thumbSrc = ''
       if (i < 3) {
         try {
-          const tgUser = await client.getEntity(bigInt(dbUser.telegramId))
+          const tgUser =
+            id === me.id.toString() ? me : await client.getEntity(bigInt(id))
           if (tgUser.className !== 'User') {
             throw new Error(`${tgUser.className} is not a User`)
           }
-          name = [tgUser.firstName, tgUser.lastName]
-            .filter((s) => !!s)
-            .join(' ')
+          name =
+            [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
+            tgUser.username ||
+            ''
           thumbSrc = getThumbSrc(
             tgUser.photo?.className === 'UserProfilePhoto' &&
               tgUser.photo.strippedThumb
@@ -207,11 +211,11 @@ export const getLeaderboard = toResultFn(
       }
 
       leaderboard.push({
-        id: dbUser.telegramId,
+        id,
         name,
         initials: getInitials(name),
         thumbSrc,
-        points: dbUser.points,
+        points: dbUsers[i].points,
       })
     }
     return leaderboard
