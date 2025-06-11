@@ -59,6 +59,8 @@ export interface BaseJob {
   params: JobParams
   /** Timestamp of when this backup job was created. */
   created: number
+  /** Timestamp of when this backup job was last updated. */
+  updated: number
 }
 
 /** A backup job that is waiting to be queued and run. */
@@ -78,6 +80,8 @@ export interface CanceledJob extends BaseJob {
   progress?: number
   /** Timestamp of when this backup was started. I may not exist. */
   started?: number
+  /** Timestamp of when this backup was canceled. */
+  finished: number
 }
 
 /** A running backup job. */

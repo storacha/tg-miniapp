@@ -80,6 +80,7 @@ export interface DbJob {
   finishedAt: Date | null
   dataCid: string | null
   createdAt: Date
+  updatedAt: Date
 }
 
 type JobEvent = { action: string; job: Job }
@@ -94,6 +95,7 @@ type JobInput = Input<
   | 'finishedAt'
   | 'dataCid'
   | 'createdAt'
+  | 'updatedAt'
 >
 export interface TGDatabase {
   findOrCreateUser(input: UserInput): Promise<User>
@@ -273,6 +275,7 @@ const toDbJobParams = (job: Job): DbJobParams => {
     finishedAt: null,
     dataCid: null,
     createdAt: new Date(job.created),
+    updatedAt: new Date(job.updated),
   }
   switch (job.status) {
     case 'waiting':
@@ -283,6 +286,7 @@ const toDbJobParams = (job: Job): DbJobParams => {
       // Preserve any fields that exist on the job
       return {
         ...baseDbJob,
+        finishedAt: new Date(job.finished),
         progress: job.progress ?? null,
         startedAt: job.started ? new Date(job.started) : null,
       }
@@ -338,6 +342,7 @@ const fromDbJob = (dbJob: DbJob): Job => {
       period: [dbJob.periodFrom, dbJob.periodTo],
     },
     created: dbJob.createdAt.getTime(),
+    updated: dbJob.updatedAt.getTime(),
   }
   switch (dbJob.status) {
     case 'waiting':
@@ -345,9 +350,13 @@ const fromDbJob = (dbJob: DbJob): Job => {
     case 'queued':
       return { ...baseJob, status: 'queued' }
     case 'canceled':
+      if (dbJob.finishedAt == null) {
+        throw new Error('finishedAt should not be null on canceled job')
+      }
       return {
         ...baseJob,
         status: 'canceled',
+        finished: dbJob.finishedAt.getDate(),
         ...(dbJob.progress != null ? { progress: dbJob.progress } : {}),
         ...(dbJob.startedAt != null
           ? { started: dbJob.startedAt.getTime() }

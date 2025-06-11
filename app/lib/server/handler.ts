@@ -52,6 +52,7 @@ class Handler {
         created,
         started,
         progress,
+        updated: Date.now(),
       })
 
       let dialogsRetrieved = 0
@@ -76,6 +77,7 @@ class Handler {
               created,
               started,
               progress,
+              updated: Date.now(),
             })
           } catch (err) {
             console.error(err)
@@ -97,6 +99,7 @@ class Handler {
         created,
         started,
         finished: Date.now(),
+        updated: Date.now(),
       })
     } catch (err) {
       console.error('backup failed', err)
@@ -109,6 +112,7 @@ class Handler {
         created,
         started,
         finished: Date.now(),
+        updated: Date.now(),
       })
     }
   }

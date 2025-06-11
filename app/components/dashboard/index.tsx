@@ -57,7 +57,7 @@ const JobItem = ({
   const STUCK_JOB_TIMEOUT_MS = 24 * 60 * 60 * 1000
   const isStuck =
     (job.status === 'running' || job.status === 'waiting') &&
-    Date.now() - job.created > STUCK_JOB_TIMEOUT_MS
+    Date.now() - job.updated > STUCK_JOB_TIMEOUT_MS
 
   const DialogsLength = Object.keys(job.params.dialogs).length
 
