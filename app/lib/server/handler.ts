@@ -59,6 +59,15 @@ class Handler {
         onDialogRetrieved: async () => {
           dialogsRetrieved++
           try {
+            const job = await this.#db.getJobByID(
+              request.jobID,
+              this.#dbUser.id
+            )
+            if (job.status === 'canceled') {
+              console.warn(`Job ${id} was canceled`)
+              return
+            }
+
             progress = dialogsRetrieved / Object.keys(dialogs).length / 2.1
             await this.#db.updateJob(id, {
               id,

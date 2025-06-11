@@ -100,4 +100,13 @@ class Store extends EventTarget implements JobStorage {
     this.target.dispatchEvent(new CustomEvent('remove', { detail: job }))
     console.debug(`job store removed job: ${job.id}`)
   }
+
+  async cancel(id: JobID) {
+    console.debug('job store canceling job...')
+    const job = await this.#jobClient.cancelJob({
+      jobID: id,
+    })
+    this.target.dispatchEvent(new CustomEvent('remove', { detail: job }))
+    console.debug(`job store canceled job: ${job.id}`)
+  }
 }

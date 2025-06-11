@@ -105,6 +105,24 @@ export const removeJob = async (request: RemoveJobRequest) => {
   return job
 }
 
+export const cancelJob = async (request: RemoveJobRequest) => {
+  console.debug('job store canceling job...')
+  const session = await getSession()
+  const telegramId = getTelegramId(session.telegramAuth)
+  const db = getDB()
+  const dbUser = await db.findOrCreateUser({
+    storachaSpace: session.spaceDID,
+    telegramId: telegramId.toString(),
+  })
+  const job = await db.getJobByID(request.jobID, dbUser.id)
+  await db.updateJob(request.jobID, {
+    ...job,
+    status: 'canceled',
+  })
+  console.debug(`job store canceled job: ${job.id}`)
+  return job
+}
+
 export const handleJob = async (request: ExecuteJobRequest) => {
   const handler = await initializeHandler(request)
   try {

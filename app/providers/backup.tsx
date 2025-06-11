@@ -66,6 +66,7 @@ export interface ContextActions {
     limit: number
   ) => Promise<void>
   fetchMoreMessages: (offset: number, limit: number) => Promise<void>
+  cancelBackupJob: (job: JobID) => Promise<void>
   // setBackup: (id: Link|null) => void
   // setDialog: (id: bigint | null) => void
 }
@@ -86,6 +87,7 @@ export const ContextDefaultValue: ContextValue = [
     removeBackupJob: () => Promise.reject(new Error('provider not setup')),
     restoreBackup: () => Promise.reject(new Error('provider not setup')),
     fetchMoreMessages: () => Promise.reject(new Error('provider not setup')),
+    cancelBackupJob: () => Promise.reject(new Error('provider not setup')),
     // setBackup: () => {},
     // setDialog: () => {}
   },
@@ -245,6 +247,23 @@ export const Provider = ({
     [jobStore]
   )
 
+  const cancelBackupJob = useCallback(
+    async (id: JobID) => {
+      if (!jobStore) {
+        setError('missing job store')
+        return
+      }
+      try {
+        await jobStore.cancel(id)
+      } catch (error: any) {
+        const msg = 'Error canceling backup job!'
+        console.error(msg, error)
+        setError(getErrorMessage(error), { title: msg })
+      }
+    },
+    [jobStore]
+  )
+
   useEffect(() => {
     if (!jobStore) return
 
@@ -310,7 +329,13 @@ export const Provider = ({
           restoredBackup: restoreBackupResult,
           jobsReady,
         },
-        { addBackupJob, removeBackupJob, restoreBackup, fetchMoreMessages },
+        {
+          addBackupJob,
+          removeBackupJob,
+          restoreBackup,
+          fetchMoreMessages,
+          cancelBackupJob,
+        },
       ]}
     >
       {children}

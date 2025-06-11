@@ -60,7 +60,7 @@ export interface User {
 type Input<
   T,
   NoInput extends keyof T,
-  OptionalInput extends keyof T = never
+  OptionalInput extends keyof T = never,
 > = Omit<Omit<T, NoInput>, OptionalInput> &
   Partial<Omit<Pick<T, OptionalInput>, NoInput>>
 
@@ -123,8 +123,8 @@ export function getDB(): TGDatabase {
         union
         select * from users
         where telegram_id = ${input.telegramId} and storacha_space = ${
-        input.storachaSpace
-      } 
+          input.storachaSpace
+        } 
       `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
@@ -167,8 +167,8 @@ export function getDB(): TGDatabase {
 
       const points = await sql<{ points: number }[]>`
         select points from users where users.telegram_id = ${input.telegramId.toString()} and users.storacha_space=${
-        input.storachaSpace
-      }
+          input.storachaSpace
+        }
       `
 
       if (!points[0]) {
@@ -220,7 +220,7 @@ export function getDB(): TGDatabase {
           // @ts-expect-error Uint8Array is automatically converted to object
           toDbJobParams(input)
         )}
-        where id = ${id}
+        where id = ${id} and (status != 'canceled' or ${input.status} = 'canceled')
         returning *
       `
       if (!results[0]) {
@@ -279,6 +279,13 @@ const toDbJobParams = (job: Job): DbJobParams => {
       return baseDbJob
     case 'queued':
       return baseDbJob
+    case 'canceled':
+      // Preserve any fields that exist on the job
+      return {
+        ...baseDbJob,
+        progress: job.progress ?? null,
+        startedAt: job.started ? new Date(job.started) : null,
+      }
     case 'running':
       return {
         ...baseDbJob,
@@ -337,6 +344,15 @@ const fromDbJob = (dbJob: DbJob): Job => {
       return { ...baseJob, status: 'waiting' }
     case 'queued':
       return { ...baseJob, status: 'queued' }
+    case 'canceled':
+      return {
+        ...baseJob,
+        status: 'canceled',
+        ...(dbJob.progress != null ? { progress: dbJob.progress } : {}),
+        ...(dbJob.startedAt != null
+          ? { started: dbJob.startedAt.getTime() }
+          : {}),
+      }
     case 'running':
       if (dbJob.progress == null) {
         throw new Error('progress should not be null on running job')

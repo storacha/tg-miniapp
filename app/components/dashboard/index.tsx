@@ -10,7 +10,7 @@ import BackedChats from '@/components/dashboard/backed-chats'
 
 export default function Dashboard() {
   const router = useRouter()
-  const [{ jobs }, { removeBackupJob }] = useBackups()
+  const [{ jobs }, { removeBackupJob, cancelBackupJob }] = useBackups()
   const { isStorachaAuthorized, isFirstLogin } = useGlobal()
 
   return (
@@ -19,7 +19,12 @@ export default function Dashboard() {
         <Head />
       </div>
       {jobs.items.map((j) => (
-        <JobItem key={j.id} job={j} onRemove={removeBackupJob} />
+        <JobItem
+          key={j.id}
+          job={j}
+          onRemove={removeBackupJob}
+          onCancel={cancelBackupJob}
+        />
       ))}
       <div className="rounded-t-xl bg-background flex-grow w-full shadow-t-xl pt-5">
         <BackedChats />
@@ -40,13 +45,22 @@ export default function Dashboard() {
 const JobItem = ({
   job,
   onRemove,
+  onCancel,
 }: {
   job: PendingJob
   onRemove: (id: JobID) => unknown
+  onCancel: (id: JobID) => unknown
 }) => {
   const progress =
     job.status === 'running' || job.status === 'failed' ? job.progress : 0
+
+  const STUCK_JOB_TIMEOUT_MS = 24 * 60 * 60 * 1000
+  const isStuck =
+    (job.status === 'running' || job.status === 'waiting') &&
+    Date.now() - job.created > STUCK_JOB_TIMEOUT_MS
+
   const DialogsLength = Object.keys(job.params.dialogs).length
+
   return (
     <div className="w-full px-5 mb-5">
       <div className="w-full bg-background rounded-sm border">
@@ -56,6 +70,11 @@ const JobItem = ({
           </p>
           {job.status === 'failed' && (
             <button onClick={() => onRemove(job.id)}>
+              <X />
+            </button>
+          )}
+          {isStuck && (
+            <button onClick={() => onCancel(job.id)}>
               <X />
             </button>
           )}
