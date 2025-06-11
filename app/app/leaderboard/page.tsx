@@ -18,24 +18,27 @@ export default function Page() {
   const { setError } = useError()
 
   useEffect(() => {
-    if (!space) return
     ;(async () => {
       try {
         const leaderboard = fromResult(await getLeaderboard(tgSessionString))
         setLeaderboard(leaderboard)
       } catch (error) {
-        setError(getErrorMessage(error), {
-          title: 'Error fetching leaderboard!',
-        })
+        const title = 'Error fetching leaderboard!'
+        console.error(title, error)
+        setError(getErrorMessage(error), { title })
         setLeaderboard([])
       }
 
-      try {
-        const ranking = fromResult(await getRanking(tgSessionString, space))
-        setRanking(ranking)
-      } catch (error) {
-        setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
-        setRanking(undefined)
+      if (space) {
+        try {
+          const ranking = fromResult(await getRanking(tgSessionString, space))
+          setRanking(ranking)
+        } catch (error) {
+          const title = 'Error fetching ranking!'
+          console.error(title, error)
+          setError(getErrorMessage(error), { title })
+          setRanking(undefined)
+        }
       }
     })()
   }, [tgSessionString, space])

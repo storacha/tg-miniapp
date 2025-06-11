@@ -12,11 +12,11 @@ import {
 import { getTelegramClient } from '@/lib/server/telegram-manager'
 import { Api, TelegramClient } from 'telegram'
 import {
+  cleanUndef,
   decodeStrippedThumb,
   stringifyWithUIntArrays,
   toJPGDataURL,
 } from '@/lib/utils'
-import { getEntityType } from '@/lib/backup/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
 import { toResultFn } from '@/lib/errorhandling'
@@ -29,6 +29,7 @@ import {
   removeJob as jobsRemoveJob,
 } from '@/lib/server/jobs'
 import { SpaceDID } from '@storacha/access'
+import { toEntityData } from '@/lib/server/runner'
 const queueURL = process.env.JOBS_QUEUE_ID
 
 const localQueueFn = () => {
@@ -106,39 +107,37 @@ export const listDialogs = toResultFn(
       const chats: DialogInfo[] = []
       let lastChat
       for await (const chat of client.iterDialogs(paginationParams)) {
-        const title = (chat.name ?? chat.title ?? '').trim() || 'Unknown'
-        const parts = title
+        if (!chat.entity) {
+          console.warn('skipping dialog without entity: ', chat)
+          continue
+        }
+
+        const entityData = toEntityData(chat.entity)
+        const parts = entityData.name
           .replace(/[^a-zA-Z ]/gi, '')
           .trim()
           .split(' ')
         const initials =
           parts.length === 1
-            ? title[0]
+            ? entityData.name[0]
             : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-
-        let thumbSrc = ''
-        // @ts-expect-error Telegram types are messed up
-        const strippedThumbBytes = chat.entity?.photo?.strippedThumb
-        if (strippedThumbBytes) {
-          thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
-        }
-
         const isPublic =
           chat.entity?.className === 'Channel' && !!chat.entity?.username
             ? true
             : false
 
-        const type = chat.entity ? getEntityType(chat.entity) : 'unknown'
-
-        chats.push({
-          id: chat.id?.toString(),
-          title,
+        const info: DialogInfo = {
+          ...entityData,
           initials,
-          thumbSrc,
           isPublic,
-          type,
-          entityId: chat.entity?.id.toString(),
-        })
+          dialogId: chat.id?.toString(),
+          accessHash:
+            'accessHash' in chat.entity
+              ? chat.entity?.accessHash?.toString()
+              : undefined,
+        }
+
+        chats.push(cleanUndef(info))
         lastChat = chat
       }
 

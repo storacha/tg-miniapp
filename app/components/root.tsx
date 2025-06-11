@@ -107,24 +107,22 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
   useEffect(() => {
     let eventSource: EventSource
 
-    let encryptionPassword = ''
-    ;(async () => {
-      encryptionPassword = await cloudStorage.getItem('encryption-password')
-      setIsFirstLogin(!encryptionPassword)
-    })()
-
-    if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
-      return
-    }
-
-    ;(async () => {
-      if (encryptionPassword === '') {
-        console.log('creating new encryption password')
-        encryptionPassword = generateRandomPassword()
-        await cloudStorage.setItem('encryption-password', encryptionPassword)
-      } else {
-        console.log('found existing encryption password')
-      }
+		(async () => {
+			let encryptionPassword = await cloudStorage.getItem('encryption-password')
+      console.log('encryption password: ', encryptionPassword)
+			setIsFirstLogin(!encryptionPassword)
+		
+			if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
+				return
+			}
+		
+			if (!encryptionPassword) {
+				console.log('creating new encryption password')
+				encryptionPassword = generateRandomPassword()
+				await cloudStorage.setItem('encryption-password', encryptionPassword)
+			} else {
+				console.log('found existing encryption password')
+			}
 
       await storacha.setCurrentSpace(space)
 

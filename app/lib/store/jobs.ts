@@ -1,5 +1,5 @@
 import { Client as StorachaClient } from '@storacha/ui-react'
-import { JobID, JobStorage, Period, JobClient } from '@/api'
+import { JobID, JobStorage, Period, JobClient, DialogsById } from '@/api'
 import { Principal } from '@ipld/dag-ucan'
 import * as SpaceBlob from '@storacha/capabilities/space/blob'
 import * as SpaceIndex from '@storacha/capabilities/space/index'
@@ -79,7 +79,7 @@ class Store extends EventTarget implements JobStorage {
     return { items: allJobs.filter((j) => j.status === 'completed') }
   }
 
-  async add(dialogs: Set<bigint>, period: Period) {
+  async add(dialogs: DialogsById, period: Period) {
     console.debug('job store adding job...')
     const job = await this.#jobClient.createJob({
       dialogs,

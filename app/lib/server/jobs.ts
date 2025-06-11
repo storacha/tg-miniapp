@@ -53,7 +53,7 @@ export const createJob = async (
     periodFrom: request.period[0],
     periodTo: request.period[1] ?? Date.now() / 1000,
     space: session.spaceDID,
-    dialogs: [...request.dialogs].map((d) => d.toString()),
+    dialogs: request.dialogs,
   })
   await queueFn({
     ...request,

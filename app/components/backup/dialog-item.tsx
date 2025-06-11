@@ -1,5 +1,6 @@
 import { Backup, DialogInfo } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { getThumbSrc } from '@/lib/backup/utils'
 
 interface DialogItemProps {
   dialog: DialogInfo
@@ -7,7 +8,8 @@ interface DialogItemProps {
 }
 
 export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
-  const { title, initials, thumbSrc } = dialog
+  const { name, initials, photo } = dialog
+  const thumbSrc = getThumbSrc(photo?.strippedThumb)
 
   let latestBackupDate
   if (latestBackup) {
@@ -35,7 +37,7 @@ export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
       <div className="flex-auto">
-        <h1 className="font-semibold text-foreground/80">{title}</h1>
+        <h1 className="font-semibold text-foreground/80">{name}</h1>
         <p className="text-sm text-foreground/60">
           Last Backup:{' '}
           {latestBackupDate ?? <span className="text-red-900">Never</span>}

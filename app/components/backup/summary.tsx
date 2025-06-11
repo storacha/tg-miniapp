@@ -1,11 +1,11 @@
 import { SpaceDID } from '@storacha/ui-react'
-import { Period } from '@/api'
+import { DialogsById, Period } from '@/api'
 import { Button } from '../ui/button'
 import { FormEventHandler } from 'react'
 import { useBackups } from '@/providers/backup'
 
 export interface SummaryProps {
-  chats: Set<bigint>
+  chats: DialogsById
   space: SpaceDID
   period: Period
   starting: boolean
@@ -23,6 +23,7 @@ export const Summary = ({
     onSubmit()
   }
   const [{ jobsReady }, {}] = useBackups()
+  const chatsLength = Object.keys(chats).length
 
   return (
     <form onSubmit={handleSubmit}>
@@ -35,7 +36,7 @@ export const Summary = ({
       <div className="flex flex-col gap-5 rounded-t-xl bg-background w-full flex-grow py-2">
         <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">
           <p>
-            {chats.size.toLocaleString()} Chat{chats.size === 1 ? '' : 's'}
+            {chatsLength.toLocaleString()} Chat{chatsLength === 1 ? '' : 's'}
           </p>
         </div>
         <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">

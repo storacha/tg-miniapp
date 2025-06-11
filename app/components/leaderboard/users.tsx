@@ -25,7 +25,7 @@ export default function Users({ users }: { users: LeaderboardUser[] }) {
   return (
     <div className="flex flex-col py-10 bg-background h-full rounded-t-xl">
       {users.map((user, i) => (
-        <User key={user.id} user={user} rank={i} />
+        <User key={user.id} user={user} rank={i + 1} />
       ))}
     </div>
   )

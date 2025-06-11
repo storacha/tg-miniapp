@@ -46,6 +46,7 @@ const JobItem = ({
 }) => {
   const progress =
     job.status === 'running' || job.status === 'failed' ? job.progress : 0
+  const DialogsLength = Object.keys(job.params.dialogs).length
   return (
     <div className="w-full px-5 mb-5">
       <div className="w-full bg-background rounded-sm border">
@@ -75,8 +76,7 @@ const JobItem = ({
             {Math.floor(progress * 100)}% Completed
           </span>
           <span className="text-muted-foreground text-xs">
-            {job.params.dialogs.length} Chat
-            {job.params.dialogs.length > 1 ? 's' : ''} Backing Up
+            {DialogsLength} Chat{DialogsLength > 1 ? 's' : ''} Backing Up
           </span>
         </div>
       </div>

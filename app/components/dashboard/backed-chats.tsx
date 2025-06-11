@@ -67,7 +67,7 @@ export default function BackedChats() {
           {!loadingDialogs &&
             dialogs.map((d) => {
               const latestBackup = sortedBackups.find(
-                (b) => d.id && b.params.dialogs.includes(d.id)
+                (b) => d.id && b.params.dialogs[d.id]
               )
               if (!latestBackup) return null
               return (

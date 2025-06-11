@@ -93,8 +93,9 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     setError(null)
     setLoadingDialogs(true)
     try {
-      const { chats, offsetParams: newOffsetParams } =
-        await listDialogs(offsetParams)
+      const { chats, offsetParams: newOffsetParams } = await listDialogs(
+        offsetParams
+      )
       setDialogs([...dialogs, ...chats])
       setOffsetParams({ ...newOffsetParams, limit: 100 })
       setHasMore(chats.length > 0)

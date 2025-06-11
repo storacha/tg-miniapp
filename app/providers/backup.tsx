@@ -10,6 +10,7 @@ import {
 import { cloudStorage } from '@telegram-apps/sdk-react'
 import {
   Backup,
+  DialogsById,
   JobID,
   JobStorage,
   PendingJob,
@@ -55,7 +56,7 @@ export interface ContextState {
 
 export interface ContextActions {
   addBackupJob: (
-    chats: Set<bigint>,
+    chats: DialogsById,
     period: Period
   ) => Promise<JobID | undefined>
   removeBackupJob: (job: JobID) => Promise<void>
@@ -159,6 +160,7 @@ export const Provider = ({
           limit
         )
         setRestoredBackup(result)
+        setRestoredBackupError(undefined)
       } catch (err: any) {
         console.error('Error: restoring backup', err)
         setRestoredBackupError(err)
@@ -206,7 +208,7 @@ export const Provider = ({
 
   const addBackupJob = useCallback(
     async (
-      dialogs: Set<bigint>,
+      dialogs: DialogsById,
       period: Period
     ): Promise<string | undefined> => {
       if (!jobStore) {
