@@ -11,12 +11,7 @@ import {
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
 import { Api, TelegramClient } from 'telegram'
-import {
-  cleanUndef,
-  decodeStrippedThumb,
-  stringifyWithUIntArrays,
-  toJPGDataURL,
-} from '@/lib/utils'
+import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
 import { toResultFn } from '@/lib/errorhandling'
@@ -31,6 +26,14 @@ import {
 } from '@/lib/server/jobs'
 import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
+import { getThumbSrc } from '@/lib/backup/utils'
+import supervillains from '@/lib/supervillains.json'
+
+const names = supervillains
+  .map((value) => ({ value, sort: Math.random() }))
+  .sort((a, b) => a.sort - b.sort)
+  .map(({ value }) => value)
+
 const queueURL = process.env.JOBS_QUEUE_ID
 
 const localQueueFn = () => {
@@ -172,48 +175,38 @@ export const listDialogs = toResultFn(
 export const getLeaderboard = toResultFn(
   withClient(async (client: TelegramClient): Promise<LeaderboardUser[]> => {
     const dbUsers = await getDB().leaderboard()
-    const telegramIDs = dbUsers.map((user) => bigInt(user.telegramId))
-    const users = await client.invoke(
-      new Api.users.GetUsers({
-        id: telegramIDs,
-      })
-    )
-    return dbUsers.map((dbUser, i): LeaderboardUser => {
-      if (users[i].className == 'UserEmpty') {
-        return {
-          id: dbUser.id,
-          name: 'missing user',
-          initials: 'MU',
-          thumbSrc: '',
-          points: dbUser.points,
+    const leaderboard: LeaderboardUser[] = []
+    let i = 0
+    for (const dbUser of dbUsers) {
+      let name, thumbSrc
+      try {
+        const tgUser = await client.getEntity(bigInt(dbUser.telegramId))
+        if (tgUser.className !== 'User') {
+          throw new Error(`${tgUser.className} is not a User`)
         }
+        name = [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ')
+        thumbSrc = getThumbSrc(
+          tgUser.photo?.className === 'UserProfilePhoto' &&
+            tgUser.photo.strippedThumb
+            ? new Uint8Array(tgUser.photo.strippedThumb)
+            : undefined
+        )
+      } catch (err: any) {
+        console.warn(`failed to get leaderboard user: ${err.message}`)
+        name = names[i]
+        thumbSrc = ''
+        i++
       }
-      const tgUser = users[i]
-      const name = tgUser.lastName
-        ? `${tgUser.firstName ? `${tgUser.firstName} ` : ''}${tgUser.lastName}`
-        : tgUser.username || ''
-      const parts = name
-        .replace(/[^a-zA-Z ]/gi, '')
-        .trim()
-        .split(' ')
-      const initials =
-        parts.length === 1
-          ? name[0]
-          : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      let thumbSrc = ''
-      // @ts-expect-error Telegram types are messed up
-      const strippedThumbBytes = tgUser.photo?.strippedThumb
-      if (strippedThumbBytes) {
-        thumbSrc = toJPGDataURL(decodeStrippedThumb(strippedThumbBytes))
-      }
-      return {
+
+      leaderboard.push({
+        id: dbUser.telegramId,
         name,
-        initials,
+        initials: getInitials(name),
         thumbSrc,
         points: dbUser.points,
-        id: dbUser.id,
-      }
-    })
+      })
+    }
+    return leaderboard
   })
 )
 
