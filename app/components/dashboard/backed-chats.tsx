@@ -1,46 +1,42 @@
-import { MouseEventHandler, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ShieldCheck, ChevronRight } from 'lucide-react'
 import { useBackups } from '@/providers/backup'
-import { useTelegram } from '@/providers/telegram'
-import { Loading } from '@/components/ui/loading'
 import { DialogItem } from '@/components/backup/dialog-item'
+import { AbsolutePeriod, DialogInfo } from '@/api'
 
 export default function BackedChats() {
   const router = useRouter()
   const [{ backups }] = useBackups()
-  const [{ dialogs, loadingDialogs }, { loadMoreDialogs }] = useTelegram()
-
+  console.log('loading: ', backups.loading)
   const sortedBackups = backups.items.sort(
     (a, b) => b.params.period[1] - a.params.period[1]
   )
-  const observerRef = useRef<HTMLDivElement | null>(null)
 
-  useEffect(() => {
-    if (!observerRef.current) return
+  const dialogIdMap: Record<
+    string,
+    { dialogInfo: DialogInfo; latestBackup: AbsolutePeriod }
+  > = {}
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !loadingDialogs) {
-          loadMoreDialogs()
+  for (const backup of sortedBackups) {
+    for (const [dialogId, dialogInfo] of Object.entries(
+      backup.params.dialogs
+    )) {
+      if (!dialogIdMap[dialogId]) {
+        dialogIdMap[dialogId] = {
+          dialogInfo: { id: dialogId, ...dialogInfo },
+          latestBackup: backup.params.period,
         }
-      },
-      {
-        threshold: 0.1,
       }
-    )
-
-    observer.observe(observerRef.current)
-    return () => observer.disconnect()
-  }, [loadMoreDialogs, loadingDialogs])
-
-  const handleDialogItemClick: MouseEventHandler = (e) => {
-    e.preventDefault()
-    const id = e.currentTarget.getAttribute('data-id') ?? '0'
-    const dialog = dialogs.find((d) => d.id == id)
-    if (!dialog) return
-    router.push(`/dialog/${id}?type=${dialog.type}`)
+    }
   }
+
+  const handleDialogItemClick =
+    (dialogId: string, dialogType?: string) => (e: React.MouseEvent) => {
+      e.preventDefault()
+      router.push(
+        `/dialog/${dialogId}${dialogType ? `?type=${dialogType}` : ''}`
+      )
+    }
 
   return (
     <div className="flex flex-col gap-5 min-h-screen">
@@ -59,33 +55,20 @@ export default function BackedChats() {
         </div>
       ) : (
         <div className="flex flex-col">
-          {loadingDialogs && (
-            <div className="text-center">
-              <Loading text={'Loading chats...'} />
+          {Object.values(dialogIdMap).map(({ dialogInfo, latestBackup }) => (
+            <div
+              key={dialogInfo.id}
+              className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3"
+              data-id={dialogInfo.id}
+              onClick={handleDialogItemClick(dialogInfo.id, dialogInfo.type)}
+            >
+              <DialogItem dialog={dialogInfo} latestBackup={latestBackup} />
+              <div className="flex-none">
+                <ChevronRight />
+              </div>
             </div>
-          )}
-          {!loadingDialogs &&
-            dialogs.map((d) => {
-              const latestBackup = sortedBackups.find(
-                (b) => d.id && b.params.dialogs[d.id]
-              )
-              if (!latestBackup) return null
-              return (
-                <div
-                  key={d.id}
-                  className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3"
-                  data-id={d.id}
-                  onClick={handleDialogItemClick}
-                >
-                  <DialogItem dialog={d} latestBackup={latestBackup} />
-                  <div className={`flex-none`}>
-                    <ChevronRight />
-                  </div>
-                </div>
-              )
-            })}
-          <div ref={observerRef} className="h-10" />
-          {loadingDialogs && <p className="text-center">Loading chats...</p>}
+          ))}
+          {backups.loading && <p className="text-center">Loading chats...</p>}
         </div>
       )}
     </div>

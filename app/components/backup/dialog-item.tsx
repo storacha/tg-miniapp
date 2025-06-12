@@ -1,10 +1,10 @@
-import { Backup, DialogInfo } from '@/api'
+import { AbsolutePeriod, DialogInfo } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getThumbSrc } from '@/lib/backup/utils'
 
 interface DialogItemProps {
   dialog: DialogInfo
-  latestBackup?: Backup
+  latestBackup?: AbsolutePeriod
 }
 
 export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
@@ -13,7 +13,7 @@ export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
 
   let latestBackupDate
   if (latestBackup) {
-    latestBackupDate = new Date(latestBackup.params.period[1] * 1000)
+    latestBackupDate = new Date(latestBackup[1] * 1000)
     const isToday =
       latestBackupDate.toDateString() === new Date().toDateString()
     latestBackupDate = isToday
