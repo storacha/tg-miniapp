@@ -162,7 +162,10 @@ export default function Chats({
                 onClick={handleDialogItemClick}
               >
                 <Checkbox checked={!!selections[d.id ?? '']} />
-                <DialogItem dialog={d} latestBackup={latestBackup} />
+                <DialogItem
+                  dialog={d}
+                  latestBackup={latestBackup?.params.period}
+                />
               </div>
             )
           })}
