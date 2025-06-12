@@ -52,7 +52,7 @@ resource "random_password" "session_password" {
 
 
 module "app" {
-  source = "github.com/storacha/storoku//app?ref=v0.2.40"
+  source = "github.com/storacha/storoku//app?ref=v0.2.41"
   private_key = var.private_key
   private_key_env_var = "SERVER_IDENTITY_PRIVATE_KEY"
   httpport = 3000
@@ -77,6 +77,9 @@ module "app" {
     "NEXT_PUBLIC_TELEGRAM_API_HASH" = var.next_public_telegram_api_hash
     "BACKUP_PASSWORD" = random_password.backup_password.result
     "SESSION_PASSWORD" = random_password.session_password.result
+    "NEXT_PUBLIC_HUMANODE_AUTH_URL" = var.next_public_humanode_auth_url
+    "NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL" = var.next_public_humanode_oauth_callback_url
+    "NEXT_PUBLIC_HUMANODE_CLIENT_ID" = var.next_public_humanode_client_id
   }
   # enter any sqs queues you want to create here
   queues = [

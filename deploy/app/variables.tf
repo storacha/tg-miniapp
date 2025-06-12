@@ -59,3 +59,18 @@ variable "next_public_telegram_api_hash" {
   description = "value for next_public_telegram_api_hash secret"
   type = string
 }
+
+variable "next_public_humanode_auth_url" {
+  description = "value for next_public_humanode_auth_url secret"
+  type = string
+}
+
+variable "next_public_humanode_oauth_callback_url" {
+  description = "value for next_public_humanode_oauth_callback_url secret"
+  type = string
+}
+
+variable "next_public_humanode_client_id" {
+  description = "value for next_public_humanode_client_id secret"
+  type = string
+}
