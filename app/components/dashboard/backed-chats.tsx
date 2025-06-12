@@ -4,32 +4,44 @@ import { useBackups } from '@/providers/backup'
 import { DialogItem } from '@/components/backup/dialog-item'
 import { AbsolutePeriod, DialogInfo } from '@/api'
 import { Loading } from '../ui/loading'
+import { useGlobal } from '@/zustand/global'
+import { useMemo } from 'react'
 
 export default function BackedChats() {
   const router = useRouter()
   const [{ backups }] = useBackups()
+  const { isStorachaAuthorized } = useGlobal()
 
-  const sortedBackups = backups.items.sort(
-    (a, b) => b.params.period[1] - a.params.period[1]
-  )
+  const sortedDialogs = useMemo(() => {
+    // Sort backups by most recent period
+    const sortedBackups = [...backups.items].sort(
+      (a, b) => b.params.period[1] - a.params.period[1]
+    )
 
-  const dialogIdMap: Record<
-    string,
-    { dialogInfo: DialogInfo; latestBackup: AbsolutePeriod }
-  > = {}
+    // Build dialogIdMap: dialogId -> { dialogInfo, latestBackup }
+    const dialogIdMap: Record<
+      string,
+      { dialogInfo: DialogInfo; latestBackup: AbsolutePeriod }
+    > = {}
 
-  for (const backup of sortedBackups) {
-    for (const [dialogId, dialogInfo] of Object.entries(
-      backup.params.dialogs
-    )) {
-      if (!dialogIdMap[dialogId]) {
-        dialogIdMap[dialogId] = {
-          dialogInfo: { id: dialogId, ...dialogInfo },
-          latestBackup: backup.params.period,
+    for (const backup of sortedBackups) {
+      for (const [dialogId, dialogInfo] of Object.entries(
+        backup.params.dialogs
+      )) {
+        if (!dialogIdMap[dialogId]) {
+          dialogIdMap[dialogId] = {
+            dialogInfo: { id: dialogId, ...dialogInfo },
+            latestBackup: backup.params.period,
+          }
         }
       }
     }
-  }
+
+    // Return sorted dialogs array
+    return Object.values(dialogIdMap).sort(
+      (a, b) => b.latestBackup[1] - a.latestBackup[1]
+    )
+  }, [backups.items])
 
   const handleDialogItemClick =
     (dialogId: string, dialogType?: string) => (e: React.MouseEvent) => {
@@ -42,7 +54,7 @@ export default function BackedChats() {
   return (
     <div className="flex flex-col gap-5 min-h-screen">
       <h1 className="px-5">Chats</h1>
-      {backups.loading && (
+      {isStorachaAuthorized && backups.loading && (
         <div className="text-center">
           <Loading text={'Loading chats...'} />
         </div>
@@ -61,7 +73,7 @@ export default function BackedChats() {
         </div>
       ) : (
         <div className="flex flex-col">
-          {Object.values(dialogIdMap).map(({ dialogInfo, latestBackup }) => (
+          {sortedDialogs.map(({ dialogInfo, latestBackup }) => (
             <div
               key={dialogInfo.id}
               className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3"
