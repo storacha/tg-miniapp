@@ -10,7 +10,7 @@ import {
   Ranking,
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
-import { Api, TelegramClient } from 'telegram'
+import { TelegramClient } from 'telegram'
 import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
