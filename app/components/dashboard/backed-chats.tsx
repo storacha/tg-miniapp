@@ -3,11 +3,12 @@ import { ShieldCheck, ChevronRight } from 'lucide-react'
 import { useBackups } from '@/providers/backup'
 import { DialogItem } from '@/components/backup/dialog-item'
 import { AbsolutePeriod, DialogInfo } from '@/api'
+import { Loading } from '../ui/loading'
 
 export default function BackedChats() {
   const router = useRouter()
   const [{ backups }] = useBackups()
-  console.log('loading: ', backups.loading)
+
   const sortedBackups = backups.items.sort(
     (a, b) => b.params.period[1] - a.params.period[1]
   )
@@ -41,6 +42,11 @@ export default function BackedChats() {
   return (
     <div className="flex flex-col gap-5 min-h-screen">
       <h1 className="px-5">Chats</h1>
+      {backups.loading && (
+        <div className="text-center">
+          <Loading text={'Loading chats...'} />
+        </div>
+      )}
       {backups.items.length === 0 ? (
         <div className="flex flex-col justify-center items-center px-10 pt-20 gap-2">
           <div className="text-foreground/40 p-2">
@@ -68,7 +74,6 @@ export default function BackedChats() {
               </div>
             </div>
           ))}
-          {backups.loading && <p className="text-center">Loading chats...</p>}
         </div>
       )}
     </div>

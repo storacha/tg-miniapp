@@ -119,7 +119,7 @@ export const Provider = ({
   const [jobsReady, setJobsReady] = useState(false)
 
   const [backups, setBackups] = useState<Backup[]>([])
-  const [backupsLoading, setBackupsLoading] = useState(false)
+  const [backupsLoading, setBackupsLoading] = useState(true)
   const [backupsError, setBackupsError] = useState<Error>()
   const backupsResult = {
     items: backups,
