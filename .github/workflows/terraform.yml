@@ -59,9 +59,9 @@ env:
   TF_VAR_telegram_bot_token: ${{ secrets.telegram-bot-token }}
   TF_VAR_next_public_telegram_api_id: ${{ secrets.next-public-telegram-api-id }}
   TF_VAR_next_public_telegram_api_hash: ${{ secrets.next-public-telegram-api-hash }}
-  TF_VAR_next_public_humanode_client_id: ${{ secrets.next-public-humanode-client-id }}
   TF_VAR_next_public_humanode_auth_url: ${{ secrets.next-public-humanode-auth-url }}
   TF_VAR_next_public_humanode_oauth_callback_url: ${{ secrets.next-public-humanode-oauth-callback-url }}
+  TF_VAR_next_public_humanode_client_id: ${{ secrets.next-public-humanode-client-id }}
   TF_VAR_cloudflare_zone_id: ${{ secrets.cloudflare-zone-id }}
   CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare-api-token }}
   DEPLOY_ENV: ci

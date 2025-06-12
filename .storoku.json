@@ -45,6 +45,18 @@
     {
       "name": "SESSION_PASSWORD",
       "variable": false
+    },
+    {
+      "name": "NEXT_PUBLIC_HUMANODE_AUTH_URL",
+      "variable": true
+    },
+    {
+      "name": "NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL",
+      "variable": true
+    },
+    {
+      "name": "NEXT_PUBLIC_HUMANODE_CLIENT_ID",
+      "variable": true
     }
   ],
   "tables": null,
