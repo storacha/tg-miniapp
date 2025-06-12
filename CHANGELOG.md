@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.2.0](https://github.com/storacha/tg-miniapp/compare/v2.1.1...v2.2.0) (2025-06-12)
+
+
+### Features
+
+* add humanode ([7bb460c](https://github.com/storacha/tg-miniapp/commit/7bb460cea9a27a3696001d6a9b47603b813573ad))
+
+
+### Bug Fixes
+
+* allow users to cancel a stuck backup ([3baa8dd](https://github.com/storacha/tg-miniapp/commit/3baa8dd446a53554d54662b5827276d8da4f8c06))
+* change the deploy config to include the humanode envs ([bd25736](https://github.com/storacha/tg-miniapp/commit/bd257363bb26708648c7f844ee9682c9035c2bfb))
+* change the deploy config to include the humanode envs ([e510e65](https://github.com/storacha/tg-miniapp/commit/e510e65fbab73b2a2b88faf5c17ca8c02b22887f))
+* **deploy:** update storoku, no replicaiton conf ([b5c00cf](https://github.com/storacha/tg-miniapp/commit/b5c00cf2def8f90358d05b7ad1eda0370244de62))
+* ensure consistent encryption password to prevent dialog not found errors ([bdc9145](https://github.com/storacha/tg-miniapp/commit/bdc914568b4c9b67e69a05e7483a6095e0911531))
+* ensure users can cancel a stuck backup ([dda59e1](https://github.com/storacha/tg-miniapp/commit/dda59e1cd4c285a32f1f50d4b519afe1d233c395))
+* get entity bug ([ab6d51c](https://github.com/storacha/tg-miniapp/commit/ab6d51c3382ad0a9d3490652b1f662ef3c45c013))
+* leaderboard page now displays first place as [#1](https://github.com/storacha/tg-miniapp/issues/1) instead of [#0](https://github.com/storacha/tg-miniapp/issues/0) ([a6ecd86](https://github.com/storacha/tg-miniapp/commit/a6ecd86247864a34022d597db859894f75945172))
+* store dialog info in db instead of just dialog IDs ([2f9918b](https://github.com/storacha/tg-miniapp/commit/2f9918b8a6f7b859033e261a130745e7e84a3987))
+* update stuck job timout to 3 hours ([f46069b](https://github.com/storacha/tg-miniapp/commit/f46069ba587da37aa9f7eac08f7e304c3b60cf24))
+
 ## [2.1.1](https://github.com/storacha/tg-miniapp/compare/v2.1.0...v2.1.1) (2025-06-06)
 
 
