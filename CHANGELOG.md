@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.2.1](https://github.com/storacha/tg-miniapp/compare/v2.2.0...v2.2.1) (2025-06-12)
+
+
+### Bug Fixes
+
+* display current users name in leaderboard ([4baca77](https://github.com/storacha/tg-miniapp/commit/4baca77ab4371a27f781e4c3fb59c145230800ea))
+* leaderboard names ([924a465](https://github.com/storacha/tg-miniapp/commit/924a465908c454373c4879862afdf0f96b3729fa))
+* **server:** handle unknown exception ([3e095fb](https://github.com/storacha/tg-miniapp/commit/3e095fbadd37b51be67713aabf1667f3042777e7))
+* **server:** remove unused var ([4ef30ca](https://github.com/storacha/tg-miniapp/commit/4ef30ca7e08e76ee207a6ff65afd110eb0aca892))
+
 ## [2.2.0](https://github.com/storacha/tg-miniapp/compare/v2.1.1...v2.2.0) (2025-06-12)
 
 
