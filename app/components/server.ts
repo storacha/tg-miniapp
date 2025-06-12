@@ -199,8 +199,12 @@ export const getLeaderboard = toResultFn(
               ? new Uint8Array(tgUser.photo.strippedThumb)
               : undefined
           )
-        } catch (err: any) {
-          console.warn(`failed to get leaderboard user: ${err.message}`)
+        } catch (err) {
+          if (err instanceof Error) {
+            console.warn(`failed to get leaderboard user: ${err.message}`)
+          } else {
+            console.log(`failed to get leaderboard user: `, err)
+          }
         }
       }
       if (!name) {
