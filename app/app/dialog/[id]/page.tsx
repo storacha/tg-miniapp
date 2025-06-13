@@ -4,6 +4,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { useBackups } from '@/providers/backup'
 import { ChevronRight } from 'lucide-react'
 import { Layouts } from '@/components/layouts'
+import { useMemo } from 'react'
 
 export default function BackupSelectionPage() {
   const { id } = useParams<{ id: string }>()
@@ -12,7 +13,13 @@ export default function BackupSelectionPage() {
   const searchParams = useSearchParams()
   const type = searchParams.get('type')
 
-  const dialogBackups = backups.items.filter((b) => b.params.dialogs[id])
+  const dialogBackups = useMemo(
+    () =>
+      backups.items
+        .filter((b) => b.params.dialogs[id])
+        .sort((a, b) => b.params.period[1] - a.params.period[1]),
+    [backups.items, id]
+  )
 
   const handleBackupClick = (e: React.MouseEvent, backupCid: string) => {
     e.preventDefault()
