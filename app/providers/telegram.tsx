@@ -17,6 +17,7 @@ import {
 import {
   listDialogs as listDialogsRequest,
   getMe as getMeRequest,
+  logout as logoutTelegram,
 } from '../components/server'
 import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
@@ -33,6 +34,7 @@ export interface ContextState {
 export interface ContextActions {
   getMe: () => Promise<string | undefined>
   loadMoreDialogs: () => Promise<void>
+  logout: () => Promise<void>
 }
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
@@ -47,6 +49,7 @@ export const ContextDefaultValue: ContextValue = [
   {
     getMe: () => Promise.reject(new Error('provider not setup')),
     loadMoreDialogs: () => Promise.reject(new Error('provider not setup')),
+    logout: () => Promise.reject(new Error('provider not setup')),
   },
 ]
 
@@ -71,6 +74,17 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const [loadingDialogs, setLoadingDialogs] = useState(false)
   const { setError } = useError()
 
+  const logout = useCallback(async () => {
+    try {
+      if (!tgSessionString) return
+      await logoutTelegram(tgSessionString)
+    } catch (err) {
+      const title = 'Failed to log out from Telegram!'
+      console.error(title, err)
+      setError(getErrorMessage(err), { title })
+    }
+  }, [tgSessionString, setError])
+
   const listDialogs = useCallback(
     async (paginationParams = { limit: 10 }) => {
       if (!tgSessionString) return { chats: [], offsetParams: {} }
@@ -93,9 +107,8 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     setError(null)
     setLoadingDialogs(true)
     try {
-      const { chats, offsetParams: newOffsetParams } = await listDialogs(
-        offsetParams
-      )
+      const { chats, offsetParams: newOffsetParams } =
+        await listDialogs(offsetParams)
       setDialogs([...dialogs, ...chats])
       setOffsetParams({ ...newOffsetParams, limit: 100 })
       setHasMore(chats.length > 0)
@@ -130,7 +143,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     <Context.Provider
       value={[
         { user, launchParams, dialogs, loadingDialogs },
-        { getMe, loadMoreDialogs },
+        { getMe, loadMoreDialogs, logout },
       ]}
     >
       {children}

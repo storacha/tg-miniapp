@@ -12,7 +12,7 @@ import { MouseEventHandler } from 'react'
 import { useW3 as useStoracha } from '@storacha/ui-react'
 
 export function Menu() {
-  const [{ user }] = useTelegram()
+  const [{ user }, { logout: telegramLogout }] = useTelegram()
   const [, { logout }] = useStoracha()
   const {
     phoneNumber,
@@ -29,6 +29,7 @@ export function Menu() {
   const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async (e) => {
     e.preventDefault()
     if (!confirm('Are you sure you want to log out?')) return
+    await telegramLogout()
     setPhoneNumber('')
     setSpace(null)
     setTgSessionString('')
