@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.2.3](https://github.com/storacha/tg-miniapp/compare/v2.2.2...v2.2.3) (2025-06-13)
+
+
+### Bug Fixes
+
+* logout from app terminate telegram session ([63e7d15](https://github.com/storacha/tg-miniapp/commit/63e7d15a2f2ae8bdfcca340d0e4efd1f1def0573))
+* logout from app terminate telegram session ([803e67b](https://github.com/storacha/tg-miniapp/commit/803e67b77aa92511d7adef7a0bafbcee21478aa4))
+
 ## [2.2.2](https://github.com/storacha/tg-miniapp/compare/v2.2.1...v2.2.2) (2025-06-13)
 
 
