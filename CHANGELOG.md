@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.2.2](https://github.com/storacha/tg-miniapp/compare/v2.2.1...v2.2.2) (2025-06-13)
+
+
+### Bug Fixes
+
+* backed up chats loading and sort order ([5d9a775](https://github.com/storacha/tg-miniapp/commit/5d9a77573e5ba6226177d12cf7ccb4ba68e7cf33))
+* backed up chats loading and sort order ([2950dfc](https://github.com/storacha/tg-miniapp/commit/2950dfc8603f02f1de3008ef90d1e2d1f9e2e55b))
+* select backup sort order ([fa4057a](https://github.com/storacha/tg-miniapp/commit/fa4057a8ed22a78a650a520f0bb28969074228e9))
+
 ## [2.2.1](https://github.com/storacha/tg-miniapp/compare/v2.2.0...v2.2.1) (2025-06-12)
 
 
