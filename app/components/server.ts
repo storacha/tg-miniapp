@@ -28,6 +28,7 @@ import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
 import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
+import { Api } from '@/vendor/telegram'
 
 const names = supervillains
   .map((value) => ({ value, sort: Math.random() }))
@@ -88,6 +89,14 @@ const withClient = <T extends [...unknown[]], U>(
     }
   }
 }
+
+export const logout = toResultFn(
+  withClient(async (client: TelegramClient) => {
+    console.log('logging out from telegram client..')
+    await client.invoke(new Api.auth.LogOut())
+    console.log('logged out from telegram client')
+  })
+)
 
 const _getMe = async (client: TelegramClient) => {
   const user = await client.getMe()
