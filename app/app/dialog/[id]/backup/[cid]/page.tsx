@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useTelegram } from '@/providers/telegram'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
@@ -290,9 +290,12 @@ export default function Page() {
   const type = searchParams.get('type') as EntityType
   const [userId, setUserId] = useState<string>()
 
-  useEffect(() => {
-    const normalizedId = getNormalizedEntityId(id, type)
+  const normalizedId = useMemo(
+    () => getNormalizedEntityId(id, type),
+    [id, type]
+  )
 
+  useEffect(() => {
     const fetchBackup = async () => {
       const userId = await getMe()
       if (!userId) return
@@ -301,7 +304,7 @@ export default function Page() {
     }
 
     fetchBackup()
-  }, [backupCid, id, restoreBackup, getMe, type])
+  }, [backupCid, restoreBackup, getMe])
 
   const handleFetchMoreMessages = async () => {
     if (

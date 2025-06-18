@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from 'react'
 import { cloudStorage } from '@telegram-apps/sdk-react'
 import {
@@ -127,6 +128,9 @@ export const Provider = ({
     error: backupsError,
   }
 
+  const [restoreCache, setRestoreCache] = useState<
+    Record<string, RestoredBackup>
+  >({})
   const [restoredBackup, setRestoredBackup] = useState<RestoredBackup>()
   const [restoredBackupLoading, setRestoredBackupLoading] = useState(false)
   const [restoredBackupError, setRestoredBackupError] = useState<Error>()
@@ -137,11 +141,25 @@ export const Provider = ({
     error: restoredBackupError,
   }
 
+  // Use useRef for cache to avoid unnecessary re-renders
+  const restoreCacheRef = useRef(restoreCache)
+  useEffect(() => {
+    restoreCacheRef.current = restoreCache
+  }, [restoreCache])
+
   const restoreBackup = useCallback(
     async (backupCid: string, dialogId: string, limit: number) => {
       setRestoredBackupLoading(true)
       try {
         setRestoredBackupError(undefined)
+        const cacheKey = `${backupCid}:${dialogId}`
+
+        const cached = restoreCacheRef.current[cacheKey]
+        if (cached) {
+          setRestoredBackup(cached)
+          setRestoredBackupLoading(false)
+          return
+        }
 
         if (!cloudStorage.getKeys.isAvailable) {
           throw new Error('Error trying to access cloud storage.')
@@ -161,13 +179,17 @@ export const Provider = ({
           cipher,
           limit
         )
-        console.log('restored backup.', result)
         setRestoredBackup(result)
+        setRestoreCache((prev) => {
+          const next = { ...prev, [cacheKey]: result }
+          restoreCacheRef.current = next
+          return next
+        })
         setRestoredBackupError(undefined)
-      } catch (err: any) {
-        console.error('Error: restoring backup', err)
-        setRestoredBackupError(err)
-        throw err // Re-throw para que o SWR possa capturar o erro
+      } catch (err: unknown) {
+        setRestoredBackupError(
+          err instanceof Error ? err : new Error('Unknown error')
+        )
       } finally {
         setRestoredBackupLoading(false)
       }
