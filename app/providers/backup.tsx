@@ -65,7 +65,7 @@ export interface ContextActions {
     dialogId: string,
     limit: number
   ) => Promise<void>
-  fetchMoreMessages: (offset: number, limit: number) => Promise<void>
+  fetchMoreMessages: (limit: number) => Promise<void>
   cancelBackupJob: (job: JobID) => Promise<void>
   // setBackup: (id: Link|null) => void
   // setDialog: (id: bigint | null) => void
@@ -161,11 +161,13 @@ export const Provider = ({
           cipher,
           limit
         )
+        console.log('restored backup.', result)
         setRestoredBackup(result)
         setRestoredBackupError(undefined)
       } catch (err: any) {
         console.error('Error: restoring backup', err)
         setRestoredBackupError(err)
+        throw err // Re-throw para que o SWR possa capturar o erro
       } finally {
         setRestoredBackupLoading(false)
       }
@@ -173,40 +175,74 @@ export const Provider = ({
     []
   )
 
-  const fetchMoreMessages = async (offset: number, limit: number) => {
-    if (!restoredBackup) {
-      console.warn('fetchMoreMessages called without a restored backup')
-      return
-    }
-
-    try {
-      if (!cloudStorage.getKeys.isAvailable) {
-        throw new Error('Error trying to access cloud storage.')
+  const fetchMoreMessages = useCallback(
+    async (limit: number) => {
+      if (!restoredBackup) {
+        console.warn('fetchMoreMessages called without a restored backup')
+        return
       }
 
-      const encryptionPassword = await cloudStorage.getItem(
-        'encryption-password'
-      )
-      if (!encryptionPassword) {
-        throw new Error('Encryption password not found in cloud storage')
+      // Prevent multiple concurrent loads
+      if (restoredBackup.isLoadingMore) {
+        console.warn(
+          'fetchMoreMessages called while already loading more messages'
+        )
+        return
       }
 
-      const cipher = createCipher(encryptionPassword)
-      const newMessages = await fetchMoreMessagesAction(
-        restoredBackup.dialogData,
-        cipher,
-        offset,
-        limit
+      console.log(
+        'backup: Fetching more messages from batch:',
+        restoredBackup.lastBatchIndex,
+        'message:',
+        restoredBackup.lastMessageIndex
       )
-      setRestoredBackup((prev) => ({
-        ...prev!,
-        messages: [...prev!.messages, ...newMessages],
-      }))
-    } catch (err: any) {
-      console.error('Error: fetching more messages', err)
-      setRestoredBackupError(err)
-    }
-  }
+      setRestoredBackup((prev) => ({ ...prev!, isLoadingMore: true }))
+
+      try {
+        if (!cloudStorage.getKeys.isAvailable) {
+          throw new Error('Error trying to access cloud storage.')
+        }
+
+        const encryptionPassword = await cloudStorage.getItem(
+          'encryption-password'
+        )
+        if (!encryptionPassword) {
+          throw new Error('Encryption password not found in cloud storage')
+        }
+
+        const cipher = createCipher(encryptionPassword)
+        const result = await fetchMoreMessagesAction(
+          restoredBackup.dialogData.messages,
+          cipher,
+          restoredBackup.lastBatchIndex,
+          restoredBackup.lastMessageIndex,
+          limit
+        )
+
+        console.log(
+          'fetched more messages:',
+          result.messages.length,
+          'lastMessageIndex: ',
+          result.lastMessageIndex
+        )
+
+        setRestoredBackup((prev) => ({
+          ...prev!,
+          messages: [...prev!.messages, ...result.messages],
+          mediaMap: { ...prev!.mediaMap, ...result.mediaMap },
+          lastBatchIndex: result.lastBatchIndex,
+          lastMessageIndex: result.lastMessageIndex,
+          hasMoreMessages: result.hasMoreMessages,
+          isLoadingMore: false,
+        }))
+      } catch (err: any) {
+        console.error('Error: fetching more messages', err)
+        setRestoredBackupError(err)
+        setRestoredBackup((prev) => ({ ...prev!, isLoadingMore: false }))
+      }
+    },
+    [restoredBackup]
+  )
 
   const addBackupJob = useCallback(
     async (
