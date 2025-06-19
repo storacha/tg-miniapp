@@ -27,6 +27,7 @@ import {
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { useError } from './error'
 import { getErrorMessage } from '@/lib/errorhandling'
+import { LRUCache } from 'lru-cache'
 
 export interface Result<T> {
   items: T[]
@@ -128,9 +129,6 @@ export const Provider = ({
     error: backupsError,
   }
 
-  const [restoreCache, setRestoreCache] = useState<
-    Record<string, RestoredBackup>
-  >({})
   const [restoredBackup, setRestoredBackup] = useState<RestoredBackup>()
   const [restoredBackupLoading, setRestoredBackupLoading] = useState(false)
   const [restoredBackupError, setRestoredBackupError] = useState<Error>()
@@ -141,11 +139,13 @@ export const Provider = ({
     error: restoredBackupError,
   }
 
-  // Use useRef for cache to avoid unnecessary content reloads
-  const restoreCacheRef = useRef(restoreCache)
-  useEffect(() => {
-    restoreCacheRef.current = restoreCache
-  }, [restoreCache])
+  const restoreCache = useRef(
+    new LRUCache<string, RestoredBackup>({
+      max: 10,
+      ttl: 1000 * 60 * 30, // 30 minutes
+      updateAgeOnGet: true, // reset TTL when accessed
+    })
+  )
 
   const handleMediaLoaded = useCallback(
     (mediaCid: string, data: Uint8Array) => {
@@ -170,7 +170,7 @@ export const Provider = ({
         setRestoredBackupError(undefined)
         const cacheKey = `${backupCid}:${dialogId}`
 
-        const cached = restoreCacheRef.current[cacheKey]
+        const cached = restoreCache.current.get(cacheKey)
         if (cached) {
           setRestoredBackup(cached)
           setRestoredBackupLoading(false)
@@ -197,13 +197,9 @@ export const Provider = ({
           limit,
           handleMediaLoaded
         )
-        console.log('restored backup:', result)
+
         setRestoredBackup(result)
-        setRestoreCache((prev) => {
-          const next = { ...prev, [cacheKey]: result }
-          restoreCacheRef.current = next
-          return next
-        })
+        restoreCache.current.set(cacheKey, result)
         setRestoredBackupError(undefined)
       } catch (err: unknown) {
         setRestoredBackupError(
