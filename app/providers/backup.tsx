@@ -141,11 +141,27 @@ export const Provider = ({
     error: restoredBackupError,
   }
 
-  // Use useRef for cache to avoid unnecessary re-renders
+  // Use useRef for cache to avoid unnecessary content reloads
   const restoreCacheRef = useRef(restoreCache)
   useEffect(() => {
     restoreCacheRef.current = restoreCache
   }, [restoreCache])
+
+  const handleMediaLoaded = useCallback(
+    (mediaCid: string, data: Uint8Array) => {
+      setRestoredBackup((prev) => {
+        if (!prev) return prev
+        if (prev.mediaMap[mediaCid]) return prev
+
+        const updatedMediaMap = { ...prev.mediaMap, [mediaCid]: data }
+        return {
+          ...prev,
+          mediaMap: updatedMediaMap,
+        }
+      })
+    },
+    []
+  )
 
   const restoreBackup = useCallback(
     async (backupCid: string, dialogId: string, limit: number) => {
@@ -173,12 +189,15 @@ export const Provider = ({
         }
 
         const cipher = createCipher(encryptionPassword)
+
         const result = await restoreBackupAction(
           backupCid,
           dialogId,
           cipher,
-          limit
+          limit,
+          handleMediaLoaded
         )
+        console.log('restored backup:', result)
         setRestoredBackup(result)
         setRestoreCache((prev) => {
           const next = { ...prev, [cacheKey]: result }
@@ -194,7 +213,7 @@ export const Provider = ({
         setRestoredBackupLoading(false)
       }
     },
-    []
+    [handleMediaLoaded]
   )
 
   const fetchMoreMessages = useCallback(
@@ -204,7 +223,6 @@ export const Provider = ({
         return
       }
 
-      // Prevent multiple concurrent loads
       if (restoredBackup.isLoadingMore) {
         console.warn(
           'fetchMoreMessages called while already loading more messages'
@@ -212,12 +230,6 @@ export const Provider = ({
         return
       }
 
-      console.log(
-        'backup: Fetching more messages from batch:',
-        restoredBackup.lastBatchIndex,
-        'message:',
-        restoredBackup.lastMessageIndex
-      )
       setRestoredBackup((prev) => ({ ...prev!, isLoadingMore: true }))
 
       try {
@@ -238,14 +250,8 @@ export const Provider = ({
           cipher,
           restoredBackup.lastBatchIndex,
           restoredBackup.lastMessageIndex,
-          limit
-        )
-
-        console.log(
-          'fetched more messages:',
-          result.messages.length,
-          'lastMessageIndex: ',
-          result.lastMessageIndex
+          limit,
+          handleMediaLoaded
         )
 
         setRestoredBackup((prev) => ({
@@ -263,7 +269,7 @@ export const Provider = ({
         setRestoredBackup((prev) => ({ ...prev!, isLoadingMore: false }))
       }
     },
-    [restoredBackup]
+    [restoredBackup, handleMediaLoaded]
   )
 
   const addBackupJob = useCallback(

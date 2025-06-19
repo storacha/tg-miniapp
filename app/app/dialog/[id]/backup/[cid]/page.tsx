@@ -230,9 +230,11 @@ function BackupDialog({
                 msg.media.metadata.type === 'document'
                   ? msg.media.metadata.document?.mimeType
                   : ''
-              mediaUrl = URL.createObjectURL(
-                new Blob([rawContent], { type: type })
-              )
+              if (rawContent) {
+                mediaUrl = URL.createObjectURL(
+                  new Blob([rawContent], { type: type })
+                )
+              }
             }
 
             return (
