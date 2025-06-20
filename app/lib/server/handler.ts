@@ -43,6 +43,7 @@ class Handler {
       params: { space, dialogs, period },
     } = job
     let progress = 0
+    let totalBytesUploaded = 0
     const started = Date.now()
     try {
       await this.#db.updateJob(id, {
@@ -84,11 +85,16 @@ class Handler {
           }
         },
         onShardStored: (meta: CARMetadata) => {
-          this.#db.updateUser(this.#dbUser.id, {
-            ...this.#dbUser,
-            points: this.#dbUser.points + meta.size * mRachaPointsPerByte,
-          })
+          totalBytesUploaded += meta.size
         },
+      })
+
+      // Only award points after successful backup completion
+      const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
+      console.log(`total size uploaded: ${totalBytesUploaded} bytes`)
+      await this.#db.updateUser(this.#dbUser.id, {
+        ...this.#dbUser,
+        points: this.#dbUser.points + pointsEarned,
       })
 
       await this.#db.updateJob(id, {
