@@ -162,12 +162,15 @@ class Handler {
           } catch (err) {
             console.error('Error updating progress during shard storage:', err)
           }
-
-          this.#db.updateUser(this.#dbUser.id, {
-            ...this.#dbUser,
-            points: this.#dbUser.points + meta.size * mRachaPointsPerByte,
-          })
         },
+      })
+
+      // Only award points after successful backup completion
+      const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
+      console.log(`total size uploaded: ${totalBytesUploaded} bytes`)
+      await this.#db.updateUser(this.#dbUser.id, {
+        ...this.#dbUser,
+        points: this.#dbUser.points + pointsEarned,
       })
 
       await this.#db.updateJob(id, {
