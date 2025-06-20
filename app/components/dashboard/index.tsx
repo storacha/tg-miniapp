@@ -7,6 +7,7 @@ import Head from '@/components/dashboard/head'
 import { Button } from '@/components/ui/button'
 import { StorachaConnect } from '@/components/backup/connect'
 import BackedChats from '@/components/dashboard/backed-chats'
+import { useEffect, useState } from 'react'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -53,6 +54,8 @@ const JobItem = ({
 }) => {
   const progress =
     job.status === 'running' || job.status === 'failed' ? job.progress : 0
+
+  console.log('job progress', progress)
 
   const STUCK_JOB_TIMEOUT_MS = 3 * 60 * 60 * 1000
   const isStuck =
