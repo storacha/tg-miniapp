@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.2.3](https://github.com/storacha/tg-miniapp/compare/v2.2.2...v2.2.3) (2025-06-20)
+
+
+### Bug Fixes
+
+* logout from app terminate telegram session ([63e7d15](https://github.com/storacha/tg-miniapp/commit/63e7d15a2f2ae8bdfcca340d0e4efd1f1def0573))
+* logout from app terminate telegram session ([803e67b](https://github.com/storacha/tg-miniapp/commit/803e67b77aa92511d7adef7a0bafbcee21478aa4))
+
+
+### Performance Improvements
+
+* add lru cache to help loading backed up chats ([d9c2d11](https://github.com/storacha/tg-miniapp/commit/d9c2d114dbdf4fe7ff167e3c2823296ff5735fe0))
+* load media in background with p-map concurrency ([a08a7bb](https://github.com/storacha/tg-miniapp/commit/a08a7bba05be15470106df9dbe00db523495158f))
+* recover backed up chat messages in batches ([d770630](https://github.com/storacha/tg-miniapp/commit/d7706305139e3e9d54bd66f653f6aa6b0c09b40e))
+
 ## [2.2.2](https://github.com/storacha/tg-miniapp/compare/v2.2.1...v2.2.2) (2025-06-13)
 
 
