@@ -55,8 +55,6 @@ const JobItem = ({
   const progress =
     job.status === 'running' || job.status === 'failed' ? job.progress : 0
 
-  console.log('job progress', progress)
-
   const STUCK_JOB_TIMEOUT_MS = 3 * 60 * 60 * 1000
   const isStuck =
     (job.status === 'running' || job.status === 'waiting') &&
@@ -88,7 +86,7 @@ const JobItem = ({
         <div className="flex justify-between items-center px-3 py-3">
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
             <div
-              className="bg-blue-900 h-2.5 rounded-full transition-all"
+              className="bg-blue-900 h-2.5 rounded-full transition-[width] duration-300 ease-in-out"
               style={{ width: `${progress * 100}%` }}
             ></div>
           </div>
