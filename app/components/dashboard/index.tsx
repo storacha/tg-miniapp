@@ -7,6 +7,7 @@ import Head from '@/components/dashboard/head'
 import { Button } from '@/components/ui/button'
 import { StorachaConnect } from '@/components/backup/connect'
 import BackedChats from '@/components/dashboard/backed-chats'
+import { useEffect, useState } from 'react'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -85,7 +86,7 @@ const JobItem = ({
         <div className="flex justify-between items-center px-3 py-3">
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
             <div
-              className="bg-blue-900 h-2.5 rounded-full transition-all"
+              className="bg-blue-900 h-2.5 rounded-full transition-[width] duration-300 ease-in-out"
               style={{ width: `${progress * 100}%` }}
             ></div>
           </div>
