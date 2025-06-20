@@ -231,6 +231,10 @@ export interface BackupData {
   period: AbsolutePeriod
 }
 
+export type DialogDataMessages = Array<
+  Link<EncryptedTaggedByteView<Array<MessageData | ServiceMessageData>>>
+>
+
 export interface DialogData extends EntityData {
   /** A link to the entities that participated in this dialog. */
   entities: Link<EncryptedTaggedByteView<EntityRecordData>>
@@ -242,9 +246,7 @@ export interface DialogData extends EntityData {
    *
    * Each list has a maximum of 1,000 messages.
    */
-  messages: Array<
-    Link<EncryptedTaggedByteView<Array<MessageData | ServiceMessageData>>>
-  >
+  messages: DialogDataMessages
 }
 
 export interface DialogInfo extends EntityData {
@@ -1357,6 +1359,9 @@ export interface RestoredBackup {
   mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
   hasMoreMessages: boolean
+  isLoadingMore?: boolean
+  lastBatchIndex: number
+  lastMessageIndex: number
 }
 
 export type MediaData =

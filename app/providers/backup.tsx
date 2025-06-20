@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
 } from 'react'
 import { cloudStorage } from '@telegram-apps/sdk-react'
 import {
@@ -26,6 +27,7 @@ import {
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { useError } from './error'
 import { getErrorMessage } from '@/lib/errorhandling'
+import { LRUCache } from 'lru-cache'
 
 export interface Result<T> {
   items: T[]
@@ -65,7 +67,7 @@ export interface ContextActions {
     dialogId: string,
     limit: number
   ) => Promise<void>
-  fetchMoreMessages: (offset: number, limit: number) => Promise<void>
+  fetchMoreMessages: (limit: number) => Promise<void>
   cancelBackupJob: (job: JobID) => Promise<void>
   // setBackup: (id: Link|null) => void
   // setDialog: (id: bigint | null) => void
@@ -137,11 +139,43 @@ export const Provider = ({
     error: restoredBackupError,
   }
 
+  const restoreCache = useRef(
+    new LRUCache<string, RestoredBackup>({
+      max: 10,
+      ttl: 1000 * 60 * 30, // 30 minutes
+      updateAgeOnGet: true, // reset TTL when accessed
+    })
+  )
+
+  const handleMediaLoaded = useCallback(
+    (mediaCid: string, data: Uint8Array) => {
+      setRestoredBackup((prev) => {
+        if (!prev) return prev
+        if (prev.mediaMap[mediaCid]) return prev
+
+        const updatedMediaMap = { ...prev.mediaMap, [mediaCid]: data }
+        return {
+          ...prev,
+          mediaMap: updatedMediaMap,
+        }
+      })
+    },
+    []
+  )
+
   const restoreBackup = useCallback(
     async (backupCid: string, dialogId: string, limit: number) => {
       setRestoredBackupLoading(true)
       try {
         setRestoredBackupError(undefined)
+        const cacheKey = `${backupCid}:${dialogId}`
+
+        const cached = restoreCache.current.get(cacheKey)
+        if (cached) {
+          setRestoredBackup(cached)
+          setRestoredBackupLoading(false)
+          return
+        }
 
         if (!cloudStorage.getKeys.isAvailable) {
           throw new Error('Error trying to access cloud storage.')
@@ -155,58 +189,84 @@ export const Provider = ({
         }
 
         const cipher = createCipher(encryptionPassword)
+
         const result = await restoreBackupAction(
           backupCid,
           dialogId,
           cipher,
-          limit
+          limit,
+          handleMediaLoaded
         )
+
         setRestoredBackup(result)
+        restoreCache.current.set(cacheKey, result)
         setRestoredBackupError(undefined)
-      } catch (err: any) {
-        console.error('Error: restoring backup', err)
-        setRestoredBackupError(err)
+      } catch (err: unknown) {
+        setRestoredBackupError(
+          err instanceof Error ? err : new Error('Unknown error')
+        )
       } finally {
         setRestoredBackupLoading(false)
       }
     },
-    []
+    [handleMediaLoaded]
   )
 
-  const fetchMoreMessages = async (offset: number, limit: number) => {
-    if (!restoredBackup) {
-      console.warn('fetchMoreMessages called without a restored backup')
-      return
-    }
-
-    try {
-      if (!cloudStorage.getKeys.isAvailable) {
-        throw new Error('Error trying to access cloud storage.')
+  const fetchMoreMessages = useCallback(
+    async (limit: number) => {
+      if (!restoredBackup) {
+        console.warn('fetchMoreMessages called without a restored backup')
+        return
       }
 
-      const encryptionPassword = await cloudStorage.getItem(
-        'encryption-password'
-      )
-      if (!encryptionPassword) {
-        throw new Error('Encryption password not found in cloud storage')
+      if (restoredBackup.isLoadingMore) {
+        console.warn(
+          'fetchMoreMessages called while already loading more messages'
+        )
+        return
       }
 
-      const cipher = createCipher(encryptionPassword)
-      const newMessages = await fetchMoreMessagesAction(
-        restoredBackup.dialogData,
-        cipher,
-        offset,
-        limit
-      )
-      setRestoredBackup((prev) => ({
-        ...prev!,
-        messages: [...prev!.messages, ...newMessages],
-      }))
-    } catch (err: any) {
-      console.error('Error: fetching more messages', err)
-      setRestoredBackupError(err)
-    }
-  }
+      setRestoredBackup((prev) => ({ ...prev!, isLoadingMore: true }))
+
+      try {
+        if (!cloudStorage.getKeys.isAvailable) {
+          throw new Error('Error trying to access cloud storage.')
+        }
+
+        const encryptionPassword = await cloudStorage.getItem(
+          'encryption-password'
+        )
+        if (!encryptionPassword) {
+          throw new Error('Encryption password not found in cloud storage')
+        }
+
+        const cipher = createCipher(encryptionPassword)
+        const result = await fetchMoreMessagesAction(
+          restoredBackup.dialogData.messages,
+          cipher,
+          restoredBackup.lastBatchIndex,
+          restoredBackup.lastMessageIndex,
+          limit,
+          handleMediaLoaded
+        )
+
+        setRestoredBackup((prev) => ({
+          ...prev!,
+          messages: [...prev!.messages, ...result.messages],
+          mediaMap: { ...prev!.mediaMap, ...result.mediaMap },
+          lastBatchIndex: result.lastBatchIndex,
+          lastMessageIndex: result.lastMessageIndex,
+          hasMoreMessages: result.hasMoreMessages,
+          isLoadingMore: false,
+        }))
+      } catch (err: any) {
+        console.error('Error: fetching more messages', err)
+        setRestoredBackupError(err)
+        setRestoredBackup((prev) => ({ ...prev!, isLoadingMore: false }))
+      }
+    },
+    [restoredBackup, handleMediaLoaded]
+  )
 
   const addBackupJob = useCallback(
     async (
