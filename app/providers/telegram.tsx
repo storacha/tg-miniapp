@@ -74,6 +74,10 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const [loadingDialogs, setLoadingDialogs] = useState(false)
   const { setError } = useError()
 
+  if (launchParams.startParam) {
+    console.log('launchParams', launchParams)
+  }
+
   const logout = useCallback(async () => {
     try {
       if (!tgSessionString) return
