@@ -108,45 +108,11 @@ export const Provider = ({
 }: ProviderProps): ReactNode => {
   const { setError } = useError()
   const [jobs, setJobs] = useState<PendingJob[]>([])
-  const [jobsProgress, setJobsProgress] = useState<Record<JobID, number>>({})
   const [jobsLoading, setJobsLoading] = useState(false)
   const [jobsError, setJobsError] = useState<Error>()
 
-  const interpolateJobsProgress = (job: PendingJob) => {
-    const start = jobsProgress[job.id] ?? 0
-    const end =
-      job.status === 'running' || job.status === 'failed' ? job.progress : 0
-    if (start >= end) return
-
-    const duration = 800
-    const startTime = performance.now()
-
-    const step = (now: number) => {
-      const elapsed = now - startTime
-      const t = Math.min(elapsed / duration, 1)
-      const eased = 1 - Math.pow(1 - t, 3)
-      const newProgress = start + (end - start) * eased
-
-      setJobsProgress((prev) => ({
-        ...prev,
-        [job.id]: newProgress,
-      }))
-
-      if (t < 1) {
-        requestAnimationFrame(step)
-      }
-    }
-
-    requestAnimationFrame(step)
-  }
-
-  // former progress value was just static at 0.47619047619047616 not changing
-  const jobsWithDynamicProgressValue = jobs.map((job) => ({
-    ...job,
-    progress: jobsProgress[job.id] ?? 0,
-  }))
   const jobsResult = {
-    items: jobsWithDynamicProgressValue,
+    items: jobs,
     loading: jobsLoading,
     error: jobsError,
   }
@@ -310,7 +276,6 @@ export const Provider = ({
         console.debug('listing pending jobs...')
         const jobs = await jobStore.listPending()
         console.debug(`found ${jobs.items.length} pending jobs`)
-        jobs.items.forEach(interpolateJobsProgress)
         setJobs(jobs.items)
       } catch (err: any) {
         console.error('Error: handling job change event', err)

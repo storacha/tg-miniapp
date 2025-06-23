@@ -134,6 +134,7 @@ export const run = async (
         }
 
         dialogEntity = { id: dialogID, ...dialogs[dialogID] }
+        await options?.onDialogRetrieved?.(BigInt(dialogID))
         const dialogInput =
           buildDialogInputPeer(dialogEntity) ?? bigInt(dialogID)
 
@@ -217,7 +218,6 @@ export const run = async (
                 minId: minMsgId,
               })
               [Symbol.asyncIterator]()
-
             ;({ value: message, done } = await messageIterator.next())
           } else {
             throw error

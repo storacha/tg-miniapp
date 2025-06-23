@@ -7,7 +7,6 @@ import Head from '@/components/dashboard/head'
 import { Button } from '@/components/ui/button'
 import { StorachaConnect } from '@/components/backup/connect'
 import BackedChats from '@/components/dashboard/backed-chats'
-import { useEffect, useState } from 'react'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -62,6 +61,15 @@ const JobItem = ({
 
   const DialogsLength = Object.keys(job.params.dialogs).length
 
+  const getProgressText = () => {
+    if (job.status === 'waiting') return 'Waiting to start...'
+    if (job.status === 'failed') return 'Failed'
+    if (progress === 0) return 'Starting...'
+    if (progress < 0.7) return 'Retrieving messages...'
+    if (progress < 0.95) return 'Storing backup...'
+    return 'Finishing up...'
+  }
+
   return (
     <div className="w-full px-5 mb-5">
       <div className="w-full bg-background rounded-sm border">
@@ -86,14 +94,14 @@ const JobItem = ({
         <div className="flex justify-between items-center px-3 py-3">
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
             <div
-              className="bg-blue-900 h-2.5 rounded-full transition-[width] duration-300 ease-in-out"
-              style={{ width: `${progress * 100}%` }}
+              className="bg-blue-900 h-2.5 rounded-full transition-[width] duration-500 ease-out"
+              style={{ width: `${Math.max(progress * 100, 2)}%` }}
             ></div>
           </div>
         </div>
         <div className="flex justify-between items-center px-3 pb-4">
           <span className="text-muted-foreground text-xs">
-            {Math.floor(progress * 100)}% Completed
+            {Math.floor(progress * 100)}% - {getProgressText()}
           </span>
           <span className="text-muted-foreground text-xs">
             {DialogsLength} Chat{DialogsLength > 1 ? 's' : ''} Backing Up

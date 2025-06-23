@@ -42,8 +42,12 @@ class Handler {
       created,
       params: { space, dialogs, period },
     } = job
+
     let progress = 0
     const started = Date.now()
+    const totalDialogs = Object.keys(dialogs).length
+    let dialogsCompleted = 0
+
     try {
       await this.#db.updateJob(id, {
         id,
@@ -51,25 +55,24 @@ class Handler {
         params,
         created,
         started,
-        progress,
+        progress: 0,
         updated: Date.now(),
       })
 
-      let dialogsRetrieved = 0
       const data = await Runner.run(this, space, dialogs, period, {
         onDialogRetrieved: async () => {
-          dialogsRetrieved++
           try {
-            const job = await this.#db.getJobByID(
+            const currentJob = await this.#db.getJobByID(
               request.jobID,
               this.#dbUser.id
             )
-            if (job.status === 'canceled') {
+            if (currentJob?.status === 'canceled') {
               console.warn(`Job ${id} was canceled`)
               return
             }
 
-            progress = dialogsRetrieved / Object.keys(dialogs).length / 2.1
+            dialogsCompleted++
+            progress = Math.min(0.7, (dialogsCompleted / totalDialogs) * 0.1)
             await this.#db.updateJob(id, {
               id,
               status: 'running',
@@ -80,10 +83,33 @@ class Handler {
               updated: Date.now(),
             })
           } catch (err) {
-            console.error(err)
+            console.error(
+              'Error updating progress during dialog retrieval:',
+              err
+            )
           }
         },
-        onShardStored: (meta: CARMetadata) => {
+
+        onShardStored: async (meta: CARMetadata) => {
+          progress = Math.min(
+            1.0,
+            0.7 + (dialogsCompleted / totalDialogs) * 0.3
+          )
+
+          try {
+            await this.#db.updateJob(id, {
+              id,
+              status: 'running',
+              params,
+              created,
+              started,
+              progress,
+              updated: Date.now(),
+            })
+          } catch (err) {
+            console.error('Error updating progress during shard storage:', err)
+          }
+
           this.#db.updateUser(this.#dbUser.id, {
             ...this.#dbUser,
             points: this.#dbUser.points + meta.size * mRachaPointsPerByte,
