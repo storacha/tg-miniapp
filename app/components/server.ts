@@ -127,14 +127,7 @@ export const listDialogs = toResultFn(
         }
 
         const entityData = toEntityData(chat.entity)
-        const parts = entityData.name
-          .replace(/[^a-zA-Z ]/gi, '')
-          .trim()
-          .split(' ')
-        const initials =
-          parts.length === 1
-            ? entityData.name[0]
-            : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        const initials = getInitials(entityData.name)
         const isPublic =
           chat.entity?.className === 'Channel' && !!chat.entity?.username
             ? true
