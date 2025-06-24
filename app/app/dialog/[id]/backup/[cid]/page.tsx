@@ -319,7 +319,7 @@ export default function Page() {
   }
 
   return (
-    <Layouts isSinglePage withHeader={false}>
+    <Layouts isSinglePage withHeader={restoredBackup.loading}>
       {restoredBackup.error && (
         <ConnectError
           open={!!restoredBackup.error}
