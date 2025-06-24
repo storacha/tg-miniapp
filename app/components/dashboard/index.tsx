@@ -45,7 +45,7 @@ const JobItem = ({ job, onRemove }: { job: PendingJob, onRemove: (id: JobID) => 
 					<p>Backup <span className="capitalize">{job.status}</span></p>
 					{job.status === 'failed' && <button onClick={() => onRemove(job.id)}><X /></button>}
 				</div>
-				{job.status === 'failed' && job.cause && <p className='px-5 pt-1 text-red-900 text-xs'>Error: {job.cause}</p>}
+				{job.status === 'failed' && job.cause && <p className='px-5 pt-1 text-red-900 text-xs'>Error: {job.cause}. Please try again or contact support.</p>}
 				<div className="flex justify-between items-center px-3 py-3">
 					<div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
 						<div className="bg-blue-900 h-2.5 rounded-full transition-all" style={{ width: `${progress * 100}%` }}></div>

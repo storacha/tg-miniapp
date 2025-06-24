@@ -1,10 +1,11 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, Suspense } from "react"
 import { File, MapPin, CheckCircle, ExternalLink, X} from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from "@/lib/utils"
 import { AudioDocumentAttributeData, DocumentMediaData, MediaData, GeoLiveMediaData, VenueMediaData, PollMediaData, WebPageMediaData, DefaultWebPageData, DocumentData } from "@/api"
+import { lazy } from 'react'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 	'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -44,12 +45,13 @@ const getDocumentType = (media: DocumentMediaData) => {
   return 'other'
 }
 
+
 export const Media: React.FC<MediaProps> = ({mediaUrl, metadata, time}) => {
   let mediaContent
 
   switch (metadata.type){
     case 'photo': {
-       mediaContent =  <ImageMedia mediaUrl={mediaUrl} />
+       mediaContent =  <Suspense fallback={<div>Loading...</div>}><LazyImage mediaUrl={mediaUrl} /></Suspense>
        break
     }
     case 'geo-live':
