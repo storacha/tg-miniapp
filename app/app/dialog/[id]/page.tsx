@@ -5,6 +5,7 @@ import { useBackups } from '@/providers/backup'
 import { ChevronRight } from 'lucide-react'
 import { Layouts } from '@/components/layouts'
 import { useMemo } from 'react'
+import { useUserLocale } from '@/hooks/useUserLocale'
 
 export default function BackupSelectionPage() {
   const { id } = useParams<{ id: string }>()
@@ -12,6 +13,7 @@ export default function BackupSelectionPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const type = searchParams.get('type')
+  const { formatDate, formatTime } = useUserLocale()
 
   const dialogBackups = useMemo(
     () =>
@@ -35,13 +37,9 @@ export default function BackupSelectionPage() {
             const fromDate =
               backup.params.period[0] === 0
                 ? 'all time'
-                : new Date(backup.params.period[0] * 1000).toLocaleDateString()
-            const toDate = new Date(
-              backup.params.period[1] * 1000
-            ).toLocaleDateString()
-            const sharedTime = new Date(
-              backup.params.period[1] * 1000
-            ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : formatDate(backup.params.period[0])
+            const toDate = formatDate(backup.params.period[1])
+            const sharedTime = formatTime(backup.params.period[1])
 
             return (
               <div

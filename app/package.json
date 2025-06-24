@@ -39,6 +39,7 @@
     "@storacha/upload-client": "^1.2.3",
     "@telegram-apps/init-data-node": "^2.0.7",
     "@telegram-apps/sdk-react": "^2.0.20",
+    "@twa-dev/sdk": "^8.0.2",
     "@ucanto/client": "^9.0.1",
     "@ucanto/core": "^10.4.0",
     "@ucanto/principal": "^9.0.2",
