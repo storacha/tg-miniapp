@@ -25,6 +25,7 @@ import { Loading } from '@/components/ui/loading'
 type BackupDialogProps = {
   userId: string
   dialog: DialogData
+  isLoading: boolean
   messages: (MessageData | ServiceMessageData)[]
   mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
@@ -141,6 +142,7 @@ function BackupDialog({
   dialog,
   messages,
   mediaMap,
+  isLoading,
   participants,
   onScrollBottom,
 }: BackupDialogProps) {
@@ -193,91 +195,97 @@ function BackupDialog({
         name={dialog.name}
         type={dialog.type}
       />
-      <div
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
-        style={{ height: 'calc(100vh - 64px)' }} // Ensure proper height
-      >
-        {messages
-          .filter((msg) => msg.type !== 'service')
-          .map((msg) => {
-            const date = formatDate(msg.date)
-            const showDate = lastRenderedDate !== date
-            if (showDate) lastRenderedDate = date
 
-            const isOutgoing = msg.from === userId
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center flex-1">
+          <Loading text="Loading messages..." />
+        </div>
+      ) : (
+        <div
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+          style={{ height: 'calc(100vh - 64px)' }} // Header height compensation
+        >
+          {messages
+            .filter((msg) => msg.type !== 'service')
+            .map((msg) => {
+              const date = formatDate(msg.date)
+              const showDate = lastRenderedDate !== date
+              if (showDate) lastRenderedDate = date
 
-            const sender = msg.from
-              ? (participants[msg.from]?.name ?? 'Unknown')
-              : 'Anonymous'
+              const isOutgoing = msg.from === userId
+              const sender = msg.from
+                ? (participants[msg.from]?.name ?? 'Unknown')
+                : 'Anonymous'
 
-            const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
-            lastSenderId = msg.from ?? null
+              const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
+              lastSenderId = msg.from ?? null
 
-            let thumbSrc = ''
-            if (msg.from && participants[msg.from].photo?.strippedThumb) {
-              thumbSrc = toJPGDataURL(
-                decodeStrippedThumb(
-                  participants[msg.from].photo?.strippedThumb as Uint8Array
-                )
-              )
-            }
-
-            let mediaUrl: string | undefined
-            if (msg.media?.content) {
-              const rawContent = mediaMap[msg.media.content.toString()]
-              const type =
-                msg.media.metadata.type === 'document'
-                  ? msg.media.metadata.document?.mimeType
-                  : ''
-              if (rawContent) {
-                mediaUrl = URL.createObjectURL(
-                  new Blob([rawContent], { type: type })
+              let thumbSrc = ''
+              if (msg.from && participants[msg.from].photo?.strippedThumb) {
+                thumbSrc = toJPGDataURL(
+                  decodeStrippedThumb(
+                    participants[msg.from].photo?.strippedThumb as Uint8Array
+                  )
                 )
               }
-            }
 
-            return (
-              <Fragment key={msg.id}>
-                {showDate && <ServiceMessage text={date} />}
-                {/* { msg.type === 'service' && <ServiceMessage text={msg.action.description} /> } // TODO: would be nice to have a description for each action */}
-                {msg.type === 'message' && (
-                  <div
-                    className={`flex ${
-                      isOutgoing ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div className="flex flex-col max-w-[75%]">
-                      {showSenderHeader && (
-                        <UserInfo thumbSrc={thumbSrc} userName={sender} />
-                      )}
-                      {msg.media ? (
-                        <MessageWithMedia
-                          isOutgoing={isOutgoing}
-                          date={msg.date}
-                          message={msg.message}
-                          metadata={msg.media.metadata}
-                          mediaUrl={mediaUrl}
-                        />
-                      ) : (
-                        <Message
-                          isOutgoing={isOutgoing}
-                          date={msg.date}
-                          message={msg.message}
-                        />
-                      )}
+              let mediaUrl: string | undefined
+              if (msg.media?.content) {
+                const rawContent = mediaMap[msg.media.content.toString()]
+                const type =
+                  msg.media.metadata.type === 'document'
+                    ? msg.media.metadata.document?.mimeType
+                    : ''
+                if (rawContent) {
+                  mediaUrl = URL.createObjectURL(
+                    new Blob([rawContent], { type })
+                  )
+                }
+              }
+
+              return (
+                <Fragment key={msg.id}>
+                  {showDate && <ServiceMessage text={date} />}
+                  {msg.type === 'message' && (
+                    <div
+                      className={`flex ${
+                        isOutgoing ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div className="flex flex-col max-w-[75%]">
+                        {showSenderHeader && (
+                          <UserInfo thumbSrc={thumbSrc} userName={sender} />
+                        )}
+                        {msg.media ? (
+                          <MessageWithMedia
+                            isOutgoing={isOutgoing}
+                            date={msg.date}
+                            message={msg.message}
+                            metadata={msg.media.metadata}
+                            mediaUrl={mediaUrl}
+                          />
+                        ) : (
+                          <Message
+                            isOutgoing={isOutgoing}
+                            date={msg.date}
+                            message={msg.message}
+                          />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </Fragment>
-            )
-          })}
-        {isLoadingMore && (
-          <div className="text-center py-4">
-            <Loading text="Loading more messages..." />
-          </div>
-        )}
-      </div>
+                  )}
+                </Fragment>
+              )
+            })}
+
+          {isLoadingMore && (
+            <div className="text-center py-4">
+              <Loading text="Loading more messages..." />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -319,7 +327,7 @@ export default function Page() {
   }
 
   return (
-    <Layouts isSinglePage withHeader={restoredBackup.loading}>
+    <Layouts isSinglePage withHeader={false}>
       {restoredBackup.error && (
         <ConnectError
           open={!!restoredBackup.error}
@@ -328,14 +336,9 @@ export default function Page() {
         />
       )}
 
-      {restoredBackup.loading || !userId ? (
-        <div className="flex flex-col items-center justify-center h-screen">
-          <div className="text-lg font-semibold text-center">
-            <Loading text="Loading messages..." />
-          </div>
-        </div>
-      ) : restoredBackup.item ? (
+      {restoredBackup.item && userId ? (
         <BackupDialog
+          isLoading={restoredBackup.loading}
           userId={userId}
           dialog={restoredBackup.item.dialogData}
           messages={restoredBackup.item.messages}
@@ -343,11 +346,7 @@ export default function Page() {
           participants={restoredBackup.item.participants}
           onScrollBottom={handleFetchMoreMessages}
         />
-      ) : (
-        <div className="flex flex-col items-center justify-center h-screen">
-          <p className="text-lg font-semibold text-red-500">Dialog not found</p>
-        </div>
-      )}
+      ) : null}
     </Layouts>
   )
 }
