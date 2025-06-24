@@ -1,16 +1,15 @@
+import { useTelegram } from '@/providers/telegram'
 import { useEffect, useState } from 'react'
-import WebApp from '@twa-dev/sdk'
 
 export const useUserLocale = () => {
   const [userLocale, setUserLocale] = useState<string>()
+  const [{ user }] = useTelegram()
 
   useEffect(() => {
     try {
-      // @telegram-apps/sdk-react doesn't provide access to the language code property
-      // hence the usage of @twa-dev/sdk here
-      const tgLocale = WebApp.initDataUnsafe?.user?.language_code
+      const tgLocale = user?.languageCode
       const browserLocale = navigator.language || navigator.languages?.[0]
-      setUserLocale(tgLocale || browserLocale || 'en-US')
+      setUserLocale(browserLocale || tgLocale || 'en-US')
     } catch (error) {
       console.warn(
         'Failed to get Telegram locale, using browser locale:',
