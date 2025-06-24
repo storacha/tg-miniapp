@@ -311,7 +311,12 @@ export default function TelegramAuth() {
     } catch (err: any) {
       console.error('checking password:', err)
       await getSRP()
-      setError(err)
+      
+      if (err.errorMessage === 'PASSWORD_HASH_INVALID') {
+        setError(new Error('Your password was incorrect. Please try again.'))
+      } else {
+        setError(err)
+      }
     } finally {
       setLoading(false)
     }
