@@ -96,8 +96,12 @@ export const Verify = ({ open, email, onDismiss }: VerifyProps) => {
             />
             <DrawerDescription className="mb-5">
               Click the link in the email we sent to{' '}
-              <span className="font-semibold tracking-wide">{email}</span> to
-              authorize this agent.
+              <span className="font-semibold tracking-wide">
+                <a href={`mailto:${email}`} title="Open in your email app">
+                  {email}
+                </a>
+              </span>{' '}
+              to authorize this agent.
             </DrawerDescription>
           </div>
         </DrawerFooter>
