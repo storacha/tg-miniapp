@@ -4,7 +4,6 @@ import PlausibleProvider from 'next-plausible'
 import './globals.css'
 import { Root } from '../components/root'
 import { AppOpenedTracker } from '../components/AppOpenedTracker'
-import { Suspense } from 'react'
 
 const epilogue = Epilogue({
   subsets: ['latin'],
