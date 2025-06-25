@@ -217,7 +217,6 @@ export const run = async (
                 minId: minMsgId,
               })
               [Symbol.asyncIterator]()
-
             ;({ value: message, done } = await messageIterator.next())
           } else {
             throw error
@@ -225,6 +224,12 @@ export const run = async (
         }
 
         if (done) {
+          if (messages.length === 0) {
+            throw new Error(
+              `No messages found for ${dialogEntity.name} in the selected time period.`
+            )
+          }
+
           messageIterator = null
           await options?.onDialogRetrieved?.(BigInt(dialogEntity.id.toString()))
           break
