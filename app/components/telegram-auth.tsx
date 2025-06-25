@@ -181,14 +181,9 @@ export default function TelegramAuth() {
   const [error, setError] = useState<Error>()
   const [codeHash, setCodeHash] = useState('')
   const [code, setCode] = useState('')
-  const {
-    setIsTgAuthorized,
-    phoneNumber,
-    setPhoneNumber,
-    tgSessionString,
-    setTgSessionString,
-  } = useGlobal()
-  const [{ user }] = useTelegram()
+  const { phoneNumber, setPhoneNumber, tgSessionString, setTgSessionString } =
+    useGlobal()
+  const [{ user }, { setIsTgAuthorized }] = useTelegram()
   const [is2FARequired, set2FARequired] = useState(false)
   const [password, setPassword] = useState('')
   const [srp, setSRP] = useState<Api.account.Password>()

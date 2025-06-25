@@ -20,7 +20,6 @@ import { Provider as BackupProvider } from '@/providers/backup'
 import { generateRandomPassword } from '@/lib/crypto'
 import { JobStorage } from '@/api'
 import Onboarding from '@/components/onboarding'
-import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
 import {
   createJob,
@@ -54,8 +53,8 @@ if (typeof window !== 'undefined') {
 
 export function Root(props: PropsWithChildren) {
   const didMount = useDidMount()
-  const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString } =
-    useGlobal()
+  const [{ isTgAuthorized }] = useTelegram()
+  const { isOnboarded, tgSessionString, setTgSessionString } = useGlobal()
 
   useEffect(() => {
     if (isTgAuthorized && !tgSessionString) {
@@ -85,18 +84,14 @@ export function Root(props: PropsWithChildren) {
     <ErrorBoundary fallback={ErrorPage}>
       <ErrorProvider>
         <TelegramProvider>
-          {isTgAuthorized ? (
-            <StorachaProvider
-              servicePrincipal={serviceID}
-              connection={connection}
-            >
-              <BackupProviderContainer>
-                <div {...props} />
-              </BackupProviderContainer>
-            </StorachaProvider>
-          ) : (
-            <TelegramAuth />
-          )}
+          <StorachaProvider
+            servicePrincipal={serviceID}
+            connection={connection}
+          >
+            <BackupProviderContainer>
+              <div {...props} />
+            </BackupProviderContainer>
+          </StorachaProvider>
         </TelegramProvider>
       </ErrorProvider>
     </ErrorBoundary>
@@ -113,10 +108,8 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
   useEffect(() => {
     let eventSource: EventSource
-
     ;(async () => {
       let encryptionPassword = await cloudStorage.getItem('encryption-password')
-      console.log('encryption password: ', encryptionPassword)
       setIsFirstLogin(!encryptionPassword)
 
       if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
