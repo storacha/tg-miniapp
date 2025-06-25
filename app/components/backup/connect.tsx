@@ -14,6 +14,7 @@ import { FormEventHandler, useState } from 'react'
 import { useGlobal } from '@/zustand/global'
 import { useTelegram } from '@/providers/telegram'
 import { PlanGate } from '@/components/backup/plan-gate'
+import { useAnalytics } from '@/lib/analytics'
 
 const spaceNamePrefix = 'Telegram Backups'
 export interface ConnectProps {
@@ -187,13 +188,16 @@ export const StorachaConnect = ({
     }
   }
 
+  const { logHumanodeStarted, logHumanodeSuccess } = useAnalytics()
+
   const waitForPlanSetup = async () => {
     console.log('waiting for plan setup...')
     try {
       if (!client) throw new Error('missing Storacha client instance')
       if (!account) throw new Error('missing account')
-
+      logHumanodeStarted()
       await account.plan.wait()
+      logHumanodeSuccess()
       const space = await client.createSpace(spaceName, { account })
       await client.setCurrentSpace(space.did())
       setSpace(space.did())

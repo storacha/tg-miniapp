@@ -14,6 +14,7 @@ import { Input } from './ui/input'
 import { useTelegram } from '@/providers/telegram'
 import { StringSession } from '@/vendor/telegram/sessions'
 import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
+import { useAnalytics } from '@/lib/analytics'
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
@@ -177,6 +178,7 @@ function TwoFAForm({
 }
 
 export default function TelegramAuth() {
+  const { logLoginStarted, logLoginSuccess } = useAnalytics()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error>()
   const [codeHash, setCodeHash] = useState('')
@@ -211,6 +213,7 @@ export default function TelegramAuth() {
     try {
       setLoading(true)
       setError(undefined)
+      logLoginStarted()
 
       if (!client.connected) {
         await client.connect()
@@ -261,6 +264,7 @@ export default function TelegramAuth() {
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
+      logLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       if (err.errorMessage === 'SESSION_PASSWORD_NEEDED') {
