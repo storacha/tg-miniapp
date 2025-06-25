@@ -4,6 +4,7 @@ import PlausibleProvider from 'next-plausible'
 import './globals.css'
 import { Root } from '../components/root'
 import { AppOpenedTracker } from '../components/AppOpenedTracker'
+import { Suspense } from 'react'
 
 const epilogue = Epilogue({
   subsets: ['latin'],
@@ -33,7 +34,9 @@ export default function RootLayout({
       <html lang="en">
         <body className={epilogue.className}>
           <Root>{children}</Root>
-          <AppOpenedTracker />
+          <Suspense>
+            <AppOpenedTracker />
+          </Suspense>
         </body>
       </html>
     </PlausibleProvider>

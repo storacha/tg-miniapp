@@ -1,6 +1,6 @@
 import { useSearchParams } from 'next/navigation'
 import { usePlausible } from 'next-plausible'
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import useLocalStorageState from 'use-local-storage-state'
 
 export type TrackingParams = {
