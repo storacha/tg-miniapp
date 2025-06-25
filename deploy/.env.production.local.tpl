@@ -5,9 +5,6 @@
   STORACHA_DID="web3.storage"
   PRICING_TABLE_ID="prctbl_1R58oLF6A5ufQX5vozallJKX"
   PUBLISHABLE_KEY="pk_live_51LO87hF6A5ufQX5vQTO5BHyz8y9ybJp4kg1GsBjYuqwluuwtQTkbeZzkoQweFQDlv7JaGjuIdUWAyuwXp3tmCfsM005lJK9aS8"
-if [ "$TF_WORKSPACE" != "prod" ]; then
-else
-fi
 %>
 
 # set these to your upload API service URL and the DID your service is using as its service DID
