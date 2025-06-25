@@ -5,6 +5,9 @@
   STORACHA_DID="web3.storage"
   PRICING_TABLE_ID="prctbl_1R58oLF6A5ufQX5vozallJKX"
   PUBLISHABLE_KEY="pk_live_51LO87hF6A5ufQX5vQTO5BHyz8y9ybJp4kg1GsBjYuqwluuwtQTkbeZzkoQweFQDlv7JaGjuIdUWAyuwXp3tmCfsM005lJK9aS8"
+if [ "$TF_WORKSPACE" != "prod" ]; then
+else
+fi
 %>
 
 # set these to your upload API service URL and the DID your service is using as its service DID
@@ -44,3 +47,6 @@ NEXT_PUBLIC_SERVER_DID=<%= $TF_VAR_did %>
 NEXT_PUBLIC_HUMANODE_CLIENT_ID=<%= $TF_VAR_next_public_humanode_client_id %>
 NEXT_PUBLIC_HUMANODE_AUTH_URL=<%= $TF_VAR_next_public_humanode_auth_url %>
 NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL=<%= $TF_VAR_next_public_humanode_oauth_callback_url %>
+
+# Deployment URL, for Bluesky and scheduled backups
+NEXT_PUBLIC_APP_URI=https://<% if [ "$TF_WORKSPACE" != "prod" ]; then %><%= "${TF_WORKSPACE}." %><% fi %>telegram.storacha.network
