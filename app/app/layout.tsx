@@ -33,10 +33,10 @@ export default function RootLayout({
     >
       <html lang="en">
         <body className={epilogue.className}>
-          <Root>{children}</Root>
-          <Suspense>
+          <Root>
+            {children}
             <AppOpenedTracker />
-          </Suspense>
+          </Root>
         </body>
       </html>
     </PlausibleProvider>

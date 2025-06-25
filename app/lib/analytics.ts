@@ -1,7 +1,8 @@
-import { useSearchParams } from 'next/navigation'
 import { usePlausible } from 'next-plausible'
 import { useEffect, useMemo } from 'react'
 import useLocalStorageState from 'use-local-storage-state'
+import { useTelegram } from '@/providers/telegram'
+import { base64url } from 'multiformats/bases/base64'
 
 export type TrackingParams = {
   source?: string
@@ -36,10 +37,24 @@ const utms = [
   'utm_content',
 ]
 
+/**
+ * Parse a "start parameter" that we assume is a base64url encoded
+ * query string. We expect our marketing team to create URLs like
+ * https://t.me/storacha_bot/backup?startapp=dXRtX3NvdXJjZT10aGVtaW5kJnV0bV9tZWRpdW09dGVsZXBhdGh5
+ * since dXRtX3NvdXJjZT10aGVtaW5kJnV0bV9tZWRpdW09dGVsZXBhdGh5 is
+ * the base64url encoding of "utm_source=themind&utm_medium=telepathy"
+ */
+function parseStartParam(params: string | undefined): URLSearchParams {
+  if (!params) return new URLSearchParams()
+  return new URLSearchParams(
+    new TextDecoder().decode(base64url.baseDecode(params))
+  )
+}
+
 export const useAnalytics = () => {
   const track = useTrack()
-  const searchParams = useSearchParams()
-
+  const [{ launchParams }] = useTelegram()
+  const searchParams = parseStartParam(launchParams.startParam)
   /**
    * useLocalStorage and useEffect here combine to give us something
    * similar to useMemo except:
