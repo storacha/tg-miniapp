@@ -112,6 +112,7 @@ export const Provider = ({
   const [jobs, setJobs] = useState<PendingJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(false)
   const [jobsError, setJobsError] = useState<Error>()
+
   const jobsResult = {
     items: jobs,
     loading: jobsLoading,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DialogsById, Period } from '@/api'
 import { useGlobal } from '@/zustand/global'
@@ -10,6 +10,7 @@ import Chats from '@/components/backup/chats'
 import { Layouts } from '@/components/layouts'
 import { Summary } from '@/components/backup/summary'
 import { StorachaConnect } from '@/components/backup/connect'
+import { useAnalytics } from '@/lib/analytics'
 
 export default function Page() {
   const router = useRouter()
@@ -19,6 +20,11 @@ export default function Page() {
   const [starting, setStarting] = useState(false)
   const [period, setPeriod] = useState<Period>([0])
   const [chats, setChats] = useState<DialogsById>({})
+  const { logBackupOpened, logBackupRequested } = useAnalytics()
+
+  useEffect(() => {
+    logBackupOpened()
+  }, [])
 
   function handleBack() {
     if (step === 0) {
@@ -30,6 +36,7 @@ export default function Page() {
   const handleSummarySubmit = async () => {
     if (!space) return
     setStarting(true)
+    logBackupRequested()
     const id = await addBackupJob(chats, period)
     if (!id) {
       setStarting(false)
