@@ -167,11 +167,14 @@ class Handler {
 
       // Only award points after successful backup completion
       const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
-      console.log(`total size uploaded: ${totalBytesUploaded} bytes`)
-      await this.#db.updateUser(this.#dbUser.id, {
-        ...this.#dbUser,
-        points: this.#dbUser.points + pointsEarned,
-      })
+      console.log(
+        `total size uploaded: ${totalBytesUploaded} bytes, points earned: ${pointsEarned}`
+      )
+
+      this.#dbUser = await this.#db.incrementUserPoints(
+        this.#dbUser.id,
+        pointsEarned
+      )
 
       await this.#db.updateJob(id, {
         id,
