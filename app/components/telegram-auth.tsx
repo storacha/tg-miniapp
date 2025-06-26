@@ -179,7 +179,7 @@ function TwoFAForm({
 }
 
 export default function TelegramAuth() {
-  const { logLoginStarted, logLoginSuccess } = useAnalytics()
+  const { logTelegramLoginStarted, logTelegramLoginSuccess } = useAnalytics()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error>()
   const [codeHash, setCodeHash] = useState('')
@@ -209,7 +209,7 @@ export default function TelegramAuth() {
     try {
       setLoading(true)
       setError(undefined)
-      logLoginStarted()
+      logTelegramLoginStarted()
 
       if (!client.connected) {
         await client.connect()
@@ -260,7 +260,7 @@ export default function TelegramAuth() {
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
-      logLoginSuccess()
+      logTelegramLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const errorMsg = getErrorMessage(error)

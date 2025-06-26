@@ -18,8 +18,10 @@ export type AnalyticsEvents = {
     telegramAuthed: boolean
     storachaAuthed: boolean
   }
-  'login-started': TrackingParams & {}
-  'login-success': TrackingParams & {}
+  'telegram-login-started': TrackingParams & {}
+  'telegram-login-success': TrackingParams & {}
+  'storacha-login-started': TrackingParams & {}
+  'storacha-login-success': TrackingParams & {}
   'humanode-started': TrackingParams & {}
   'humanode-success': TrackingParams & {}
   'backup-opened': TrackingParams & {}
@@ -88,14 +90,34 @@ export const useAnalytics = () => {
         })
       },
 
-      logLoginStarted: (props: AnalyticsEvents['login-started'] = {}) => {
-        track('login-started', {
+      logTelegramLoginStarted: (
+        props: AnalyticsEvents['telegram-login-started'] = {}
+      ) => {
+        track('telegram-login-started', {
           props: { ...utmParams, ...props },
         })
       },
 
-      logLoginSuccess: (props: AnalyticsEvents['login-success'] = {}) => {
-        track('login-success', {
+      logTelegramLoginSuccess: (
+        props: AnalyticsEvents['telegram-login-success'] = {}
+      ) => {
+        track('telegram-login-success', {
+          props: { ...utmParams, ...props },
+        })
+      },
+
+      logStorachaLoginStarted: (
+        props: AnalyticsEvents['storacha-login-started'] = {}
+      ) => {
+        track('storacha-login-started', {
+          props: { ...utmParams, ...props },
+        })
+      },
+
+      logStorachaLoginSuccess: (
+        props: AnalyticsEvents['storacha-login-success'] = {}
+      ) => {
+        track('storacha-login-success', {
           props: { ...utmParams, ...props },
         })
       },
