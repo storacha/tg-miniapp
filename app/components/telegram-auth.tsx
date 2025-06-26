@@ -14,6 +14,7 @@ import { Input } from './ui/input'
 import { useTelegram } from '@/providers/telegram'
 import { StringSession } from '@/vendor/telegram/sessions'
 import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
+import { getErrorMessage } from '@/lib/errorhandling'
 import { useAnalytics } from '@/lib/analytics'
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
@@ -267,7 +268,8 @@ export default function TelegramAuth() {
       logLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      if (err.errorMessage === 'SESSION_PASSWORD_NEEDED') {
+      const errorMsg = getErrorMessage(error)
+      if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
         await getSRP()
         set2FARequired(true)
         return
@@ -315,7 +317,12 @@ export default function TelegramAuth() {
     } catch (err: any) {
       console.error('checking password:', err)
       await getSRP()
-      setError(err)
+      const errorMsg = getErrorMessage(error)
+      if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
+        setError(new Error('Your password was incorrect. Please try again.'))
+      } else {
+        setError(err)
+      }
     } finally {
       setLoading(false)
     }
