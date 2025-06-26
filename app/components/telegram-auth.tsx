@@ -17,7 +17,13 @@ import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClien
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
-const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
+const appVersion = process.env.version ?? '1.0.0'
+const defaultClientParams: TelegramClientParams = {
+  connectionRetries: 5,
+  deviceModel: 'Storacha',
+  systemVersion: 'Linux',
+  appVersion,
+}
 
 function CountDown({ onResend }: { onResend: () => unknown }) {
   const [count, setCount] = useState(59)
