@@ -48,8 +48,13 @@ defaultHeaders['X-Client'] += ` tg-miniapp/${version.split('.')[0]}`
 
 // Initialize telegram react SDK
 if (typeof window !== 'undefined') {
-  init()
-  restoreInitData()
+  try {
+    init()
+    restoreInitData()
+  } catch (e) {
+    console.error('could not initialized TG SDK, the miniapp will not work')
+    console.error(e)
+  }
 }
 
 export function Root(props: PropsWithChildren) {
@@ -113,7 +118,6 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
   useEffect(() => {
     let eventSource: EventSource
-
     ;(async () => {
       let encryptionPassword = await cloudStorage.getItem('encryption-password')
       console.log('encryption password: ', encryptionPassword)
