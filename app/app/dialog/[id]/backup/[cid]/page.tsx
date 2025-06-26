@@ -293,17 +293,34 @@ function BackupDialog({
 export default function Page() {
   const router = useRouter()
   const [{}, { getMe }] = useTelegram()
-  const [{ restoredBackup }, { restoreBackup, fetchMoreMessages }] =
-    useBackups()
+  const [
+    { restoredBackup },
+    { restoreBackup, fetchMoreMessages, resetBackup },
+  ] = useBackups()
   const { id, cid: backupCid } = useParams<{ id: string; cid: string }>()
   const searchParams = useSearchParams()
   const type = searchParams.get('type') as EntityType
   const [userId, setUserId] = useState<string>()
 
+  const dialog = restoredBackup.item?.dialogData
+  let dialogThumbSrc = ''
+  if (restoredBackup.item?.dialogData.photo?.strippedThumb) {
+    dialogThumbSrc = toJPGDataURL(
+      decodeStrippedThumb(restoredBackup.item.dialogData.photo?.strippedThumb)
+    )
+  }
+
   const normalizedId = useMemo(
     () => getNormalizedEntityId(id, type),
     [id, type]
   )
+
+  // this is so we don't get stale chat data in
+  // the header (and even in the chat it flashes old messages) when people switch backed up chats
+  useEffect(() => {
+    resetBackup()
+    setUserId(undefined)
+  }, [id, backupCid])
 
   useEffect(() => {
     const fetchBackup = async () => {
@@ -346,7 +363,18 @@ export default function Page() {
           participants={restoredBackup.item.participants}
           onScrollBottom={handleFetchMoreMessages}
         />
-      ) : null}
+      ) : (
+        <>
+          <ChatHeader
+            image={dialogThumbSrc}
+            name={dialog?.name || 'Loading...'}
+            type={dialog?.type || 'user'}
+          />
+          <div className="flex flex-col items-center justify-center flex-1">
+            <Loading text="Loading messages..." />
+          </div>
+        </>
+      )}
     </Layouts>
   )
 }
