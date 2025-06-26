@@ -103,5 +103,10 @@ export const getErrorMessage = (err: unknown) => {
     return `${err.errorCode}: ${err.errorMessage}`
   }
 
+  if (typeof err === 'object' && err !== null) {
+    const msg = (err as any).message ?? (err as any).errorMessage
+    if (typeof msg === 'string') return msg
+  }
+
   return 'Unknown error'
 }
