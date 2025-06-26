@@ -159,13 +159,14 @@ export const StorachaConnect = ({
 
   const account = accounts[0]
   const spaceName = `${spaceNamePrefix} (${user?.id})`
+  const { logStorachaLoginStarted, logStorachaLoginSuccess } = useAnalytics()
 
   const handleConnectSubmit = async () => {
     try {
       if (!client) throw new Error('missing Storacha client instance')
       setConnErr(undefined)
       setVerifying(true)
-
+      logStorachaLoginStarted()
       const account = await client.login(parseEmail(email))
       const plan = await account.plan.get()
 
@@ -179,6 +180,7 @@ export const StorachaConnect = ({
           await client.setCurrentSpace(space.did())
           setSpace(space.did())
         }
+        logStorachaLoginSuccess()
         setIsStorachaAuthorized(true)
       } else {
         console.log('waiting for account plan to be ready...')
