@@ -232,6 +232,12 @@ export const run = async (
         }
 
         if (done) {
+          if (messages.length === 0) {
+            throw new Error(
+              `No messages found for ${dialogEntity.name} in the selected time period.`
+            )
+          }
+
           messageIterator = null
           await options?.onMessagesRetrieved?.(
             BigInt(dialogEntity.id.toString())

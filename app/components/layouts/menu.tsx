@@ -16,7 +16,6 @@ export function Menu() {
   const [, { logout }] = useStoracha()
   const {
     phoneNumber,
-    setIsTgAuthorized,
     setIsStorachaAuthorized,
     setPhoneNumber,
     setSpace,
@@ -33,10 +32,6 @@ export function Menu() {
     setPhoneNumber('')
     setSpace(null)
     setTgSessionString('')
-    // TODO: remove other stuff in global?
-    // TODO: I don't think this actually does anything 😱
-    // There's no client logout method (there is in Python)
-    setIsTgAuthorized(false)
     await logout()
     setIsStorachaAuthorized(false)
   }

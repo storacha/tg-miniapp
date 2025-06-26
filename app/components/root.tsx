@@ -1,11 +1,6 @@
 'use client'
 
 import { useEffect, useState, type PropsWithChildren } from 'react'
-import { useDidMount } from '../hooks/useDidMount'
-import { ErrorBoundary } from './error-boundary'
-import { ErrorPage } from './error'
-import LogoSplash from './svgs/logo-splash'
-import { Provider as TelegramProvider, useTelegram } from '@/providers/telegram'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import {
   Provider as StorachaProvider,
@@ -16,12 +11,17 @@ import {
   defaultHeaders,
 } from '@storacha/client/service'
 import { parse as parseDID } from '@ipld/dag-ucan/did'
-import { Provider as BackupProvider } from '@/providers/backup'
-import { generateRandomPassword } from '@/lib/crypto'
+import { StringSession, StoreSession } from '@/vendor/telegram/sessions'
 import { JobStorage } from '@/api'
-import Onboarding from '@/components/onboarding'
-import TelegramAuth from '@/components/telegram-auth'
 import { useGlobal } from '@/zustand/global'
+import { parseWithUIntArrays } from '@/lib/utils'
+import { generateRandomPassword } from '@/lib/crypto'
+import { create as createJobStorage } from '@/lib/store/jobs'
+import { fromResult, getErrorMessage } from '@/lib/errorhandling'
+import Onboarding from '@/components/onboarding'
+import { ErrorProvider, useError } from '@/providers/error'
+import { Provider as BackupProvider } from '@/providers/backup'
+import { Provider as TelegramProvider, useTelegram } from '@/providers/telegram'
 import {
   createJob,
   findJob,
@@ -30,11 +30,11 @@ import {
   removeJob,
   cancelJob,
 } from './server'
-import { create as createJobStorage } from '@/lib/store/jobs'
-import { StringSession, StoreSession } from '@/vendor/telegram/sessions'
-import { fromResult, getErrorMessage } from '@/lib/errorhandling'
-import { parseWithUIntArrays } from '@/lib/utils'
-import { ErrorProvider, useError } from '@/providers/error'
+import { ErrorPage } from './error'
+import TelegramAuth from './telegram-auth'
+import LogoSplash from './svgs/logo-splash'
+import { ErrorBoundary } from './error-boundary'
+import { useDidMount } from '../hooks/useDidMount'
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -59,8 +59,8 @@ if (typeof window !== 'undefined') {
 
 export function Root(props: PropsWithChildren) {
   const didMount = useDidMount()
-  const { isOnboarded, isTgAuthorized, tgSessionString, setTgSessionString } =
-    useGlobal()
+  const [{ isTgAuthorized }] = useTelegram()
+  const { isOnboarded, tgSessionString, setTgSessionString } = useGlobal()
 
   useEffect(() => {
     if (isTgAuthorized && !tgSessionString) {
@@ -90,21 +90,36 @@ export function Root(props: PropsWithChildren) {
     <ErrorBoundary fallback={ErrorPage}>
       <ErrorProvider>
         <TelegramProvider>
-          {isTgAuthorized ? (
-            <StorachaProvider
-              servicePrincipal={serviceID}
-              connection={connection}
-            >
-              <BackupProviderContainer>
-                <div {...props} />
-              </BackupProviderContainer>
-            </StorachaProvider>
-          ) : (
-            <TelegramAuth />
-          )}
+          <AppContent {...props} />
         </TelegramProvider>
       </ErrorProvider>
     </ErrorBoundary>
+  )
+}
+
+const AppContent = (props: PropsWithChildren) => {
+  const [{ isTgAuthorized, isValidating }] = useTelegram()
+
+  if (isValidating) {
+    return (
+      <div className="h-screen flex justify-center items-center bg-primary">
+        <LogoSplash />
+      </div>
+    )
+  }
+
+  return (
+    <>
+      {isTgAuthorized ? (
+        <StorachaProvider servicePrincipal={serviceID} connection={connection}>
+          <BackupProviderContainer>
+            <div {...props} />
+          </BackupProviderContainer>
+        </StorachaProvider>
+      ) : (
+        <TelegramAuth />
+      )}
+    </>
   )
 }
 
@@ -120,7 +135,6 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
     let eventSource: EventSource
     ;(async () => {
       let encryptionPassword = await cloudStorage.getItem('encryption-password')
-      console.log('encryption password: ', encryptionPassword)
       setIsFirstLogin(!encryptionPassword)
 
       if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
