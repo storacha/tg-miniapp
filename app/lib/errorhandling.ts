@@ -104,7 +104,8 @@ export const getErrorMessage = (err: unknown) => {
   }
 
   if (typeof err === 'object' && err !== null) {
-    const msg = (err as any).message ?? (err as any).errorMessage
+    // @ts-expect-error if message or errorMessage does not exist, 'Unknown error' will be returned
+    const msg = err.message ?? err.errorMessage
     if (typeof msg === 'string') return msg
   }
 
