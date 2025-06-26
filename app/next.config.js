@@ -1,10 +1,10 @@
-import { version } from './package.json'
+import pkg from './package.json' with { type: "json" };
 import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    version
+    version: pkg.version,
   },
   output: 'standalone',
   experimental: {
