@@ -4,6 +4,7 @@ import * as Runner from './runner'
 import { TGDatabase, User } from './db'
 import { CARMetadata } from '@storacha/ui-react'
 import { mRachaPointsPerByte } from './constants'
+import { SHARD_SIZE } from '@storacha/upload-client'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -42,8 +43,24 @@ class Handler {
       created,
       params: { space, dialogs, period },
     } = job
-    let progress = 0
+
     const started = Date.now()
+    const totalDialogs = Object.keys(dialogs).length
+    let progress = 0
+    let dialogsRetrieved = 0
+    let dialogsCompleted = 0
+    let totalBytesUploaded = 0
+
+    /**
+     * Calculates the progress of the backup job, excluding the final shard storage phase.
+     * - Dialog retrieval accounts for 20% of the total progress.
+     * - Message retrieval accounts for 50% of the total progress.
+     * @returns The current progress percentage of the backup job, excluding the last storage step.
+     */
+    const getDialogsProgress = () =>
+      (dialogsRetrieved / totalDialogs) * 0.2 +
+      (dialogsCompleted / totalDialogs) * 0.5
+
     try {
       await this.#db.updateJob(id, {
         id,
@@ -51,25 +68,28 @@ class Handler {
         params,
         created,
         started,
-        progress,
+        progress: 0,
         updated: Date.now(),
       })
 
-      let dialogsRetrieved = 0
       const data = await Runner.run(this, space, dialogs, period, {
-        onDialogRetrieved: async () => {
-          dialogsRetrieved++
+        /**
+         * Called when a dialog entity is created and ready for processing
+         */
+        onDialogRetrieved: async (dialogId) => {
           try {
-            const job = await this.#db.getJobByID(
+            const currentJob = await this.#db.getJobByID(
               request.jobID,
               this.#dbUser.id
             )
-            if (job.status === 'canceled') {
+            if (currentJob?.status === 'canceled') {
               console.warn(`Job ${id} was canceled`)
               return
             }
 
-            progress = dialogsRetrieved / Object.keys(dialogs).length / 2.1
+            dialogsRetrieved++
+            progress = getDialogsProgress()
+
             await this.#db.updateJob(id, {
               id,
               status: 'running',
@@ -80,10 +100,69 @@ class Handler {
               updated: Date.now(),
             })
           } catch (err) {
-            console.error(err)
+            console.error(
+              `Error updating progress during dialog ${dialogId.toString()} retrieval:`,
+              err
+            )
           }
         },
-        onShardStored: (meta: CARMetadata) => {
+
+        /**
+         * Called when all messages for a dialog have been retrieved
+         */
+        onMessagesRetrieved: async (dialogId) => {
+          try {
+            const currentJob = await this.#db.getJobByID(
+              request.jobID,
+              this.#dbUser.id
+            )
+            if (currentJob?.status === 'canceled') {
+              console.warn(`Job ${id} was canceled`)
+              return
+            }
+
+            dialogsCompleted++
+            progress = getDialogsProgress()
+
+            await this.#db.updateJob(id, {
+              id,
+              status: 'running',
+              params,
+              created,
+              started,
+              progress,
+              updated: Date.now(),
+            })
+          } catch (err) {
+            console.error(
+              `Error updating progress during messages retried for dialog ${dialogId.toString()}:`,
+              err
+            )
+          }
+        },
+
+        onShardStored: async (meta: CARMetadata) => {
+          try {
+            /**
+             * Called after all messages have been retrieved for all dialogs.
+             * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
+             */
+            totalBytesUploaded += meta.size
+            progress = totalBytesUploaded <= SHARD_SIZE ? 1 : 0.9
+
+            await this.#db.updateJob(id, {
+              id,
+              status: 'running',
+              params,
+              created,
+              started,
+              progress,
+              updated: Date.now(),
+            })
+          } catch (err) {
+            console.error('Error updating progress during shard storage:', err)
+          }
+
           this.#db.updateUser(this.#dbUser.id, {
             ...this.#dbUser,
             points: this.#dbUser.points + meta.size * mRachaPointsPerByte,

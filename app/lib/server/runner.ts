@@ -79,6 +79,13 @@ export interface Options {
    * not yet stored.
    */
   onDialogRetrieved?: (id: bigint) => unknown
+  /**
+   * Called when all messages for a dialog have been retrieved
+   */
+  onMessagesRetrieved?: (id: bigint) => unknown
+  /**
+   * Called when a shard is stored, a dialog can have multiple shards.
+   */
   onShardStored?: (meta: CARMetadata) => unknown
 }
 
@@ -134,6 +141,7 @@ export const run = async (
         }
 
         dialogEntity = { id: dialogID, ...dialogs[dialogID] }
+        await options?.onDialogRetrieved?.(BigInt(dialogID))
         const dialogInput =
           buildDialogInputPeer(dialogEntity) ?? bigInt(dialogID)
 
@@ -217,7 +225,6 @@ export const run = async (
                 minId: minMsgId,
               })
               [Symbol.asyncIterator]()
-
             ;({ value: message, done } = await messageIterator.next())
           } else {
             throw error
@@ -226,7 +233,9 @@ export const run = async (
 
         if (done) {
           messageIterator = null
-          await options?.onDialogRetrieved?.(BigInt(dialogEntity.id.toString()))
+          await options?.onMessagesRetrieved?.(
+            BigInt(dialogEntity.id.toString())
+          )
           break
         }
 
