@@ -23,8 +23,6 @@ import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { useError } from './error'
-import TelegramAuth from '@/components/telegram-auth'
-import LogoSplash from '@/components/svgs/logo-splash'
 
 export interface ContextState {
   launchParams: LaunchParams
@@ -32,6 +30,7 @@ export interface ContextState {
   dialogs: DialogInfo[]
   loadingDialogs: boolean
   isTgAuthorized: boolean
+  isValidating: boolean
 }
 
 export interface ContextActions {
@@ -50,6 +49,7 @@ export const ContextDefaultValue: ContextValue = [
     dialogs: [],
     loadingDialogs: false,
     isTgAuthorized: false,
+    isValidating: true,
   },
   {
     getMe: () => Promise.reject(new Error('provider not setup')),
@@ -180,22 +180,21 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     }
   }, [])
 
-  if (isValidating) {
-    return (
-      <div className="h-screen flex justify-center items-center bg-primary">
-        <LogoSplash />
-      </div>
-    )
-  }
-
   return (
     <Context.Provider
       value={[
-        { user, launchParams, dialogs, loadingDialogs, isTgAuthorized },
+        {
+          user,
+          launchParams,
+          dialogs,
+          loadingDialogs,
+          isTgAuthorized,
+          isValidating,
+        },
         { getMe, loadMoreDialogs, logout, setIsTgAuthorized },
       ]}
     >
-      {isTgAuthorized ? children : <TelegramAuth />}
+      {children}
     </Context.Provider>
   )
 }
