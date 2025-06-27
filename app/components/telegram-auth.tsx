@@ -219,7 +219,12 @@ export default function TelegramAuth() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('requesting OTP:', err)
-      setError(err)
+      const errorMsg = getErrorMessage(error)
+      if (errorMsg.includes('PHONE_NUMBER_INVALID')) {
+        setError(new Error('Your phone number is incorrect. Please try again.'))
+      } else {
+        setError(err)
+      }
     } finally {
       setLoading(false)
     }
