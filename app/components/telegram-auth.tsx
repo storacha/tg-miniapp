@@ -269,8 +269,8 @@ export default function TelegramAuth() {
       logTelegramLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      const errorMsg = getErrorMessage(error)
-      if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
+      const errorMsg = getErrorMessage(err)
+      if (errorMsg.includes('SESSION_PASSWORD_NEEDED')) {
         await getSRP()
         set2FARequired(true)
         return
@@ -318,7 +318,7 @@ export default function TelegramAuth() {
     } catch (err: any) {
       console.error('checking password:', err)
       await getSRP()
-      const errorMsg = getErrorMessage(error)
+      const errorMsg = getErrorMessage(err)
       if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
         setError(new Error('Your password was incorrect. Please try again.'))
       } else {
