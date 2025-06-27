@@ -28,6 +28,8 @@ export function Menu() {
   const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async (e) => {
     e.preventDefault()
     if (!confirm('Are you sure you want to log out?')) return
+    localStorage.removeItem('GramJs:apiCache')
+    sessionStorage.clear()
     await telegramLogout()
     setPhoneNumber('')
     setSpace(null)
