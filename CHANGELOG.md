@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.1](https://github.com/storacha/tg-miniapp/compare/v2.3.0...v2.3.1) (2025-06-27)
+
+
+### Bug Fixes
+
+* Revert "feat: configure sentry" ([c4b729f](https://github.com/storacha/tg-miniapp/commit/c4b729f1b5c43a7a3b02218847130a5105ea0522))
+
 ## [2.3.0](https://github.com/storacha/tg-miniapp/compare/v2.2.3...v2.3.0) (2025-06-27)
 
 
