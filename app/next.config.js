@@ -1,10 +1,14 @@
+import pkg from './package.json' with { type: "json" };
 import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    version: pkg.version,
+  },
   output: 'standalone',
   experimental: {
-    nodeMiddleware: true,
+    nodeMiddleware: true, // TODO: remove this
   },
 }
 

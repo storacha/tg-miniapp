@@ -1,6 +1,6 @@
 {
-  "name": "app",
-  "version": "0.1.0",
+  "name": "secure-chat-backup",
+  "version": "1.0.0",
   "type": "module",
   "private": true,
   "scripts": {
