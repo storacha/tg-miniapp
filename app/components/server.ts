@@ -218,12 +218,14 @@ export const getLeaderboard = toResultFn(
         nameIndex++
       }
 
+      console.log('ME?!?!?', id, me, me.id.toString())
       leaderboard.push({
         id,
         name,
         initials: getInitials(name),
         thumbSrc,
         points: dbUsers[i].points,
+        isMe: id === me.id.toString(),
       })
     }
     return leaderboard
