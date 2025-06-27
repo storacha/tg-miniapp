@@ -19,3 +19,12 @@ export async function getSession(): Promise<IronSession<TGSession>> {
   })
   return session
 }
+
+export async function clearSession() {
+  const { SESSION_PASSWORD, SESSION_COOKIE_NAME } = getServerConstants()
+  const session = await getIronSession<TGSession>(await cookies(), {
+    password: SESSION_PASSWORD,
+    cookieName: SESSION_COOKIE_NAME,
+  })
+  session.destroy()
+}
