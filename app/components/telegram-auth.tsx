@@ -63,6 +63,7 @@ function OTPForm({
   onSubmit,
   onCodeChange,
   onResend,
+  onBack,
   code,
   loading,
   error,
@@ -70,6 +71,7 @@ function OTPForm({
   onSubmit: () => unknown
   onCodeChange: (code: string) => unknown
   onResend: () => unknown
+  onBack: () => unknown
   code: string
   loading: boolean
   error?: Error
@@ -113,7 +115,16 @@ function OTPForm({
           Hurry... enter the pin you received on your Telegram.
         </p>
       </div>
-      <div className="flex justify-center items-center">
+      <div className="flex flex-col justify-center items-center gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          onClick={onBack}
+          disabled={loading}
+        >
+          Back
+        </Button>
         <Button type="submit" className="w-full" disabled={disabled}>
           {loading ? 'Loading...' : 'Submit OTP'}
         </Button>
@@ -359,6 +370,11 @@ export default function TelegramAuth() {
         }}
         onSubmit={handleCodeSubmit}
         onResend={handleResend}
+        onBack={() => {
+          setCodeHash('')
+          setError(undefined)
+          setCode('')
+        }}
         loading={loading}
         error={error}
       />
