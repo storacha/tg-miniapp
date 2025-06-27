@@ -230,7 +230,7 @@ export default function TelegramAuth() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('requesting OTP:', err)
-      const errorMsg = getErrorMessage(error)
+      const errorMsg = getErrorMessage(err)
       if (errorMsg.includes('PHONE_NUMBER_INVALID')) {
         setError(new Error('Your phone number is incorrect. Please try again.'))
       } else {
@@ -279,7 +279,8 @@ export default function TelegramAuth() {
       logTelegramLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      const errorMsg = getErrorMessage(error)
+      console.log('signing in:', err)
+      const errorMsg = getErrorMessage(err)
       if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
         await getSRP()
         set2FARequired(true)
@@ -333,7 +334,7 @@ export default function TelegramAuth() {
     } catch (err: any) {
       console.error('checking password:', err)
       await getSRP()
-      const errorMsg = getErrorMessage(error)
+      const errorMsg = getErrorMessage(err)
       if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
         setError(new Error('Your password was incorrect. Please try again.'))
       } else {
