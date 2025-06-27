@@ -273,6 +273,11 @@ export default function TelegramAuth() {
         await getSRP()
         set2FARequired(true)
         return
+      } else if (errorMsg.includes('PHONE_CODE_INVALID')) {
+        setError(
+          new Error('The code you entered is incorrect. Please try again.')
+        )
+        return
       }
       console.error('signing in:', err)
       setError(err)
