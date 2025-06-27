@@ -178,7 +178,7 @@ const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
 const ContactMedia: React.FC<{ metadata: ContactMediaData }> = ({
   metadata,
 }) => {
-  const { firstName, lastName, phoneNumber, vcard } = metadata
+  const { firstName, lastName, phoneNumber } = metadata
   const fullName = lastName ? `${firstName} ${lastName}` : firstName
 
   return (
@@ -205,11 +205,6 @@ const ContactMedia: React.FC<{ metadata: ContactMediaData }> = ({
             {fullName}
           </div>
           <div className="text-blue-600 text-sm">+{phoneNumber}</div>
-          {vcard && (
-            <div className="text-xs text-gray-500 mt-1">
-              Contact card available
-            </div>
-          )}
         </div>
       </div>
     </Bubble>
