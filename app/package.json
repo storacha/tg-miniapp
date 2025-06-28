@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "test": "pnpm lint",
     "db:migrate": "node ./scripts/migrate.mjs",
+    "db:dev:console": "psql --username admin --password tg_backups_dev",
     "pages:build": "npx @cloudflare/next-on-pages",
     "pages:preview": "pnpm run pages:build && wrangler pages dev",
     "pages:deploy": "pnpm run pages:build && wrangler pages deploy"

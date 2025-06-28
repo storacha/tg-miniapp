@@ -3,9 +3,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 function User({ user, rank }: { user: LeaderboardUser; rank: number }) {
   return (
-    <div className="flex justify-between active:bg-accent px-5 py-3">
+    <div
+      className={`flex justify-between active:bg-accent px-5 py-3  ${user.isMe ? 'bg-blue-100' : ''}`}
+    >
       <div className="flex gap-4 items-center">
-        <p className=" text-blue-600">#{rank}</p>
+        <p className="text-blue-600">#{rank}</p>
         <Avatar>
           <AvatarImage src={user.thumbSrc} />
           <AvatarFallback>{user.initials}</AvatarFallback>
