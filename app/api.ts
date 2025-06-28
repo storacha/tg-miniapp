@@ -304,7 +304,10 @@ export interface MessageData {
   /** The string text of the message. */
   message: string
   media?: MessageMedia
+  /** Message reactions if any. */
+  reactions?: MessageReactionsData
 }
+
 export interface ServiceMessageData {
   id: MessageID
   type: 'service'
@@ -2142,4 +2145,68 @@ export interface Ranking {
   rank: number
   percentile: number
   points: number
+}
+
+// Reaction-related types
+
+/** A single reaction (emoji or custom emoji sticker) */
+export type ReactionData =
+  | EmojiReactionData
+  | CustomEmojiReactionData
+  | UnknownReactionData
+
+export interface EmojiReactionData {
+  type: 'emoji'
+  /** The emoji character(s) */
+  emoticon: string
+}
+
+export interface CustomEmojiReactionData {
+  type: 'custom-emoji'
+  /** The custom emoji document ID */
+  documentId: ToString<bigint>
+}
+
+export interface UnknownReactionData {
+  type: 'unknown'
+}
+
+/** Aggregated count of a specific reaction */
+export interface ReactionCountData {
+  /** The reaction */
+  reaction: ReactionData
+  /** Number of users who reacted with this reaction */
+  count: number
+  /** Order if chosen by current user */
+  chosenOrder?: number
+}
+
+/** Individual user reaction */
+export interface MessagePeerReactionData {
+  /** Whether this is a "big" reaction */
+  big?: boolean
+  /** Whether this reaction is unread */
+  unread?: boolean
+  /** Whether this is the current user's reaction */
+  my?: boolean
+  /** ID of the user who reacted */
+  peerId: ToString<EntityID>
+  /** When the reaction was added */
+  date: number
+  /** The reaction */
+  reaction: ReactionData
+}
+
+/** Message reactions container */
+export interface MessageReactionsData {
+  /** Whether this is minimal reaction info */
+  min?: boolean
+  /** Whether the reaction list can be viewed */
+  canSeeList?: boolean
+  /** Whether reactions are displayed as tags */
+  reactionsAsTags?: boolean
+  /** Aggregated reaction counts */
+  results: ReactionCountData[]
+  /** Recent individual reactions */
+  recentReactions?: MessagePeerReactionData[]
 }
