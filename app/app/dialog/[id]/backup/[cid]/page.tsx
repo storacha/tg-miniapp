@@ -15,6 +15,7 @@ import {
   MessageData,
   ServiceMessageData,
 } from '@/api'
+import type { MessageReactionsData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ConnectError } from '@/components/backup/connect'
 import { useBackups } from '@/providers/backup'
@@ -47,24 +48,28 @@ const Message: React.FC<{
   isOutgoing: boolean
   date: number
   message: string
-}> = ({ isOutgoing, date, message }) => {
+  reactions?: MessageReactionsData
+}> = ({ isOutgoing, date, message, reactions }) => {
   return (
-    <div
-      className={`px-4 py-2 text-sm rounded-xl whitespace-pre-line shadow-sm break-words min-w-[100px] ${
-        isOutgoing
-          ? 'bg-blue-500 text-white rounded-br-none'
-          : 'bg-gray-100 text-foreground rounded-bl-none'
-      }`}
-    >
-      {message && <p>{message}</p>}
-
+    <div>
       <div
-        className={`text-xs text-right mt-1 ${
-          isOutgoing ? 'text-gray-300' : 'text-muted-foreground'
+        className={`px-4 py-2 text-sm rounded-xl whitespace-pre-line shadow-sm break-words min-w-[100px] ${
+          isOutgoing
+            ? 'bg-blue-500 text-white rounded-br-none'
+            : 'bg-gray-100 text-foreground rounded-bl-none'
         }`}
       >
-        {formatTime(date)}
+        {message && <p>{message}</p>}
+
+        <div
+          className={`text-xs text-right mt-1 ${
+            isOutgoing ? 'text-gray-300' : 'text-muted-foreground'
+          }`}
+        >
+          {formatTime(date)}
+        </div>
       </div>
+      {reactions && <MessageReactions reactions={reactions} />}
     </div>
   )
 }
@@ -75,39 +80,43 @@ const MessageWithMedia: React.FC<{
   message?: string
   mediaUrl?: string
   metadata: MediaData
-}> = ({ isOutgoing, date, message, mediaUrl, metadata }) => {
+  reactions?: MessageReactionsData
+}> = ({ isOutgoing, date, message, mediaUrl, metadata, reactions }) => {
   return (
-    <>
-      <div
-        className={`${
-          message ? 'bg-muted rounded-t-xl overflow-hidden' : 'mt-2'
-        }`}
-      >
-        <Media
-          mediaUrl={mediaUrl}
-          metadata={metadata}
-          time={message ? undefined : formatTime(date)}
-        />
-      </div>
-      {message && (
+    <div>
+      <div>
         <div
-          className={`px-4 py-2 text-sm rounded-xl rounded-t-none whitespace-pre-line shadow-sm break-words ${
-            isOutgoing
-              ? 'bg-blue-500 text-white rounded-br-none'
-              : 'bg-gray-100 text-foreground rounded-bl-none'
+          className={`${
+            message ? 'bg-muted rounded-t-xl overflow-hidden' : 'mt-2'
           }`}
         >
-          <p>{message}</p>
+          <Media
+            mediaUrl={mediaUrl}
+            metadata={metadata}
+            time={message ? undefined : formatTime(date)}
+          />
+        </div>
+        {message && (
           <div
-            className={`text-xs text-right mt-1 ${
-              isOutgoing ? 'text-gray-300' : 'text-muted-foreground'
+            className={`px-4 py-2 text-sm rounded-xl rounded-t-none whitespace-pre-line shadow-sm break-words ${
+              isOutgoing
+                ? 'bg-blue-500 text-white rounded-br-none'
+                : 'bg-gray-100 text-foreground rounded-bl-none'
             }`}
           >
-            {formatTime(date)}
+            <p>{message}</p>
+            <div
+              className={`text-xs text-right mt-1 ${
+                isOutgoing ? 'text-gray-300' : 'text-muted-foreground'
+              }`}
+            >
+              {formatTime(date)}
+            </div>
           </div>
-        </div>
-      )}
-    </>
+        )}
+      </div>
+      {reactions && <MessageReactions reactions={reactions} />}
+    </div>
   )
 }
 
@@ -132,6 +141,42 @@ const UserInfo: React.FC<{ thumbSrc: string; userName: string }> = ({
         <AvatarFallback>{getInitials(userName)}</AvatarFallback>
       </Avatar>
       <p className="text-xs text-muted-foreground font-medium">{userName}</p>
+    </div>
+  )
+}
+
+const MessageReactions: React.FC<{ reactions: MessageReactionsData }> = ({
+  reactions,
+}) => {
+  if (!reactions.results || reactions.results.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-2">
+      {reactions.results.map((reactionCount, index) => {
+        const isMyReaction = reactionCount.chosenOrder !== undefined
+
+        return (
+          <div
+            key={index}
+            className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs border ${
+              isMyReaction
+                ? 'bg-blue-100 border-blue-300 text-blue-700'
+                : 'bg-gray-100 border-gray-300 text-gray-700'
+            }`}
+          >
+            <span>
+              {
+                reactionCount.reaction.type === 'emoji'
+                  ? reactionCount.reaction.emoticon
+                  : '😀' // fallback for custom emojis
+              }
+            </span>
+            <span className="font-medium">{reactionCount.count}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -258,12 +303,14 @@ function BackupDialog({
                           message={msg.message}
                           metadata={msg.media.metadata}
                           mediaUrl={mediaUrl}
+                          reactions={msg.reactions}
                         />
                       ) : (
                         <Message
                           isOutgoing={isOutgoing}
                           date={msg.date}
                           message={msg.message}
+                          reactions={msg.reactions}
                         />
                       )}
                     </div>
