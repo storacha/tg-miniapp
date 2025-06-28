@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   File,
   MapPin,
@@ -10,6 +10,8 @@ import {
   Loader2,
 } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
+import Lottie from 'lottie-react'
+import { inflate } from 'pako'
 import { decodeStrippedThumb, toJPGDataURL, cn } from '@/lib/utils'
 import {
   AudioDocumentAttributeData,
@@ -62,6 +64,7 @@ const getDocumentType = (media: DocumentMediaData) => {
     if (mime === 'application/pdf') return 'pdf'
     if (mime === 'application/zip' || /\.zip$|\.rar$|\.7z$/.test(fileName))
       return 'archive'
+    if (mime === 'application/x-tgsticker') return 'x-tgsticker'
   }
 
   return 'other'
@@ -109,6 +112,12 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
             <Bubble>
               <AudioMedia metadata={metadata} mediaUrl={mediaUrl} />
             </Bubble>
+          )
+          break
+        }
+        case 'x-tgsticker': {
+          mediaContent = (
+            <TgStickerMedia metadata={metadata} mediaUrl={mediaUrl} />
           )
           break
         }
@@ -518,6 +527,104 @@ const PdfView: React.FC<{
         ) : (
           <p className="text-center text-gray-500">No PDF to display.</p>
         )}
+      </div>
+    </div>
+  )
+}
+
+const TgStickerMedia: React.FC<{
+  metadata: DocumentMediaData
+  mediaUrl?: string
+}> = ({ metadata, mediaUrl }) => {
+  const [lottieData, setLottieData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [useFallback, setUseFallback] = useState(false)
+  const lottieRef = useRef<any>(null)
+
+  useEffect(() => {
+    const loadTgsSticker = async () => {
+      if (!mediaUrl) {
+        setIsLoading(false)
+        setError('No media URL provided')
+        return
+      }
+
+      try {
+        setIsLoading(true)
+        setError(null)
+
+        // Fetch the .tgs file
+        const response = await fetch(mediaUrl)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch sticker: ${response.status}`)
+        }
+
+        const arrayBuffer = await response.arrayBuffer()
+        const compressed = new Uint8Array(arrayBuffer)
+
+        // Decompress the gzipped JSON
+        const decompressed = inflate(compressed, { to: 'string' })
+        const lottieJson = JSON.parse(decompressed)
+
+        // Validate that it's a proper Lottie animation
+        if (!lottieJson.v || !lottieJson.fr || !lottieJson.layers) {
+          throw new Error('Invalid Lottie animation data')
+        }
+
+        setLottieData(lottieJson)
+        setIsLoading(false)
+      } catch (err) {
+        console.error('Failed to load TGS sticker:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load sticker')
+        setUseFallback(true)
+        setIsLoading(false)
+      }
+    }
+
+    loadTgsSticker()
+  }, [mediaUrl])
+
+  if (!mediaUrl) {
+    return <PlaceholderBubble label="No Sticker" />
+  }
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex justify-center">
+        <div className="flex items-center justify-center w-32 h-32 bg-gray-100 rounded-lg">
+          <Loader2 className="animate-spin h-6 w-6 text-gray-400" />
+        </div>
+      </div>
+    )
+  }
+
+  // Show error fallback
+  if (error || useFallback) {
+    return <PlaceholderBubble label="Telegram Sticker" />
+  }
+
+  // Render Lottie animation
+  return (
+    <div className="flex justify-center">
+      <div className="w-32 h-32 flex items-center justify-center">
+        <Lottie
+          lottieRef={lottieRef}
+          animationData={lottieData}
+          loop={true}
+          autoplay={true}
+          style={{
+            width: '100%',
+            height: '100%',
+            maxWidth: '128px',
+            maxHeight: '128px',
+          }}
+          onError={(error) => {
+            console.error('Lottie playback error:', error)
+            setUseFallback(true)
+          }}
+        />
       </div>
     </div>
   )
