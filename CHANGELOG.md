@@ -1,5 +1,51 @@
 # Changelog
 
+## [2.3.1](https://github.com/storacha/tg-miniapp/compare/v2.3.0...v2.3.1) (2025-06-27)
+
+
+### Bug Fixes
+
+* Revert "feat: configure sentry" ([c4b729f](https://github.com/storacha/tg-miniapp/commit/c4b729f1b5c43a7a3b02218847130a5105ea0522))
+
+## [2.3.0](https://github.com/storacha/tg-miniapp/compare/v2.2.3...v2.3.0) (2025-06-27)
+
+
+### Features
+
+* add /start command ([f6adf8f](https://github.com/storacha/tg-miniapp/commit/f6adf8f2b48cc21e48fbd625d5d41599a9e096d2))
+* add /start command ([df8085d](https://github.com/storacha/tg-miniapp/commit/df8085ded70b68515eb8ec3e0884faeee74adbed))
+* add storoku config for NEXT_PUBLIC_APP_URI ([87f2d53](https://github.com/storacha/tg-miniapp/commit/87f2d53f2af5e10454ee6503248952bfafd16b89))
+* added wrong password error text ([de0567d](https://github.com/storacha/tg-miniapp/commit/de0567d9291bcdef7f5cdfa3f8cfa17c93e776fd))
+* configure sentry ([b3fda59](https://github.com/storacha/tg-miniapp/commit/b3fda5986a4b760d7f69d2149c3137e31a31706f))
+* install Plausible and get tracking set up ([d624971](https://github.com/storacha/tg-miniapp/commit/d6249718478afb1852dea64fe95bfa5e1a5af1a5))
+* install Sentry and Plausible and get tracking set up ([9661cce](https://github.com/storacha/tg-miniapp/commit/9661ccef1bd4018b5961c934519300e728985470))
+* track storacha login too ([941e1e4](https://github.com/storacha/tg-miniapp/commit/941e1e4b7ff2df0193172bcc8063494c3cd10ff2))
+* track storacha login too ([9ba8186](https://github.com/storacha/tg-miniapp/commit/9ba81869206c0ddf6c7680c8278f8deb668ec3b1))
+
+
+### Bug Fixes
+
+* add custom error message to when 2fa password is wrong ([eab653a](https://github.com/storacha/tg-miniapp/commit/eab653a18c4ee1625d0daa5e762c182d32babb95))
+* add session validaton on load ([9fdd6c4](https://github.com/storacha/tg-miniapp/commit/9fdd6c452254cbcac363d1d8efb678494c3f3878))
+* get initials from chat name ([2f3bf02](https://github.com/storacha/tg-miniapp/commit/2f3bf02a18917537d0532c05d6b80681509b4bf8))
+* get initials from chat name ([b687b89](https://github.com/storacha/tg-miniapp/commit/b687b89236fb2f0afb5160c54c8b52aa4a3c6da2))
+* get isTgAuthorized from useTelegram instead of useGlobal ([066de9e](https://github.com/storacha/tg-miniapp/commit/066de9e503586fd9a56366a9d118e91af137fd0c))
+* jobs progress ([#141](https://github.com/storacha/tg-miniapp/issues/141)) ([45b8861](https://github.com/storacha/tg-miniapp/commit/45b88615422cdabbbd1d9a3ac4b493708030151f))
+* lint and build ([7b55a79](https://github.com/storacha/tg-miniapp/commit/7b55a7970918571d1d387c2e69dd353172d80912))
+* make it possible to pass utm params to the app ([d7516df](https://github.com/storacha/tg-miniapp/commit/d7516df9b1a73a24a762e7537732f741eeba0513))
+* only give points after complete upload ([8a72c8f](https://github.com/storacha/tg-miniapp/commit/8a72c8fd5de2991a037c98ca0ea5d083957c8502))
+* only give points after upload ([72ab8dc](https://github.com/storacha/tg-miniapp/commit/72ab8dc25b7bead1f7b81f78c037e2ba61917460))
+* rebase issue ([b0159f0](https://github.com/storacha/tg-miniapp/commit/b0159f00942a5b90d7ee3eff3185320170133c10))
+* remove a dead end ([784ca43](https://github.com/storacha/tg-miniapp/commit/784ca43c901618c152862096060d78100f5a7c63))
+* session ([95b878f](https://github.com/storacha/tg-miniapp/commit/95b878fcc0542fd89ec5722d283a335b02a5b5b5))
+* session ([df5df42](https://github.com/storacha/tg-miniapp/commit/df5df420fafb7d83ddfba3613f1925b8498ca6c5))
+* telegram auth error handling ([f4e9c6d](https://github.com/storacha/tg-miniapp/commit/f4e9c6d44514451ac567c56f4db19f36b1684b82))
+* telegram auth error handling ([3e99aa7](https://github.com/storacha/tg-miniapp/commit/3e99aa746878ad3f3dafe6214dd2a8c626738f46))
+* throw error if backup does not have messages ([7f98a2e](https://github.com/storacha/tg-miniapp/commit/7f98a2ed7230edd82edbe379069a03c0b53ca259))
+* throw error on empty backup and add session validation ([3ee8549](https://github.com/storacha/tg-miniapp/commit/3ee85496436223534db93ee09739f416a3bbef61))
+* use a ts file for next.config ([c9a79c7](https://github.com/storacha/tg-miniapp/commit/c9a79c738eef1841dd1ecfacb7911bb5ec5b9c4f))
+* use a ts file for next.config ([9e2b4a7](https://github.com/storacha/tg-miniapp/commit/9e2b4a74091a718387d1e431b106c7f84530e0af))
+
 ## [2.2.3](https://github.com/storacha/tg-miniapp/compare/v2.2.2...v2.2.3) (2025-06-20)
 
 
