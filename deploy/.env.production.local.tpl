@@ -44,3 +44,6 @@ NEXT_PUBLIC_SERVER_DID=<%= $TF_VAR_did %>
 NEXT_PUBLIC_HUMANODE_CLIENT_ID=<%= $TF_VAR_next_public_humanode_client_id %>
 NEXT_PUBLIC_HUMANODE_AUTH_URL=<%= $TF_VAR_next_public_humanode_auth_url %>
 NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL=<%= $TF_VAR_next_public_humanode_oauth_callback_url %>
+
+# Deployment URL, for Bluesky and scheduled backups
+NEXT_PUBLIC_APP_URI=https://<% if [ "$TF_WORKSPACE" != "prod" ]; then %><%= "${TF_WORKSPACE}." %><% fi %>telegram.storacha.network

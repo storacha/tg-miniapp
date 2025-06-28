@@ -16,7 +16,6 @@ export function Menu() {
   const [, { logout }] = useStoracha()
   const {
     phoneNumber,
-    setIsTgAuthorized,
     setIsStorachaAuthorized,
     setPhoneNumber,
     setSpace,
@@ -29,14 +28,12 @@ export function Menu() {
   const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async (e) => {
     e.preventDefault()
     if (!confirm('Are you sure you want to log out?')) return
+    localStorage.removeItem('GramJs:apiCache')
+    sessionStorage.clear()
     await telegramLogout()
     setPhoneNumber('')
     setSpace(null)
     setTgSessionString('')
-    // TODO: remove other stuff in global?
-    // TODO: I don't think this actually does anything 😱
-    // There's no client logout method (there is in Python)
-    setIsTgAuthorized(false)
     await logout()
     setIsStorachaAuthorized(false)
   }

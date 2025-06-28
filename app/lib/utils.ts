@@ -110,13 +110,18 @@ export const withCleanUndef =
   }
 
 export const getInitials = (name: string) => {
-  const title = name.trim() || 'Unknown'
-  const parts = title
-    .replace(/[^a-zA-Z ]/gi, '')
+  const parts = name
+    .replace(/[^a-zA-Z ]/gi, '') // Remove all characters that are not alphabetic letters
     .trim()
     .split(' ')
+    .filter((part) => part.length > 0) // Remove empty parts
+
+  if (parts.length === 0) {
+    return '??'
+  }
+
   return parts.length === 1
-    ? title[0]
+    ? parts[0][0].toUpperCase()
     : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
 }
 

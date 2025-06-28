@@ -100,6 +100,7 @@ type JobInput = Input<
 export interface TGDatabase {
   findOrCreateUser(input: UserInput): Promise<User>
   updateUser(id: string, input: User): Promise<User>
+  incrementUserPoints(id: string, pointsToAdd: number): Promise<User>
   leaderboard(): Promise<User[]>
   rank(input: UserInput): Promise<Ranking | undefined>
   createJob(input: JobInput): Promise<Job>
@@ -141,6 +142,17 @@ export function getDB(): TGDatabase {
       `
       if (!results[0]) {
         throw new Error('error updating user')
+      }
+      return results[0]
+    },
+    async incrementUserPoints(id, pointsToAdd) {
+      const results = await sql<User[]>`
+        update users set points = points + ${pointsToAdd}
+        where id = ${id}
+        returning *
+      `
+      if (!results[0]) {
+        throw new Error('error incrementing user points')
       }
       return results[0]
     },

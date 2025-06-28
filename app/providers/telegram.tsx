@@ -29,12 +29,15 @@ export interface ContextState {
   user?: User
   dialogs: DialogInfo[]
   loadingDialogs: boolean
+  isTgAuthorized: boolean
+  isValidating: boolean
 }
 
 export interface ContextActions {
   getMe: () => Promise<string | undefined>
   loadMoreDialogs: () => Promise<void>
   logout: () => Promise<void>
+  setIsTgAuthorized: (isTgAuthorized: boolean) => void
 }
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
@@ -45,11 +48,16 @@ export const ContextDefaultValue: ContextValue = [
     user: undefined,
     dialogs: [],
     loadingDialogs: false,
+    isTgAuthorized: false,
+    isValidating: true,
   },
   {
     getMe: () => Promise.reject(new Error('provider not setup')),
     loadMoreDialogs: () => Promise.reject(new Error('provider not setup')),
     logout: () => Promise.reject(new Error('provider not setup')),
+    setIsTgAuthorized: () => {
+      throw new Error('provider not setup')
+    },
   },
 ]
 
@@ -60,9 +68,14 @@ export const Context = createContext<ContextValue>(ContextDefaultValue)
  * the context.
  */
 export const Provider = ({ children }: PropsWithChildren): ReactNode => {
-  const { tgSessionString } = useGlobal()
+  const { tgSessionString, setTgSessionString } = useGlobal()
+  const [isTgAuthorized, setIsTgAuthorized] = useState(false)
+  const [isValidating, setIsValidating] = useState(true)
+  const { setError } = useError()
+
   const user = useSignal(initData.user)
   const launchParams = useLaunchParams()
+
   const [dialogs, setDialogs] = useState<DialogInfo[]>([])
   const [offsetParams, setOffsetParams] = useState<{
     limit: number
@@ -72,10 +85,46 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   }>({ limit: 20 })
   const [hasMore, setHasMore] = useState(true)
   const [loadingDialogs, setLoadingDialogs] = useState(false)
-  const { setError } = useError()
+
+  useEffect(() => {
+    const validateSession = async () => {
+      if (!tgSessionString) {
+        setIsValidating(false)
+        return
+      }
+      try {
+        setIsValidating(true)
+        fromResult(await getMeRequest(tgSessionString))
+        console.log('Session is valid, user is authorized')
+        setIsTgAuthorized(true)
+      } catch (err) {
+        console.log('Failed session token validation: ', err)
+
+        const errorMsg = getErrorMessage(err)
+        if (errorMsg.includes('client authorization failed')) {
+          console.log('Session validation failed, clearing session')
+          setTgSessionString('')
+          setIsTgAuthorized(false)
+        }
+      } finally {
+        setIsValidating(false)
+      }
+    }
+
+    validateSession()
+  }, [])
+
+  useEffect(() => {
+    if (!isTgAuthorized || !tgSessionString) return
+    setDialogs([])
+    setOffsetParams({ limit: 20 })
+    setHasMore(true)
+    loadMoreDialogs()
+  }, [tgSessionString])
 
   const logout = useCallback(async () => {
     try {
+      setIsTgAuthorized(false)
       if (!tgSessionString) return
       await logoutTelegram(tgSessionString)
     } catch (err) {
@@ -120,14 +169,6 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     }
   }, [tgSessionString, hasMore, loadingDialogs, offsetParams, listDialogs])
 
-  useEffect(() => {
-    if (!tgSessionString) return
-    setDialogs([])
-    setOffsetParams({ limit: 20 })
-    setHasMore(true)
-    loadMoreDialogs()
-  }, [tgSessionString])
-
   const getMe = useCallback(async () => {
     if (!tgSessionString) return undefined
     try {
@@ -142,8 +183,15 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   return (
     <Context.Provider
       value={[
-        { user, launchParams, dialogs, loadingDialogs },
-        { getMe, loadMoreDialogs, logout },
+        {
+          user,
+          launchParams,
+          dialogs,
+          loadingDialogs,
+          isTgAuthorized,
+          isValidating,
+        },
+        { getMe, loadMoreDialogs, logout, setIsTgAuthorized },
       ]}
     >
       {children}

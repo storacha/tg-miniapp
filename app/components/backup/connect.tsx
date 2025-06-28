@@ -14,6 +14,7 @@ import { FormEventHandler, useState } from 'react'
 import { useGlobal } from '@/zustand/global'
 import { useTelegram } from '@/providers/telegram'
 import { PlanGate } from '@/components/backup/plan-gate'
+import { useAnalytics } from '@/lib/analytics'
 
 const spaceNamePrefix = 'Telegram Backups'
 export interface ConnectProps {
@@ -96,8 +97,12 @@ export const Verify = ({ open, email, onDismiss }: VerifyProps) => {
             />
             <DrawerDescription className="mb-5">
               Click the link in the email we sent to{' '}
-              <span className="font-semibold tracking-wide">{email}</span> to
-              authorize this agent.
+              <span className="font-semibold tracking-wide">
+                <a href={`mailto:${email}`} title="Open in your email app">
+                  {email}
+                </a>
+              </span>{' '}
+              to authorize this agent.
             </DrawerDescription>
           </div>
         </DrawerFooter>
@@ -154,13 +159,14 @@ export const StorachaConnect = ({
 
   const account = accounts[0]
   const spaceName = `${spaceNamePrefix} (${user?.id})`
+  const { logStorachaLoginStarted, logStorachaLoginSuccess } = useAnalytics()
 
   const handleConnectSubmit = async () => {
     try {
       if (!client) throw new Error('missing Storacha client instance')
       setConnErr(undefined)
       setVerifying(true)
-
+      logStorachaLoginStarted()
       const account = await client.login(parseEmail(email))
       const plan = await account.plan.get()
 
@@ -174,6 +180,7 @@ export const StorachaConnect = ({
           await client.setCurrentSpace(space.did())
           setSpace(space.did())
         }
+        logStorachaLoginSuccess()
         setIsStorachaAuthorized(true)
       } else {
         console.log('waiting for account plan to be ready...')
@@ -187,13 +194,16 @@ export const StorachaConnect = ({
     }
   }
 
+  const { logHumanodeStarted, logHumanodeSuccess } = useAnalytics()
+
   const waitForPlanSetup = async () => {
     console.log('waiting for plan setup...')
     try {
       if (!client) throw new Error('missing Storacha client instance')
       if (!account) throw new Error('missing account')
-
+      logHumanodeStarted()
       await account.plan.wait()
+      logHumanodeSuccess()
       const space = await client.createSpace(spaceName, { account })
       await client.setCurrentSpace(space.did())
       setSpace(space.did())

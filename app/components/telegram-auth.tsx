@@ -14,10 +14,18 @@ import { Input } from './ui/input'
 import { useTelegram } from '@/providers/telegram'
 import { StringSession } from '@/vendor/telegram/sessions'
 import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
+import { getErrorMessage } from '@/lib/errorhandling'
+import { useAnalytics } from '@/lib/analytics'
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
-const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
+const appVersion = process.env.version ?? '1.0.0'
+const defaultClientParams: TelegramClientParams = {
+  connectionRetries: 5,
+  deviceModel: 'Storacha',
+  systemVersion: 'Linux',
+  appVersion,
+}
 
 function CountDown({ onResend }: { onResend: () => unknown }) {
   const [count, setCount] = useState(59)
@@ -177,18 +185,14 @@ function TwoFAForm({
 }
 
 export default function TelegramAuth() {
+  const { logTelegramLoginStarted, logTelegramLoginSuccess } = useAnalytics()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error>()
   const [codeHash, setCodeHash] = useState('')
   const [code, setCode] = useState('')
-  const {
-    setIsTgAuthorized,
-    phoneNumber,
-    setPhoneNumber,
-    tgSessionString,
-    setTgSessionString,
-  } = useGlobal()
-  const [{ user }] = useTelegram()
+  const { phoneNumber, setPhoneNumber, tgSessionString, setTgSessionString } =
+    useGlobal()
+  const [{ user }, { setIsTgAuthorized }] = useTelegram()
   const [is2FARequired, set2FARequired] = useState(false)
   const [password, setPassword] = useState('')
   const [srp, setSRP] = useState<Api.account.Password>()
@@ -211,6 +215,7 @@ export default function TelegramAuth() {
     try {
       setLoading(true)
       setError(undefined)
+      logTelegramLoginStarted()
 
       if (!client.connected) {
         await client.connect()
@@ -261,9 +266,11 @@ export default function TelegramAuth() {
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
+      logTelegramLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      if (err.errorMessage === 'SESSION_PASSWORD_NEEDED') {
+      const errorMsg = getErrorMessage(err)
+      if (errorMsg.includes('SESSION_PASSWORD_NEEDED')) {
         await getSRP()
         set2FARequired(true)
         return
@@ -311,7 +318,12 @@ export default function TelegramAuth() {
     } catch (err: any) {
       console.error('checking password:', err)
       await getSRP()
-      setError(err)
+      const errorMsg = getErrorMessage(err)
+      if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
+        setError(new Error('Your password was incorrect. Please try again.'))
+      } else {
+        setError(err)
+      }
     } finally {
       setLoading(false)
     }

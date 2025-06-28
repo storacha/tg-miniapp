@@ -1,10 +1,12 @@
 import * as Crypto from '@/lib/crypto'
 import * as dagCBOR from '@ipld/dag-cbor'
 import * as raw from 'multiformats/codecs/raw'
+import pMap from 'p-map'
 import {
   BackupModel,
   Decrypter,
   DialogData,
+  DialogDataMessages,
   EntityData,
   MessageData,
   RestoredBackup,
@@ -28,7 +30,8 @@ export const restoreBackup = async (
   backupCid: string,
   dialogId: string,
   cipher: Decrypter,
-  limit: number = 50
+  limit: number = 20,
+  onMediaLoaded: (mediaCid: string, data: Uint8Array) => void
 ): Promise<RestoredBackup> => {
   const response = await getFromStoracha(backupCid)
   const encryptedBackupRaw = new Uint8Array(await response.arrayBuffer())
@@ -49,83 +52,71 @@ export const restoreBackup = async (
     encryptedDialogData
   )) as DialogData
 
-  const messagesToFetch = decryptedDialogData.messages.slice(0, limit)
-  const hasMoreMessages = decryptedDialogData.messages.length > limit
+  // Load entities first (needed for all messages)
+  const entitiesResult = await getFromStoracha(
+    decryptedDialogData.entities.toString()
+  )
+  const encryptedEntitiesData = new Uint8Array(
+    await entitiesResult.arrayBuffer()
+  )
+  const restoredEntities = (await Crypto.decryptAndDecode(
+    cipher,
+    dagCBOR,
+    encryptedEntitiesData
+  )) as Record<string, EntityData>
 
+  // Load initial messages progressively
   const mediaMap: Record<string, Uint8Array> = {}
-
-  const [restoredMessages, restoredEntities] = await Promise.all([
-    // Fetch and decrypt messages
-    (async () => {
-      const messages: MessageData[] = []
-      for (const messageLink of messagesToFetch) {
-        const messagesResult = await getFromStoracha(messageLink.toString())
-        const encryptedMessageData = new Uint8Array(
-          await messagesResult.arrayBuffer()
-        )
-        const decryptedMessageData = (await Crypto.decryptAndDecode(
-          cipher,
-          dagCBOR,
-          encryptedMessageData
-        )) as MessageData[]
-
-        for (const message of decryptedMessageData) {
-          if (message.media?.content) {
-            const mediaCid = message.media.content.toString()
-            if (!mediaMap[mediaCid]) {
-              const mediaResult = await getFromStoracha(mediaCid)
-              const encryptedRawMedia = new Uint8Array(
-                await mediaResult.arrayBuffer()
-              )
-              const rawMedia = await Crypto.decryptAndDecode(
-                cipher,
-                raw,
-                encryptedRawMedia
-              )
-              mediaMap[mediaCid] = rawMedia
-            }
-          }
-          messages.push(message)
-        }
-      }
-      return messages
-    })(),
-
-    // Fetch and decrypt entities
-    (async () => {
-      const entitiesResult = await getFromStoracha(
-        decryptedDialogData.entities.toString()
-      )
-      const encryptedEntitiesData = new Uint8Array(
-        await entitiesResult.arrayBuffer()
-      )
-      return (await Crypto.decryptAndDecode(
-        cipher,
-        dagCBOR,
-        encryptedEntitiesData
-      )) as Record<string, EntityData>
-    })(),
-  ])
+  const {
+    messages: initialMessages,
+    lastBatchIndex,
+    lastMessageIndex,
+    hasMoreMessages,
+  } = await loadMessagesProgressively(
+    decryptedDialogData.messages,
+    cipher,
+    mediaMap,
+    0,
+    0,
+    limit,
+    onMediaLoaded
+  )
 
   return {
     dialogData: decryptedDialogData,
-    messages: restoredMessages,
+    messages: initialMessages,
     participants: restoredEntities,
     mediaMap,
     hasMoreMessages,
+    lastBatchIndex,
+    lastMessageIndex,
   }
 }
 
-export const fetchMoreMessages = async (
-  dialogData: DialogData,
-  cipher: Decrypter,
-  offset: number,
-  limit: number
-) => {
-  const newMessages: MessageData[] = []
-  const messagesToFetch = dialogData.messages.slice(offset, offset + limit)
+interface LoadResult {
+  messages: MessageData[]
+  lastBatchIndex: number
+  lastMessageIndex: number
+  hasMoreMessages: boolean
+}
 
-  for (const messageLink of messagesToFetch) {
+const loadMessagesProgressively = async (
+  messageBatches: DialogDataMessages,
+  cipher: Decrypter,
+  mediaMap: Record<string, Uint8Array>,
+  startBatchIndex: number,
+  startMessageIndex: number,
+  limit: number,
+  onMediaLoaded: (mediaCid: string, data: Uint8Array) => void
+): Promise<LoadResult> => {
+  const messages: MessageData[] = []
+  let currentBatchIndex = startBatchIndex
+  let currentMessageIndex = startMessageIndex
+  let loadedCount = 0
+
+  // Load all messages (text) immediately
+  while (currentBatchIndex < messageBatches.length && loadedCount < limit) {
+    const messageLink = messageBatches[currentBatchIndex]
     const messagesResult = await getFromStoracha(messageLink.toString())
     const encryptedMessageData = new Uint8Array(
       await messagesResult.arrayBuffer()
@@ -135,8 +126,96 @@ export const fetchMoreMessages = async (
       dagCBOR,
       encryptedMessageData
     )) as MessageData[]
-    newMessages.push(...decryptedMessageData)
+
+    const remainingInBatch = decryptedMessageData.length - currentMessageIndex
+    const toLoadFromBatch = Math.min(remainingInBatch, limit - loadedCount)
+
+    const batchMessages = decryptedMessageData.slice(
+      currentMessageIndex,
+      currentMessageIndex + toLoadFromBatch
+    )
+
+    messages.push(...batchMessages)
+    loadedCount += batchMessages.length
+    currentMessageIndex += toLoadFromBatch
+
+    if (currentMessageIndex >= decryptedMessageData.length) {
+      currentBatchIndex++
+      currentMessageIndex = 0
+    }
   }
 
-  return newMessages
+  const loadMediaInBackground = async () => {
+    const mediaCidsToLoad = messages
+      .map((message) => message.media?.content?.toString())
+      .filter((cid): cid is string => !!cid && !mediaMap[cid])
+
+    if (mediaCidsToLoad.length === 0) return
+
+    await pMap(
+      mediaCidsToLoad,
+      async (mediaCid) => {
+        try {
+          const mediaResult = await getFromStoracha(mediaCid)
+          const encryptedRawMedia = new Uint8Array(
+            await mediaResult.arrayBuffer()
+          )
+          const rawMedia = await Crypto.decryptAndDecode(
+            cipher,
+            raw,
+            encryptedRawMedia
+          )
+          mediaMap[mediaCid] = rawMedia
+          onMediaLoaded(mediaCid, rawMedia)
+        } catch (error) {
+          console.warn(`Failed to load media ${mediaCid}:`, error)
+        }
+      },
+      { concurrency: 6 }
+    )
+  }
+
+  // Start media loading in background - don't await this
+  loadMediaInBackground().catch((error) => {
+    console.warn('Background media loading failed:', error)
+  })
+
+  const hasMoreMessages =
+    currentBatchIndex < messageBatches.length ||
+    (currentBatchIndex === messageBatches.length - 1 && currentMessageIndex > 0)
+
+  return {
+    messages,
+    lastBatchIndex: currentBatchIndex,
+    lastMessageIndex: currentMessageIndex,
+    hasMoreMessages,
+  }
+}
+
+export const fetchMoreMessages = async (
+  dialogDataMessages: DialogDataMessages,
+  cipher: Decrypter,
+  startBatchIndex: number,
+  startMessageIndex: number,
+  limit: number,
+  onMediaLoaded: (mediaCid: string, data: Uint8Array) => void
+) => {
+  const mediaMap: Record<string, Uint8Array> = {}
+  const result = await loadMessagesProgressively(
+    dialogDataMessages,
+    cipher,
+    mediaMap,
+    startBatchIndex,
+    startMessageIndex,
+    limit,
+    onMediaLoaded
+  )
+
+  return {
+    messages: result.messages,
+    mediaMap,
+    lastBatchIndex: result.lastBatchIndex,
+    lastMessageIndex: result.lastMessageIndex,
+    hasMoreMessages: result.hasMoreMessages,
+  }
 }

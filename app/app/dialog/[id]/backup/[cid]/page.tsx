@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useTelegram } from '@/providers/telegram'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
@@ -28,7 +28,7 @@ type BackupDialogProps = {
   messages: (MessageData | ServiceMessageData)[]
   mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
-  onScrollTop: () => void
+  onScrollBottom: () => Promise<void>
 }
 
 const formatTime = (timestamp: number) =>
@@ -142,10 +142,10 @@ function BackupDialog({
   messages,
   mediaMap,
   participants,
-  onScrollTop,
+  onScrollBottom,
 }: BackupDialogProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null)
-  const sortedMessages = [...messages].sort((a, b) => a.date - b.date)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   let lastRenderedDate: string | null = null
   let lastSenderId: string | null = null
 
@@ -157,25 +157,37 @@ function BackupDialog({
   }
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (chatContainerRef.current) {
-        const { scrollTop } = chatContainerRef.current
-        if (scrollTop === 0) {
-          onScrollTop()
+    const handleScroll = async () => {
+      if (chatContainerRef.current && !isLoadingMore) {
+        const { scrollTop, scrollHeight, clientHeight } =
+          chatContainerRef.current
+        const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 20
+
+        if (scrolledToBottom) {
+          setIsLoadingMore(true)
+          await onScrollBottom()
+          setIsLoadingMore(false)
         }
       }
     }
 
     const chatContainer = chatContainerRef.current
-    chatContainer?.addEventListener('scroll', handleScroll)
+    if (chatContainer) {
+      chatContainer.addEventListener('scroll', handleScroll, { passive: true })
+
+      // Also check scroll position on mount and when messages change
+      handleScroll()
+    }
 
     return () => {
-      chatContainer?.removeEventListener('scroll', handleScroll)
+      if (chatContainer) {
+        chatContainer.removeEventListener('scroll', handleScroll)
+      }
     }
-  }, [onScrollTop])
+  }, [onScrollBottom, isLoadingMore, messages.length])
 
   return (
-    <div className="flex flex-col bg-background">
+    <div className="flex flex-col bg-background h-screen">
       <ChatHeader
         image={dialogThumbSrc}
         name={dialog.name}
@@ -184,9 +196,10 @@ function BackupDialog({
       <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+        style={{ height: 'calc(100vh - 64px)' }} // Ensure proper height
       >
-        {sortedMessages
-          .filter((msg) => msg.type !== 'service') // TODO: handle this
+        {messages
+          .filter((msg) => msg.type !== 'service')
           .map((msg) => {
             const date = formatDate(msg.date)
             const showDate = lastRenderedDate !== date
@@ -195,7 +208,7 @@ function BackupDialog({
             const isOutgoing = msg.from === userId
 
             const sender = msg.from
-              ? participants[msg.from]?.name ?? 'Unknown'
+              ? (participants[msg.from]?.name ?? 'Unknown')
               : 'Anonymous'
 
             const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
@@ -217,9 +230,11 @@ function BackupDialog({
                 msg.media.metadata.type === 'document'
                   ? msg.media.metadata.document?.mimeType
                   : ''
-              mediaUrl = URL.createObjectURL(
-                new Blob([rawContent], { type: type })
-              )
+              if (rawContent) {
+                mediaUrl = URL.createObjectURL(
+                  new Blob([rawContent], { type: type })
+                )
+              }
             }
 
             return (
@@ -257,6 +272,11 @@ function BackupDialog({
               </Fragment>
             )
           })}
+        {isLoadingMore && (
+          <div className="text-center py-4">
+            <Loading text="Loading more messages..." />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -272,21 +292,30 @@ export default function Page() {
   const type = searchParams.get('type') as EntityType
   const [userId, setUserId] = useState<string>()
 
-  useEffect(() => {
-    const normalizedId = getNormalizedEntityId(id, type)
+  const normalizedId = useMemo(
+    () => getNormalizedEntityId(id, type),
+    [id, type]
+  )
 
+  useEffect(() => {
     const fetchBackup = async () => {
       const userId = await getMe()
       if (!userId) return
       setUserId(userId)
-      await restoreBackup(backupCid!, normalizedId, 50)
+      await restoreBackup(backupCid!, normalizedId, 20)
     }
 
     fetchBackup()
-  }, [backupCid, id, restoreBackup, getMe])
+  }, [backupCid, restoreBackup, getMe])
 
   const handleFetchMoreMessages = async () => {
-    return fetchMoreMessages(restoredBackup.item?.messages.length || 0, 50)
+    if (
+      restoredBackup.item?.hasMoreMessages &&
+      !restoredBackup.item?.isLoadingMore
+    ) {
+      console.log('Fetching more messages...')
+      await fetchMoreMessages(30)
+    }
   }
 
   return (
@@ -302,7 +331,7 @@ export default function Page() {
       {restoredBackup.loading || !userId ? (
         <div className="flex flex-col items-center justify-center h-screen">
           <div className="text-lg font-semibold text-center">
-            <Loading />
+            <Loading text="Loading messages..." />
           </div>
         </div>
       ) : restoredBackup.item ? (
@@ -312,7 +341,7 @@ export default function Page() {
           messages={restoredBackup.item.messages}
           mediaMap={restoredBackup.item.mediaMap}
           participants={restoredBackup.item.participants}
-          onScrollTop={handleFetchMoreMessages}
+          onScrollBottom={handleFetchMoreMessages}
         />
       ) : (
         <div className="flex flex-col items-center justify-center h-screen">

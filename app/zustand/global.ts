@@ -50,7 +50,6 @@ const saveSessionToString = (session?: Session | string) => {
 interface GlobalState {
   isFirstLogin: boolean
   isOnboarded: boolean
-  isTgAuthorized: boolean
   isStorachaAuthorized: boolean
   user: User | null
   phoneNumber: string
@@ -59,7 +58,6 @@ interface GlobalState {
 
   setIsFirstLogin: (isFirstLogin: boolean) => void
   setIsOnboarded: (isOnboarded: boolean) => void
-  setIsTgAuthorized: (isTgAuthorized: boolean) => void
   setIsStorachaAuthorized: (isStorachaAuthorized: boolean) => void
   setUser: (user: User) => void
   setPhoneNumber: (phone: string) => void
@@ -72,7 +70,6 @@ export const useGlobal = create<GlobalState>()(
     (set) => ({
       isFirstLogin: true,
       isOnboarded: false,
-      isTgAuthorized: false,
       isStorachaAuthorized: false,
       user: null,
       phoneNumber: '',
@@ -80,7 +77,6 @@ export const useGlobal = create<GlobalState>()(
       tgSessionString: '',
       setIsFirstLogin: (isFirstLogin) => set({ isFirstLogin }),
       setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
-      setIsTgAuthorized: (isTgAuthorized) => set({ isTgAuthorized }),
       setIsStorachaAuthorized: (isStorachaAuthorized) =>
         set({ isStorachaAuthorized }),
       setUser: (user) => set({ user }),

@@ -1,7 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
-import { File, MapPin, CheckCircle, ExternalLink, X } from 'lucide-react'
+import {
+  File,
+  MapPin,
+  CheckCircle,
+  ExternalLink,
+  X,
+  Loader2,
+} from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from '@/lib/utils'
 import {
@@ -143,14 +150,15 @@ const Bubble: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="p-3 bg-gray-100 rounded-xl max-w-sm">{children}</div>
 )
 
-const PlaceholderBubble: React.FC<{ label: string }> = ({ label }) => (
-  <div className="flex items-center justify-center w-full h-32 bg-gray-200 text-gray-500 text-sm rounded-xl">
-    {label}
+const PlaceholderBubble: React.FC<{ label?: string }> = ({ label }) => (
+  <div className="flex flex-col items-center justify-center w-full h-32 min-w-[8rem] min-h-[10rem] bg-gray-200 text-gray-500 text-sm rounded-xl">
+    <Loader2 className="animate-spin h-7 w-7 text-gray-400 mb-2" />
+    {label ?? <p className="px-4">{label}</p>}
   </div>
 )
 
 const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="No image available" />
+  if (!mediaUrl) return <PlaceholderBubble label="no image" />
   return (
     <div className="flex justify-center">
       <img
@@ -174,7 +182,7 @@ const AudioMedia: React.FC<{
   const mime = metadata.document?.mimeType || 'audio/mpeg'
 
   if (!mediaUrl)
-    return <div className="p-2 text-sm text-gray-500">No audio available</div>
+    return <div className="p-2 text-sm text-gray-500">loading audio...</div>
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-2">
@@ -202,7 +210,7 @@ const VideoMedia: React.FC<{
   mediaUrl?: string
   metadata: DocumentMediaData
 }> = ({ mediaUrl, metadata }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="No video available" />
+  if (!mediaUrl) return <PlaceholderBubble label="no video" />
 
   const mime = metadata.document?.mimeType?.toLowerCase() || 'video/mp4'
   const thumbUrl = metadata.document
@@ -225,7 +233,7 @@ const GifMedia: React.FC<{
   mediaUrl?: string
   metadata?: DocumentMediaData
 }> = ({ mediaUrl, metadata }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="No video available" />
+  if (!mediaUrl) return <PlaceholderBubble label="no gif" />
 
   const mime = metadata?.document?.mimeType?.toLowerCase() || 'video/mp4'
 

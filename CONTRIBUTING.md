@@ -107,6 +107,44 @@ cd app
 pnpm db:migrate
 ```
 
+## ⚠️ Before you run db migrations
+
+After setup you'll need to create your development database. If you're on a Mac (OSX) install postgres
+
+```bash
+brew install postgresql
+```
+
+You may need to start the postgres service after installation with
+
+```bash
+brew services start postgresql
+```
+
+If you're on Linux, refer to [this](https://www.digitalocean.com/community/tutorials/how-to-install-postgresql-on-ubuntu-22-04-quickstart). I think it works quite well for other distros, feel free to compare.
+
+Use `psql` to start a database session;
+
+```bash
+psql
+```
+
+If this is your first time setting up postgres on your machine. There's a chance the command above fails when you run it. If that happens, try the one below instead:
+
+```bash
+psql postgres
+```
+
+And then in the SQL console:
+
+```sql
+create database tg_backups_dev;
+create role admin with login password 'tarjay';
+grant all privileges on database tg_backups_dev to admin;
+```
+
+Now run `pnpm db:migrate`
+
 ## 📝 How should I write my commits?
 
 We use [Conventional Commits](https://www.conventionalcommits.org/) to power automatic changelogs and releases via [Release Please](https://github.com/googleapis/release-please).

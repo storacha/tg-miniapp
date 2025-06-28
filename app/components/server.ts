@@ -29,6 +29,7 @@ import { toEntityData } from '@/lib/server/runner'
 import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
 import { Api } from '@/vendor/telegram'
+import { clearSession } from '@/lib/server/session'
 
 const names = supervillains
   .map((value) => ({ value, sort: Math.random() }))
@@ -92,6 +93,7 @@ const withClient = <T extends [...unknown[]], U>(
 
 export const logout = toResultFn(
   withClient(async (client: TelegramClient) => {
+    clearSession()
     console.log('logging out from telegram client..')
     await client.invoke(new Api.auth.LogOut())
     console.log('logged out from telegram client')
@@ -127,14 +129,7 @@ export const listDialogs = toResultFn(
         }
 
         const entityData = toEntityData(chat.entity)
-        const parts = entityData.name
-          .replace(/[^a-zA-Z ]/gi, '')
-          .trim()
-          .split(' ')
-        const initials =
-          parts.length === 1
-            ? entityData.name[0]
-            : (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+        const initials = getInitials(entityData.name)
         const isPublic =
           chat.entity?.className === 'Channel' && !!chat.entity?.username
             ? true
