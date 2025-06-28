@@ -69,6 +69,7 @@ export interface ContextActions {
   ) => Promise<void>
   fetchMoreMessages: (limit: number) => Promise<void>
   cancelBackupJob: (job: JobID) => Promise<void>
+  resetBackup: () => void
   // setBackup: (id: Link|null) => void
   // setDialog: (id: bigint | null) => void
 }
@@ -90,6 +91,7 @@ export const ContextDefaultValue: ContextValue = [
     restoreBackup: () => Promise.reject(new Error('provider not setup')),
     fetchMoreMessages: () => Promise.reject(new Error('provider not setup')),
     cancelBackupJob: () => Promise.reject(new Error('provider not setup')),
+    resetBackup: () => Promise.reject(new Error('provider not setup')),
     // setBackup: () => {},
     // setDialog: () => {}
   },
@@ -378,6 +380,11 @@ export const Provider = ({
     }
   }, [jobStore])
 
+  const resetBackup = () => {
+    setRestoredBackup(undefined)
+    setRestoredBackupError(undefined)
+  }
+
   useEffect(() => {
     setJobsReady(!!jobStore)
   }, [jobStore])
@@ -391,6 +398,7 @@ export const Provider = ({
           jobsReady,
         },
         {
+          resetBackup,
           addBackupJob,
           removeBackupJob,
           restoreBackup,
