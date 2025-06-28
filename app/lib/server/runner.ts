@@ -41,6 +41,10 @@ import {
   WallPaperData,
   WallPaperSettingsData,
   MediaData,
+  ReactionData,
+  ReactionCountData,
+  MessagePeerReactionData,
+  MessageReactionsData,
 } from '@/api'
 import pRetry from 'p-retry'
 import * as Type from '@/api'
@@ -589,6 +593,14 @@ const toMessageData = (
 
     if (mediaRoot) {
       messageData['media'].content = mediaRoot
+    }
+  }
+
+  // Extract reactions if present
+  if (message.reactions) {
+    const reactions = toMessageReactionsData(message.reactions)
+    if (reactions) {
+      messageData.reactions = reactions
     }
   }
 
@@ -1887,6 +1899,64 @@ const toExtendedMediaData = withCleanUndef(
           type: 'unknown',
         } as Type.ExtendedMediaUnknownData
       }
+    }
+  }
+)
+
+const toReactionData = withCleanUndef(
+  (reaction: Api.TypeReaction): ReactionData => {
+    switch (reaction.className) {
+      case 'ReactionEmoji':
+        return {
+          type: 'emoji',
+          emoticon: reaction.emoticon,
+        }
+      case 'ReactionCustomEmoji':
+        return {
+          type: 'custom-emoji',
+          documentId: String(reaction.documentId),
+        }
+      default:
+        return {
+          type: 'unknown',
+        }
+    }
+  }
+)
+
+const toReactionCountData = withCleanUndef(
+  (reactionCount: Api.ReactionCount): ReactionCountData => {
+    return {
+      reaction: toReactionData(reactionCount.reaction),
+      count: reactionCount.count,
+      chosenOrder: reactionCount.chosenOrder,
+    }
+  }
+)
+
+const toMessagePeerReactionData = withCleanUndef(
+  (peerReaction: Api.MessagePeerReaction): MessagePeerReactionData => {
+    return {
+      big: peerReaction.big,
+      unread: peerReaction.unread,
+      my: peerReaction.my,
+      peerId: toPeerID(peerReaction.peerId),
+      date: peerReaction.date,
+      reaction: toReactionData(peerReaction.reaction),
+    }
+  }
+)
+
+const toMessageReactionsData = withCleanUndef(
+  (reactions: Api.MessageReactions): MessageReactionsData => {
+    return {
+      min: reactions.min,
+      canSeeList: reactions.canSeeList,
+      reactionsAsTags: reactions.reactionsAsTags,
+      results: reactions.results.map((r) => toReactionCountData(r)),
+      recentReactions: reactions.recentReactions?.map((r) =>
+        toMessagePeerReactionData(r)
+      ),
     }
   }
 )
