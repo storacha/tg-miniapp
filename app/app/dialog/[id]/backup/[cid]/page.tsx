@@ -149,6 +149,8 @@ function BackupDialog({
   let lastRenderedDate: string | null = null
   let lastSenderId: string | null = null
 
+  console.log('messages', messages)
+
   let dialogThumbSrc = ''
   if (dialog.photo?.strippedThumb) {
     dialogThumbSrc = toJPGDataURL(

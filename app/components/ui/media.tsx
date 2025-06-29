@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   File,
   MapPin,
@@ -21,7 +21,11 @@ import {
   WebPageMediaData,
   DefaultWebPageData,
   DocumentData,
+  GameMediaData,
+  StrippedPhotoSizeData,
+  InvoiceMediaData,
 } from '@/api'
+import { useTelegram } from '@/providers/telegram'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -86,6 +90,14 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
     }
     case 'webpage': {
       mediaContent = <WebPageMedia metadata={metadata} />
+      break
+    }
+    case 'game': {
+      mediaContent = <GameMedia metadata={metadata} />
+      break
+    }
+    case 'invoice': {
+      mediaContent = <InvoiceMedia metadata={metadata} />
       break
     }
     case 'document': {
@@ -203,6 +215,119 @@ const AudioMedia: React.FC<{
         Your browser does not support the audio element.
       </audio>
     </div>
+  )
+}
+
+interface GameMediaProps {
+  metadata: GameMediaData
+}
+
+const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
+  const [thumbUrl, setThumbUrl] = useState<string | undefined>()
+
+  useEffect(() => {
+    const photo = metadata.game.photo
+    if (!photo) return
+    // @ts-expect-error the PhotoDataSize union be messing things up here
+    const sizes = photo.sizes
+
+    const stripped = sizes?.find(
+      (s: StrippedPhotoSizeData) => s.type === 'stripped'
+    )
+
+    if (stripped) {
+      try {
+        const decoded = toJPGDataURL(decodeStrippedThumb(stripped.bytes))
+        setThumbUrl(decoded)
+      } catch (err) {
+        console.error('Failed to decode stripped thumbnail:', err)
+      }
+      return
+    }
+  }, [metadata.game.photo])
+
+  return (
+    <Bubble>
+      <div className="flex flex-col w-60">
+        {thumbUrl ? (
+          <img
+            src={thumbUrl}
+            alt={metadata.game.title}
+            className="w-full h-36 object-cover rounded mb-2"
+          />
+        ) : (
+          <div className="w-full h-36 bg-gray-300 animate-pulse rounded mb-2" />
+        )}
+
+        <div className="text-sm font-medium mb-1 text-black">
+          {metadata.game.title}
+        </div>
+
+        <button
+          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
+          onClick={() =>
+            window.open(
+              `https://t.me/${metadata.game.shortName}?game=${metadata.game.shortName}`,
+              '_blank'
+            )
+          }
+        >
+          Play {metadata.game.title}
+        </button>
+      </div>
+    </Bubble>
+  )
+}
+
+const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
+  const [thumbUrl, setThumbUrl] = useState<string>('')
+  const [{ user }] = useTelegram()
+
+  useEffect(() => {
+    const photo = metadata.photo
+    if (!photo) return
+
+    if (photo.type === 'default' || photo.type === 'proxy') {
+      setThumbUrl(photo.url)
+    }
+  }, [metadata.photo])
+
+  const formatPrice = (price: string) => {
+    // elegram sends totalAmount as an integer multiplied by 100
+    // (i.e. amount in minor units, like cents for USD)
+    const minorUnit = parseInt(price, 10) / 100
+    return new Intl.NumberFormat(user?.languageCode || 'en-US', {
+      style: 'currency',
+      currency: metadata.currency,
+    }).format(minorUnit)
+  }
+
+  return (
+    <Bubble>
+      <div className="flex flex-col gap-2 w-64">
+        {thumbUrl && (
+          <img
+            src={thumbUrl}
+            alt={metadata.title}
+            className="rounded-lg w-full object-cover aspect-video"
+          />
+        )}
+        <p className="text-md font-semibold">{metadata.title}</p>
+        <p className="text-sm text-gray-600">
+          {formatPrice(metadata.totalAmount)}{' '}
+          {metadata.test ? '(TEST INVOICE)' : ''}
+        </p>
+        <p className="text-sm text-gray-600">{metadata.description}</p>
+        <button
+          className="mt-2 w-full px-3 py-1 text-sm rounded bg-blue-500 text-white"
+          onClick={() =>
+            window.open(`https://t.me/${metadata.startParam}`, '_blank')
+          }
+        >
+          Pay {formatPrice(metadata.totalAmount)}
+        </button>
+      </div>
+    </Bubble>
   )
 }
 
