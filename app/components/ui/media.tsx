@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   File,
   MapPin,
@@ -21,6 +21,9 @@ import {
   WebPageMediaData,
   DefaultWebPageData,
   DocumentData,
+  GameMediaData,
+  DefaultPhotoSizeData,
+  PhotoSizeData,
 } from '@/api'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -44,6 +47,28 @@ const getThumbURL = (document: DocumentData) => {
     console.error('Failed to decode thumbnail', err)
     return undefined
   }
+}
+
+export const getGameThumbURL = async (photoSizes: PhotoSizeData[]) => {
+  const withFileId = photoSizes.filter(
+    (size): size is DefaultPhotoSizeData & { file_id: string } =>
+      size.type === 'default' &&
+      'file_id' in size &&
+      typeof size.file_id === 'string'
+  )
+
+  if (!withFileId.length) return undefined
+  // we should pick the largest img resoultion here
+  const largest = withFileId.sort((a, b) => (b.w ?? 0) - (a.w ?? 0))[0]
+  const res = await fetch(`/api/get-file/${largest.file_id}`)
+
+  if (!res.ok) {
+    console.error('Failed to fetch game thumbnail:', res.statusText)
+    return undefined
+  }
+
+  const { fileUrl } = await res.json()
+  return fileUrl
 }
 
 const getDocumentType = (media: DocumentMediaData) => {
@@ -86,6 +111,10 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
     }
     case 'webpage': {
       mediaContent = <WebPageMedia metadata={metadata} />
+      break
+    }
+    case 'game': {
+      mediaContent = <GameMedia metadata={metadata} />
       break
     }
     case 'document': {
@@ -203,6 +232,60 @@ const AudioMedia: React.FC<{
         Your browser does not support the audio element.
       </audio>
     </div>
+  )
+}
+
+interface GameMediaProps {
+  metadata: GameMediaData
+}
+
+export const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
+  const [thumbUrl, setThumbUrl] = useState<string | undefined>()
+
+  useEffect(() => {
+    const photo = metadata.game.photo
+    if (!photo || photo.type !== 'default') return
+
+    const sizes = photo.sizes?.filter(
+      (s): s is DefaultPhotoSizeData & { file_id: string } =>
+        'file_id' in s && typeof s.file_id === 'string'
+    )
+
+    if (!sizes?.length) return
+
+    getGameThumbURL(sizes).then(setThumbUrl)
+  }, [metadata.game.photo])
+
+  return (
+    <Bubble>
+      <div className="flex flex-col w-60">
+        {thumbUrl ? (
+          <img
+            src={thumbUrl}
+            alt={metadata.game.title}
+            className="w-full h-36 object-cover rounded mb-2"
+          />
+        ) : (
+          <div className="w-full h-36 bg-gray-300 animate-pulse rounded mb-2" />
+        )}
+
+        <div className="text-sm font-medium mb-1 text-black">
+          {metadata.game.title}
+        </div>
+
+        <button
+          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
+          onClick={() =>
+            window.open(
+              `https://t.me/${metadata.game.shortName}?game=${metadata.game.shortName}`,
+              '_blank'
+            )
+          }
+        >
+          Play {metadata.game.title}
+        </button>
+      </div>
+    </Bubble>
   )
 }
 
