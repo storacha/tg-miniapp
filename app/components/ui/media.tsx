@@ -23,7 +23,9 @@ import {
   DocumentData,
   GameMediaData,
   StrippedPhotoSizeData,
+  InvoiceMediaData,
 } from '@/api'
+import { useTelegram } from '@/providers/telegram'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -92,6 +94,10 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
     }
     case 'game': {
       mediaContent = <GameMedia metadata={metadata} />
+      break
+    }
+    case 'invoice': {
+      mediaContent = <InvoiceMedia metadata={metadata} />
       break
     }
     case 'document': {
@@ -216,7 +222,7 @@ interface GameMediaProps {
   metadata: GameMediaData
 }
 
-export const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
+const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
   const [thumbUrl, setThumbUrl] = useState<string | undefined>()
 
   useEffect(() => {
@@ -267,6 +273,58 @@ export const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
           }
         >
           Play {metadata.game.title}
+        </button>
+      </div>
+    </Bubble>
+  )
+}
+
+const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
+  const [thumbUrl, setThumbUrl] = useState<string>('')
+  const [{ user }] = useTelegram()
+
+  useEffect(() => {
+    const photo = metadata.photo
+    if (!photo) return
+
+    if (photo.type === 'default' || photo.type === 'proxy') {
+      setThumbUrl(photo.url)
+    }
+  }, [metadata.photo])
+
+  const formatPrice = (price: string) => {
+    // elegram sends totalAmount as an integer multiplied by 100
+    // (i.e. amount in minor units, like cents for USD)
+    const minorUnit = parseInt(price, 10) / 100
+    return new Intl.NumberFormat(user?.languageCode || 'en-US', {
+      style: 'currency',
+      currency: metadata.currency,
+    }).format(minorUnit)
+  }
+
+  return (
+    <Bubble>
+      <div className="flex flex-col gap-2 w-64">
+        {thumbUrl && (
+          <img
+            src={thumbUrl}
+            alt={metadata.title}
+            className="rounded-lg w-full object-cover aspect-video"
+          />
+        )}
+        <p className="text-md font-semibold">{metadata.title}</p>
+        <p className="text-sm text-gray-600">
+          {formatPrice(metadata.totalAmount)}{' '}
+          {metadata.test ? '(TEST INVOICE)' : ''}
+        </p>
+        <p className="text-sm text-gray-600">{metadata.description}</p>
+        <button
+          className="mt-2 w-full px-3 py-1 text-sm rounded bg-blue-500 text-white"
+          onClick={() =>
+            window.open(`https://t.me/${metadata.startParam}`, '_blank')
+          }
+        >
+          Pay {formatPrice(metadata.totalAmount)}
         </button>
       </div>
     </Bubble>
