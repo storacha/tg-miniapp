@@ -437,13 +437,6 @@ export interface DefaultPhotoSizeData {
   h: number
   /** File size */
   size: number
-  /**
-   * Unique file identifier for fetching the image file via Bot API.
-   * @see https://core.telegram.org/bots/api#photosize
-   * @example
-   * "file_id": "AgACAgQAAxUAAWhhGyZPTxAesPsXjYCgMQXGAYNxAAL0xj..."
-   */
-  file_id: string
 }
 
 export interface CachedPhotoSizeData {
@@ -484,13 +477,6 @@ export interface ProgressivePhotoSizeData {
   h: number
   /** Sizes of progressive JPEG file prefixes, which can be used to preliminarily show the image. */
   sizes: number[]
-  /**
-   * Unique file identifier for fetching the image file via Bot API.
-   * @see https://core.telegram.org/bots/api#photosize
-   * @example
-   * "file_id": "AgACAgQAAxUAAWhhGyZPTxAesPsXjYCgMQXGAYNxAAL0xj..."
-   */
-  file_id: string
 }
 
 export interface PathPhotoSizeData {

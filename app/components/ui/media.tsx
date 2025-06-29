@@ -23,8 +23,7 @@ import {
   DefaultWebPageData,
   DocumentData,
   GameMediaData,
-  DefaultPhotoSizeData,
-  PhotoSizeData,
+  StrippedPhotoSizeData,
 } from '@/api'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -49,28 +48,6 @@ const getThumbURL = (document: DocumentData) => {
     console.error('Failed to decode thumbnail', err)
     return undefined
   }
-}
-
-export const getGameThumbURL = async (photoSizes: PhotoSizeData[]) => {
-  const withFileId = photoSizes.filter(
-    (size): size is DefaultPhotoSizeData & { file_id: string } =>
-      size.type === 'default' &&
-      'file_id' in size &&
-      typeof size.file_id === 'string'
-  )
-
-  if (!withFileId.length) return undefined
-  // we should pick the largest img resoultion here
-  const largest = withFileId.sort((a, b) => (b.w ?? 0) - (a.w ?? 0))[0]
-  const res = await fetch(`/api/get-file/${largest.file_id}`)
-
-  if (!res.ok) {
-    console.error('Failed to fetch game thumbnail:', res.statusText)
-    return undefined
-  }
-
-  const { fileUrl } = await res.json()
-  return fileUrl
 }
 
 const getDocumentType = (media: DocumentMediaData) => {
@@ -279,16 +256,23 @@ export const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
 
   useEffect(() => {
     const photo = metadata.game.photo
-    if (!photo || photo.type !== 'default') return
+    if (!photo) return
+    // @ts-expect-error the PhotoDataSize union be messing things up here
+    const sizes = photo.sizes
 
-    const sizes = photo.sizes?.filter(
-      (s): s is DefaultPhotoSizeData & { file_id: string } =>
-        'file_id' in s && typeof s.file_id === 'string'
+    const stripped = sizes?.find(
+      (s: StrippedPhotoSizeData) => s.type === 'stripped'
     )
 
-    if (!sizes?.length) return
-
-    getGameThumbURL(sizes).then(setThumbUrl)
+    if (stripped) {
+      try {
+        const decoded = toJPGDataURL(decodeStrippedThumb(stripped.bytes))
+        setThumbUrl(decoded)
+      } catch (err) {
+        console.error('Failed to decode stripped thumbnail:', err)
+      }
+      return
+    }
   }, [metadata.game.photo])
 
   return (
