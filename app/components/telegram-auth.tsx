@@ -69,6 +69,7 @@ function OTPForm({
   onSubmit,
   onCodeChange,
   onResend,
+  onBack,
   code,
   loading,
   error,
@@ -76,6 +77,7 @@ function OTPForm({
   onSubmit: () => unknown
   onCodeChange: (code: string) => unknown
   onResend: () => unknown
+  onBack: () => unknown
   code: string
   loading: boolean
   error?: Error
@@ -119,10 +121,21 @@ function OTPForm({
           Hurry... enter the pin you received on your Telegram.
         </p>
       </div>
-      <div className="flex justify-center items-center">
-        <Button type="submit" className="w-full" disabled={disabled}>
-          {loading ? 'Loading...' : 'Submit OTP'}
-        </Button>
+      <div className="flex flex-col justify-center items-center gap-3">
+        {disabled ? (
+          <Button
+            type="submit"
+            className="w-full"
+            onClick={onBack}
+            disabled={loading}
+          >
+            Back
+          </Button>
+        ) : (
+          <Button type="submit" className="w-full" disabled={disabled}>
+            {loading ? 'Loading...' : 'Submit OTP'}
+          </Button>
+        )}
       </div>
     </form>
   )
@@ -225,7 +238,12 @@ export default function TelegramAuth() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('requesting OTP:', err)
-      setError(err)
+      const errorMsg = getErrorMessage(err)
+      if (errorMsg.includes('PHONE_NUMBER_INVALID')) {
+        setError(new Error('Your phone number is incorrect. Please try again.'))
+      } else {
+        setError(err)
+      }
     } finally {
       setLoading(false)
     }
@@ -269,10 +287,16 @@ export default function TelegramAuth() {
       logTelegramLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+      console.log('signing in:', err)
       const errorMsg = getErrorMessage(err)
       if (errorMsg.includes('SESSION_PASSWORD_NEEDED')) {
         await getSRP()
         set2FARequired(true)
+        return
+      } else if (errorMsg.includes('PHONE_CODE_INVALID')) {
+        setError(
+          new Error('The code you entered is incorrect. Please try again.')
+        )
         return
       }
       console.error('signing in:', err)
@@ -355,6 +379,11 @@ export default function TelegramAuth() {
         }}
         onSubmit={handleCodeSubmit}
         onResend={handleResend}
+        onBack={() => {
+          setCodeHash('')
+          setError(undefined)
+          setCode('')
+        }}
         loading={loading}
         error={error}
       />
