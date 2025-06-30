@@ -122,18 +122,20 @@ function OTPForm({
         </p>
       </div>
       <div className="flex flex-col justify-center items-center gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          onClick={onBack}
-          disabled={loading}
-        >
-          Back
-        </Button>
-        <Button type="submit" className="w-full" disabled={disabled}>
-          {loading ? 'Loading...' : 'Submit OTP'}
-        </Button>
+        {disabled ? (
+          <Button
+            type="submit"
+            className="w-full"
+            onClick={onBack}
+            disabled={loading}
+          >
+            Back
+          </Button>
+        ) : (
+          <Button type="submit" className="w-full" disabled={disabled}>
+            {loading ? 'Loading...' : 'Submit OTP'}
+          </Button>
+        )}
       </div>
     </form>
   )
