@@ -123,6 +123,14 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
       }
       break
     }
+    case 'unsupported': {
+      mediaContent = (
+        <Bubble>
+          <UnsupportedMedia />
+        </Bubble>
+      )
+      break
+    }
     default: {
       console.log(JSON.stringify(metadata))
       mediaContent = (
@@ -156,6 +164,14 @@ const PlaceholderBubble: React.FC<{ label?: string }> = ({ label }) => (
     {label ?? <p className="px-4">{label}</p>}
   </div>
 )
+
+const UnsupportedMedia: React.FC = () => {
+  return (
+    <div className="text-sm italic text-muted-foreground text-center">
+      ⚠️ This media type isn&#39;t supported by your Telegram app.
+    </div>
+  )
+}
 
 const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
   if (!mediaUrl) return <PlaceholderBubble label="no image" />
