@@ -6,10 +6,12 @@ import { ChevronRight } from 'lucide-react'
 import { Layouts } from '@/components/layouts'
 import { useMemo } from 'react'
 import { useUserLocale } from '@/hooks/useUserLocale'
+import { getNormalizedEntityId } from '@/lib/backup/utils'
+import { EntityType } from '@/api'
 
 export default function BackupSelectionPage() {
   const { id } = useParams<{ id: string }>()
-  const [{ backups }] = useBackups()
+  const [{ backups }, { restoreBackup }] = useBackups()
   const router = useRouter()
   const searchParams = useSearchParams()
   const type = searchParams.get('type')
@@ -25,6 +27,9 @@ export default function BackupSelectionPage() {
 
   const handleBackupClick = (e: React.MouseEvent, backupCid: string) => {
     e.preventDefault()
+    // Start preloading the backup data
+    const normalizedId = getNormalizedEntityId(id, type as EntityType)
+    restoreBackup(backupCid, normalizedId, 20)
     router.push(`/dialog/${id}/backup/${backupCid}?type=${type}`)
   }
 
