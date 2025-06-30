@@ -318,15 +318,21 @@ export default function Page() {
   // this is so we don't get stale chat data in
   // the header (and even in the chat it flashes old messages) when people switch backed up chats
   useEffect(() => {
-    resetBackup()
-    setUserId(undefined)
-  }, [id, backupCid])
+    if (restoredBackup.item && restoredBackup.item.backupCid !== backupCid) {
+      resetBackup()
+    }
+  }, [id, backupCid, restoredBackup])
 
   useEffect(() => {
     const fetchBackup = async () => {
       const userId = await getMe()
       if (!userId) return
       setUserId(userId)
+      if (
+        restoredBackup.loading ||
+        (restoredBackup.item && restoredBackup.item.backupCid === backupCid)
+      )
+        return
       await restoreBackup(backupCid!, normalizedId, 20)
     }
 

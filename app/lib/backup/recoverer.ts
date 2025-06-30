@@ -83,6 +83,7 @@ export const restoreBackup = async (
   )
 
   return {
+    backupCid,
     dialogData: decryptedDialogData,
     messages: initialMessages,
     participants: restoredEntities,
