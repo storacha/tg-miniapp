@@ -2,23 +2,18 @@ import { useTelegram } from '@/providers/telegram'
 import { useEffect, useState } from 'react'
 
 export const useUserLocale = () => {
-  const [userLocale, setUserLocale] = useState<string>()
+  const [userLocale, setUserLocale] = useState<string>('en-US')
   const [{ user }] = useTelegram()
 
   useEffect(() => {
-    try {
-      const tgLocale = user?.languageCode
-      const browserLocale = navigator.language || navigator.languages?.[0]
-      setUserLocale(browserLocale || tgLocale || 'en-US')
-    } catch (error) {
-      console.warn(
-        'Failed to get Telegram locale, using browser locale:',
-        error
-      )
-      const browserLocale = navigator.language || navigator.languages?.[0]
-      setUserLocale(browserLocale || 'en-US')
-    }
-  }, [])
+    const tgLocale = user?.languageCode
+    const browserLocale =
+      typeof window !== 'undefined'
+        ? navigator.language || navigator.languages?.[0]
+        : undefined
+    // Prioritize mini app browser locale, since languageCode only contains the language information, not the region
+    setUserLocale(browserLocale || tgLocale || 'en-US')
+  }, [user])
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp * 1000).toLocaleDateString(userLocale, {
