@@ -14,6 +14,7 @@ import { FormEventHandler, useState } from 'react'
 import { useGlobal } from '@/zustand/global'
 import { useTelegram } from '@/providers/telegram'
 import { PlanGate } from '@/components/backup/plan-gate'
+import { getErrorMessage } from '@/lib/errorhandling'
 import { useAnalytics } from '@/lib/analytics'
 
 const spaceNamePrefix = 'Telegram Backups'
@@ -130,6 +131,7 @@ export const ConnectError = ({ open, error, onDismiss }: ConnectErrorProps) => {
               src="/fail-racha.png"
               width="112"
               className="inline-block mb-5"
+              alt="racha with dead eyes"
             />
             <p className="text-red-600 text-center">
               Error: {error?.message ?? 'A connection error occured.'}
@@ -188,7 +190,17 @@ export const StorachaConnect = ({
       }
     } catch (err) {
       console.error(err)
-      setConnErr(err as Error)
+      const errMsg = getErrorMessage(err)
+      if (
+        errMsg.includes('not authorized') ||
+        errMsg.includes('Unauthorized') ||
+        errMsg.includes('expired')
+      ) {
+        setConnErr(new Error('The email verification could not be completed!'))
+        setVerifying(false)
+      } else {
+        setConnErr(new Error('Error connecting to Storacha.'))
+      }
     } finally {
       setVerifying(false)
     }
@@ -223,6 +235,9 @@ export const StorachaConnect = ({
         error={connErr}
         onDismiss={() => {
           setConnErr(undefined)
+          setVerifying(false)
+          setIsPlanGateOpen(false)
+
           if (onDismiss) onDismiss()
         }}
       />
