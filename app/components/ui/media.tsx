@@ -25,6 +25,9 @@ import {
   GameMediaData,
   StrippedPhotoSizeData,
   InvoiceMediaData,
+  DiceMediaData,
+  StoryMediaData,
+  DefaultPhotoData,
 } from '@/api'
 import { useTelegram } from '@/providers/telegram'
 
@@ -105,6 +108,14 @@ export const Media: React.FC<MediaProps> = ({
     }
     case 'invoice': {
       mediaContent = <InvoiceMedia metadata={metadata} />
+      break
+    }
+    case 'dice': {
+      mediaContent = <DiceMedia metadata={metadata} />
+      break
+    }
+    case 'story': {
+      mediaContent = <StoryMedia metadata={metadata} />
       break
     }
     case 'document': {
@@ -299,7 +310,7 @@ const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
         </div>
 
         <button
-          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
+          className="px-3 py-1 bg-blue-500 hover:bg-blue-700 text-white text-sm rounded"
           onClick={() =>
             window.open(
               `https://t.me/${metadata.game.shortName}?game=${metadata.game.shortName}`,
@@ -364,6 +375,115 @@ const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
       </div>
     </Bubble>
   )
+}
+
+const DiceMedia = ({ metadata }: { metadata: DiceMediaData }) => {
+  const [animate, setAnimate] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const getAnimation = () => {
+    if (!animate) return ''
+
+    switch (metadata.emoticon) {
+      case '🎯':
+      case '🏀':
+        return 'animate-bounce'
+      case '🎲':
+        return 'animate-spin'
+      case '🎳':
+        return 'animate-ping'
+      case '⚽':
+        return 'animate-bounce'
+      case '🎰':
+        return 'animate-spin'
+      default:
+        return ''
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center">
+      <span className={cn('text-4xl', getAnimation())}>
+        {metadata.emoticon}
+      </span>
+    </div>
+  )
+}
+
+const StoryMedia = ({ metadata }: { metadata: StoryMediaData }) => {
+  const [thumbUrl, setThumbUrl] = useState<string | undefined>()
+
+  const story = metadata.story
+
+  useEffect(() => {
+    if (story?.type !== 'default') return
+
+    const photoData = story.media as { type: 'photo'; photo: DefaultPhotoData }
+    const photo = photoData?.photo
+    if (!photo || photo.type !== 'default') return
+
+    const stripped = photo.sizes?.find(
+      (s) => s.type === 'stripped' && 'bytes' in s
+    )
+    const bytes = stripped?.bytes as Uint8Array | undefined
+
+    if (bytes) {
+      try {
+        const url = toJPGDataURL(decodeStrippedThumb(bytes))
+        setThumbUrl(url)
+      } catch (err) {
+        console.error('Failed to decode stripped thumb', err)
+      }
+    }
+  }, [story])
+
+  if (!story || story.type === 'unknown') {
+    return <Bubble>Unsupported story format</Bubble>
+  }
+
+  if (story.type === 'deleted' || story.type === 'skipped') {
+    return (
+      <Bubble>
+        <div className="w-64 aspect-video rounded bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+          Story is no longer available
+        </div>
+      </Bubble>
+    )
+  }
+
+  if (story.type === 'default') {
+    const caption = story.caption
+
+    return (
+      <Bubble>
+        <div className="w-64 flex flex-col gap-2">
+          {thumbUrl ? (
+            <img
+              src={thumbUrl}
+              alt="Story"
+              className="w-full aspect-video object-cover rounded"
+            />
+          ) : (
+            <div className="w-full aspect-video bg-gray-300 rounded blur-sm flex items-center justify-center text-gray-400 text-sm">
+              Preview unavailable
+            </div>
+          )}
+
+          {caption && (
+            <p className="text-sm text-gray-700 whitespace-pre-line">
+              {caption}
+            </p>
+          )}
+        </div>
+      </Bubble>
+    )
+  }
+
+  return null
 }
 
 const VideoMedia: React.FC<{
