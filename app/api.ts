@@ -2131,6 +2131,7 @@ export interface LeaderboardUser {
   thumbSrc: string
   name: string
   points: number
+  isMe: boolean
 }
 
 export interface Podium {
