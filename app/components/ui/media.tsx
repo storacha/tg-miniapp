@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   File,
   MapPin,
@@ -535,12 +535,11 @@ const PdfView: React.FC<{
 const TgStickerMedia: React.FC<{
   metadata: DocumentMediaData
   mediaUrl?: string
-}> = ({ metadata, mediaUrl }) => {
-  const [lottieData, setLottieData] = useState<any>(null)
+}> = ({ mediaUrl }) => {
+  const [lottieData, setLottieData] = useState<object | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [useFallback, setUseFallback] = useState(false)
-  const lottieRef = useRef<any>(null)
 
   useEffect(() => {
     const loadTgsSticker = async () => {
@@ -610,7 +609,6 @@ const TgStickerMedia: React.FC<{
     <div className="flex justify-center">
       <div className="w-32 h-32 flex items-center justify-center">
         <Lottie
-          lottieRef={lottieRef}
           animationData={lottieData}
           loop={true}
           autoplay={true}
