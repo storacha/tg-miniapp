@@ -44,6 +44,8 @@ const formatDate = (timestamp: number) =>
     year: 'numeric',
   })
 
+const INITIAL_MESSAGE_BATCH_SIZE = 20
+
 const Message: React.FC<{
   isOutgoing: boolean
   date: number
@@ -151,6 +153,26 @@ function BackupDialog({
   let lastRenderedDate: string | null = null
   let lastSenderId: string | null = null
 
+  const filteredMessages: MessageData[] = useMemo(
+    () =>
+      messages.filter((msg): msg is MessageData => {
+        // Skip all service messages for now, this should be handled later
+        if (msg.type === 'service') {
+          return false
+        }
+
+        /**
+         * Skip unsupported media types, there's no point in showing them.
+         */
+        if (msg.media?.metadata?.type === 'unsupported') {
+          return false
+        }
+
+        return true
+      }),
+    [messages]
+  )
+
   let dialogThumbSrc = ''
   if (dialog.photo?.strippedThumb) {
     dialogThumbSrc = toJPGDataURL(
@@ -177,8 +199,9 @@ function BackupDialog({
     if (chatContainer) {
       chatContainer.addEventListener('scroll', handleScroll, { passive: true })
 
-      // Also check scroll position on mount and when messages change
-      handleScroll()
+      if (messages.length >= INITIAL_MESSAGE_BATCH_SIZE) {
+        handleScroll()
+      }
     }
 
     return () => {
@@ -206,78 +229,74 @@ function BackupDialog({
           className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
           style={{ height: 'calc(100vh - 64px)' }} // Header height compensation
         >
-          {messages
-            .filter((msg) => msg.type !== 'service')
-            .map((msg) => {
-              const date = formatDate(msg.date)
-              const showDate = lastRenderedDate !== date
-              if (showDate) lastRenderedDate = date
+          {filteredMessages.map((msg) => {
+            const date = formatDate(msg.date)
+            const showDate = lastRenderedDate !== date
+            if (showDate) lastRenderedDate = date
 
-              const isOutgoing = msg.from === userId
-              const sender = msg.from
-                ? (participants[msg.from]?.name ?? 'Unknown')
-                : 'Anonymous'
+            const isOutgoing = msg.from === userId
+            const sender = msg.from
+              ? (participants[msg.from]?.name ?? 'Unknown')
+              : 'Anonymous'
 
-              const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
-              lastSenderId = msg.from ?? null
+            const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
+            lastSenderId = msg.from ?? null
 
-              let thumbSrc = ''
-              if (msg.from && participants[msg.from].photo?.strippedThumb) {
-                thumbSrc = toJPGDataURL(
-                  decodeStrippedThumb(
-                    participants[msg.from].photo?.strippedThumb as Uint8Array
-                  )
+            let thumbSrc = ''
+            if (msg.from && participants[msg.from].photo?.strippedThumb) {
+              thumbSrc = toJPGDataURL(
+                decodeStrippedThumb(
+                  participants[msg.from].photo?.strippedThumb as Uint8Array
                 )
-              }
-
-              let mediaUrl: string | undefined
-              if (msg.media?.content) {
-                const rawContent = mediaMap[msg.media.content.toString()]
-                const type =
-                  msg.media.metadata.type === 'document'
-                    ? msg.media.metadata.document?.mimeType
-                    : ''
-                if (rawContent) {
-                  mediaUrl = URL.createObjectURL(
-                    new Blob([rawContent], { type })
-                  )
-                }
-              }
-
-              return (
-                <Fragment key={msg.id}>
-                  {showDate && <ServiceMessage text={date} />}
-                  {msg.type === 'message' && (
-                    <div
-                      className={`flex ${
-                        isOutgoing ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <div className="flex flex-col max-w-[75%]">
-                        {showSenderHeader && (
-                          <UserInfo thumbSrc={thumbSrc} userName={sender} />
-                        )}
-                        {msg.media ? (
-                          <MessageWithMedia
-                            isOutgoing={isOutgoing}
-                            date={msg.date}
-                            message={msg.message}
-                            metadata={msg.media.metadata}
-                            mediaUrl={mediaUrl}
-                          />
-                        ) : (
-                          <Message
-                            isOutgoing={isOutgoing}
-                            date={msg.date}
-                            message={msg.message}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </Fragment>
               )
-            })}
+            }
+
+            let mediaUrl: string | undefined
+            if (msg.media?.content) {
+              const rawContent = mediaMap[msg.media.content.toString()]
+              const type =
+                msg.media.metadata.type === 'document'
+                  ? msg.media.metadata.document?.mimeType
+                  : ''
+              if (rawContent) {
+                mediaUrl = URL.createObjectURL(new Blob([rawContent], { type }))
+              }
+            }
+
+            return (
+              <Fragment key={msg.id}>
+                {showDate && <ServiceMessage text={date} />}
+                {msg.type === 'message' && (
+                  <div
+                    className={`flex ${
+                      isOutgoing ? 'justify-end' : 'justify-start'
+                    }`}
+                  >
+                    <div className="flex flex-col max-w-[75%]">
+                      {showSenderHeader && (
+                        <UserInfo thumbSrc={thumbSrc} userName={sender} />
+                      )}
+                      {msg.media ? (
+                        <MessageWithMedia
+                          isOutgoing={isOutgoing}
+                          date={msg.date}
+                          message={msg.message}
+                          metadata={msg.media.metadata}
+                          mediaUrl={mediaUrl}
+                        />
+                      ) : (
+                        <Message
+                          isOutgoing={isOutgoing}
+                          date={msg.date}
+                          message={msg.message}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+              </Fragment>
+            )
+          })}
 
           {isLoadingMore && (
             <div className="text-center py-4">
@@ -333,7 +352,7 @@ export default function Page() {
         (restoredBackup.item && restoredBackup.item.backupCid === backupCid)
       )
         return
-      await restoreBackup(backupCid!, normalizedId, 20)
+      await restoreBackup(backupCid!, normalizedId, INITIAL_MESSAGE_BATCH_SIZE)
     }
 
     fetchBackup()
