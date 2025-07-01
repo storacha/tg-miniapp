@@ -119,8 +119,10 @@ export default function BackupSelectionPage() {
           <div className="bg-white dark:bg-zinc-900 rounded-lg shadow-xl w-full max-w-sm mx-4 p-6">
             <h2 className="text-lg font-semibold mb-2">Delete Backup?</h2>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-              This action is irreversible. Are you sure you want to delete this
-              backup?
+              This action is irreversible. <br />
+              <br /> Are you sure you want to delete this backup from Storacha?
+              They may still remain available on the network for some amount of
+              time.
             </p>
             <div className="flex justify-end gap-3 mt-6">
               <button
