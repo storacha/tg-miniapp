@@ -7,6 +7,7 @@ import {
   RemoveJobRequest,
   LoginRequest,
   CancelJobRequest,
+  DeleteJobRequest,
 } from '@/api'
 import { Delegation, DID, Signer } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
@@ -86,6 +87,21 @@ export const listJobs = async () => {
     telegramId: telegramId.toString(),
   })
   return await db.getJobsByUserID(dbUser.id)
+}
+
+export const deleteJob = async (request: DeleteJobRequest) => {
+  console.debug('deleting job from db')
+  const session = await getSession()
+  const telegramId = getTelegramId(session.telegramAuth)
+  const db = getDB()
+  const dbUser = await db.findOrCreateUser({
+    storachaSpace: session.spaceDID,
+    telegramId: telegramId.toString(),
+  })
+  const job = await db.getJobByID(request.jobID, dbUser.id)
+  await db.deleteJob(request.jobID, dbUser.id)
+  console.debug(`job store deleted job: ${job.id} from db`)
+  return job
 }
 
 export const removeJob = async (request: RemoveJobRequest) => {

@@ -140,6 +140,7 @@ export interface JobStorage extends EventTarget {
   add: (dialogs: DialogsById, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
   cancel: (id: JobID) => Promise<void>
+  delete: (id: JobID) => Promise<void>
 }
 
 export interface TelegramAuth {
@@ -165,7 +166,9 @@ export interface CreateJobRequest extends ExecuteAuth {
   period: Period
 }
 
-export interface ListJobsRequest {}
+// An interface declaring no members is equivalent to its supertype.
+// we can change this later when it is not empty
+export type ListJobsRequest = object
 
 export interface FindJobRequest {
   jobID: JobID
@@ -179,12 +182,15 @@ export interface CancelJobRequest {
   jobID: JobID
 }
 
+export type DeleteJobRequest = RemoveJobRequest
+
 export interface JobClient {
   createJob: (jr: CreateJobRequest) => Promise<Job>
   findJob: (jr: FindJobRequest) => Promise<Job>
   listJobs: (jr: ListJobsRequest) => Promise<Job[]>
   removeJob: (jr: RemoveJobRequest) => Promise<Job>
   cancelJob: (jr: CancelJobRequest) => Promise<Job>
+  deleteJob: (jr: DeleteJobRequest) => Promise<Job>
 }
 
 export interface Encrypter {
