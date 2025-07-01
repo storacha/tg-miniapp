@@ -12,7 +12,9 @@ export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
   const { name, initials, photo } = dialog
   const thumbSrc = getThumbSrc(photo?.strippedThumb)
   const { formatDateTime } = useUserLocale()
-  const latestBackupDate = formatDateTime(Number(latestBackup?.[1]))
+  const latestBackupDate = latestBackup
+    ? formatDateTime(Number(latestBackup[1]))
+    : undefined
 
   return (
     <div className="flex gap-4 items-center w-full">
