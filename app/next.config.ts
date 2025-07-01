@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   experimental: {
     nodeMiddleware: true, // TODO: remove this
   },
+  serverExternalPackages: ['telegram'],
 }
 
 export default withSentryConfig(nextConfig, {
