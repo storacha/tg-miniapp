@@ -38,11 +38,17 @@ export default function Head() {
       <div className="flex justify-between items-center px-5 py-3">
         <p>Hi, {user?.firstName ?? ''}</p>
         <div className="flex items-center gap-10 text-blue-600">
-          <p>#{ranking ? ranking.rank : '__'}</p>
-          <div className="flex justify-center items-center gap-1">
-            <Coin size={25} />
-            <p>{ranking ? ranking.points.toLocaleString() : '00'}</p>
-          </div>
+          {ranking ? (
+            <>
+              <p>#{ranking.rank}</p>
+              <div className="flex justify-center items-center gap-1">
+                <Coin size={25} />
+                <p>{ranking ? ranking.points.toLocaleString() : '00'}</p>
+              </div>
+            </>
+          ) : (
+            ''
+          )}
         </div>
       </div>
       <div className="flex justify-between items-center px-3 pb-4">
