@@ -44,6 +44,8 @@ const formatDate = (timestamp: number) =>
     year: 'numeric',
   })
 
+const INITIAL_MESSAGE_BATCH_SIZE = 20
+
 const Message: React.FC<{
   isOutgoing: boolean
   date: number
@@ -386,7 +388,6 @@ const formatServiceMessage = (
   }
 }
 
-
 const UserInfo: React.FC<{ thumbSrc: string; userName: string }> = ({
   thumbSrc,
   userName,
@@ -424,6 +425,26 @@ function BackupDialog({
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   let lastRenderedDate: string | null = null
   let lastSenderId: string | null = null
+
+  // const filteredMessages: MessageData[] = useMemo(
+  //   () =>
+  //     messages.filter((msg): msg is MessageData => {
+  //       // Skip all service messages for now, this should be handled later
+  //       if (msg.type === 'service') {
+  //         return false
+  //       }
+
+  //       /**
+  //        * Skip unsupported media types, there's no point in showing them.
+  //        */
+  //       if (msg.media?.metadata?.type === 'unsupported') {
+  //         return false
+  //       }
+
+  //       return true
+  //     }),
+  //   [messages]
+  // )
 
   let dialogThumbSrc = ''
   if (dialog.photo?.strippedThumb) {
@@ -489,8 +510,9 @@ function BackupDialog({
     if (chatContainer) {
       chatContainer.addEventListener('scroll', handleScroll, { passive: true })
 
-      // Also check scroll position on mount and when messages change
-      handleScroll()
+      if (messages.length >= INITIAL_MESSAGE_BATCH_SIZE) {
+        handleScroll()
+      }
     }
 
     return () => {
@@ -507,31 +529,37 @@ function BackupDialog({
         name={dialog.name}
         type={dialog.type}
       />
-     
-     {isLoading ? (
+
+      {isLoading ? (
         <div className="flex flex-col items-center justify-center flex-1">
           <Loading text="Loading messages..." />
         </div>
       ) : (
-      <div
-        ref={chatContainerRef}
-        className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
-        style={{ height: 'calc(100vh - 64px)' }} // Ensure proper height
-      >
-        {messages.map((msg) => {
+        <div
+          ref={chatContainerRef}
+          className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
+          style={{ height: 'calc(100vh - 64px)' }} // Ensure proper height
+        >
+          {messages.map((msg) => {
+            if (
+              msg.type === 'message' &&
+              msg.media?.metadata?.type === 'unsupported'
+            ) {
+              return null
+            }
             const date = formatDate(msg.date)
             const showDate = lastRenderedDate !== date
             if (showDate) lastRenderedDate = date
 
-              const isOutgoing = msg.from === userId
-              const sender = msg.from
-                ? (participants[msg.from]?.name ?? 'Unknown')
-                : 'Anonymous'
+            const isOutgoing = msg.from === userId
+            const sender = msg.from
+              ? (participants[msg.from]?.name ?? 'Unknown')
+              : 'Anonymous'
 
-              const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
-              lastSenderId = msg.from ?? null
+            const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
+            lastSenderId = msg.from ?? null
 
-              let thumbSrc = ''
+            let thumbSrc = ''
             if (msg.from && participants[msg.from]?.photo?.strippedThumb) {
               thumbSrc = toJPGDataURL(
                 decodeStrippedThumb(
@@ -559,12 +587,12 @@ function BackupDialog({
                 {showDate && <ServiceMessage text={date} />}
                 {/* { msg.type === 'service' && <ServiceMessage text={msg.action.description} /> } // TODO: would be nice to have a description for each action */}
                 {msg.type === 'service' ? (
-                <div className="flex flex-col items-center space-y-1">
-                  <ServiceMessage
-                    text={formatServiceMessage(msg, participants)}
-                  />
-                </div>
-              ) : (
+                  <div className="flex flex-col items-center space-y-1">
+                    <ServiceMessage
+                      text={formatServiceMessage(msg, participants)}
+                    />
+                  </div>
+                ) : (
                   <div
                     className={`flex ${
                       isOutgoing ? 'justify-end' : 'justify-start'
@@ -595,12 +623,12 @@ function BackupDialog({
               </Fragment>
             )
           })}
-        {isLoadingMore && (
-          <div className="text-center py-4">
-            <Loading text="Loading more messages..." />
-          </div>
-        )}
-      </div>
+          {isLoadingMore && (
+            <div className="text-center py-4">
+              <Loading text="Loading more messages..." />
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
@@ -649,7 +677,7 @@ export default function Page() {
         (restoredBackup.item && restoredBackup.item.backupCid === backupCid)
       )
         return
-      await restoreBackup(backupCid!, normalizedId, 20)
+      await restoreBackup(backupCid!, normalizedId, INITIAL_MESSAGE_BATCH_SIZE)
     }
 
     fetchBackup()

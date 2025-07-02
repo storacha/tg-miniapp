@@ -123,6 +123,10 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
       }
       break
     }
+    case 'unsupported': {
+      // skipping unsupported media types visualization
+      break
+    }
     default: {
       console.log(JSON.stringify(metadata))
       mediaContent = (

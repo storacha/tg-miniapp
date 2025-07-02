@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.4.0](https://github.com/storacha/tg-miniapp/compare/v2.3.1...v2.4.0) (2025-07-01)
+
+
+### Features
+
+* highlight myself in the leaderboard ([25f5186](https://github.com/storacha/tg-miniapp/commit/25f51861e70bb793ad772d16a54080ba9cdad59c))
+* improve sign in flow ([ca22cb8](https://github.com/storacha/tg-miniapp/commit/ca22cb8287ea2d0109924f2a2a933605995d7370))
+* install sentry, for real ([7b9750a](https://github.com/storacha/tg-miniapp/commit/7b9750a545bfa1034b865b5164b5ac25d8cdbbc8))
+
+
+### Bug Fixes
+
+* add error message for expired email verification link ([3c85278](https://github.com/storacha/tg-miniapp/commit/3c85278a09181694c0c83da57b9f1d16788980e0))
+* add error message for expired email verification link ([402ab9a](https://github.com/storacha/tg-miniapp/commit/402ab9ac983c266ea4acb2c5b2bfca3a8b415a19))
+* add telegram to `serverExternalPackages` ([6eaf4e3](https://github.com/storacha/tg-miniapp/commit/6eaf4e339b9df3a6d7241b35e31908a0e593fcd3))
+* format date-time in current user locale ([9e3869a](https://github.com/storacha/tg-miniapp/commit/9e3869a47d4a2e282ed1ab42f582421fda8608e2))
+* format date-time in current user locale ([3ee0a71](https://github.com/storacha/tg-miniapp/commit/3ee0a7142cdc247f75bb416ddaff67fe7e561b5b))
+* improve view for unsupported media ([455087a](https://github.com/storacha/tg-miniapp/commit/455087ae83eb222ca426160e1c69883e0439c8d7))
+* improve visualization to unsupported media ([01abab4](https://github.com/storacha/tg-miniapp/commit/01abab40aaeb47bd9b184ba0b6fe3032b36db8ab))
+* skip unsupported media and fix missing user info header ([437c185](https://github.com/storacha/tg-miniapp/commit/437c18500896450a03d37e083116a88261808dd9))
+* skip unsupported media and fix missing user info header ([1de435c](https://github.com/storacha/tg-miniapp/commit/1de435c20adef1c1db73624f59bbf21e35b6cc85))
+
 ## [2.3.1](https://github.com/storacha/tg-miniapp/compare/v2.3.0...v2.3.1) (2025-06-27)
 
 
