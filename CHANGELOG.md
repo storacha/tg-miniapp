@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.1](https://github.com/storacha/tg-miniapp/compare/v2.4.0...v2.4.1) (2025-07-02)
+
+
+### Bug Fixes
+
+* don't show ranking info if not loaded ([583842f](https://github.com/storacha/tg-miniapp/commit/583842fc5836926323c7efa47f1ff74f56a5c7d0))
+* don't show ranking info if not loaded ([443ccb7](https://github.com/storacha/tg-miniapp/commit/443ccb7af8262150831340a7317898af637c0738))
+
 ## [2.4.0](https://github.com/storacha/tg-miniapp/compare/v2.3.1...v2.4.0) (2025-07-01)
 
 
