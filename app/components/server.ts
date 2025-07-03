@@ -243,3 +243,28 @@ export const getRanking = toResultFn(
     }
   )
 )
+
+export const getEntity = toResultFn(
+  withClient(async (client: TelegramClient, peerId: string) => {
+    const entity = await client.getEntity(bigInt(peerId))
+    const basic: Pick<DialogInfo, 'id' | 'name' | 'photo'> = {
+      id: entity.id.toString(),
+      name:
+        'firstName' in entity
+          ? [entity.firstName, entity.lastName].filter(Boolean).join(' ')
+          : 'title' in entity
+            ? entity.title
+            : '',
+      photo:
+        'photo' in entity &&
+        entity.photo?.className === 'UserProfilePhoto' &&
+        entity.photo.strippedThumb
+          ? {
+              id: entity.photo.photoId.toString(),
+              strippedThumb: new Uint8Array(entity.photo.strippedThumb),
+            }
+          : undefined,
+    }
+    return basic
+  })
+)
