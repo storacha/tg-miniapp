@@ -340,7 +340,9 @@ export const Provider = ({
         console.debug(`found ${jobs.items.length} pending jobs`)
         setJobs(jobs.items)
       } catch (err: any) {
-        console.error('Error: handling job change event', err)
+        const msg = `Failed to list pending backups in job change handler`
+        console.error(msg, err)
+        setError(getErrorMessage(err), { title: msg })
         setJobsError(err)
       }
 
@@ -351,7 +353,9 @@ export const Provider = ({
         console.debug(`found ${backups.items.length} completed jobs`)
         setBackups(backups.items)
       } catch (err: any) {
-        console.error('Error: handling job change event', err)
+        const msg = `Failed to list completed backups in job change handler`
+        console.error(msg, err)
+        setError(getErrorMessage(err), { title: msg })
         setBackupsError(err)
       }
     }

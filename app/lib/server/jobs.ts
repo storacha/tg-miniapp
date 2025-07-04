@@ -165,6 +165,9 @@ const initializeHandler = async (request: ExecuteJobRequest) => {
 }
 
 export const getTelegramId = (telegramAuth: TelegramAuth) => {
+  if (!telegramAuth) {
+    throw new Error('Session not found or expired.')
+  }
   const initData = parseInitData(telegramAuth.initData)
   return BigInt(initData.user?.id.toString() || '0')
 }
