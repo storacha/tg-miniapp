@@ -162,6 +162,10 @@ exports._dispatchUpdate = _dispatchUpdate;
 /** @hidden */
 async function _updateLoop(client) {
     let lastPongAt;
+    let failureCount = 0;
+    const maxBackoff = 60000; // 1 minute
+    const minBackoff = 1000; // 1 second
+    const healthCallback = client._updateLoopHealthCallback || (() => {});
     while (!client._destroyed) {
         await (0, Helpers_1.sleep)(PING_INTERVAL, true);
         if (client._destroyed)
@@ -195,15 +199,21 @@ async function _updateLoop(client) {
                 _handleUpdate(client, network_1.UpdateConnectionState.connected);
             }
             lastPongAt = Date.now();
+            failureCount = 0;
+            healthCallback({ status: 'ok', latency: lastPongAt - pingAt });
         }
         catch (err) {
-            // eslint-disable-next-line no-console
-            if (client._errorHandler) {
-                await client._errorHandler(err);
+            failureCount++;
+            const backoff = Math.min(maxBackoff, minBackoff * Math.pow(2, failureCount)) + Math.floor(Math.random() * 500);
+            if (client._log && client._log.canSend && client._log.canSend(Logger_1.LogLevel.ERROR)) {
+                client._log.error(`_updateLoop error: ${err.message || err}`);
+                client._log.error(`Backing off for ${backoff}ms (failureCount=${failureCount})`);
+            } else {
+                console.error('_updateLoop error:', err);
+                console.error(`Backing off for ${backoff}ms (failureCount=${failureCount})`);
             }
-            if (client._log.canSend(Logger_1.LogLevel.ERROR)) {
-                console.error(err);
-            }
+            healthCallback({ status: 'error', error: err, failureCount });
+            await (0, Helpers_1.sleep)(backoff);
             lastPongAt = undefined;
             if (client._sender.isReconnecting || client._isSwitchingDc) {
                 continue;
