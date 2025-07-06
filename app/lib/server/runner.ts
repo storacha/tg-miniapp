@@ -82,7 +82,7 @@ export interface Options {
   /**
    * Called when all messages for a dialog have been retrieved
    */
-  onMessagesRetrieved?: (id: bigint) => unknown
+  onMessagesRetrieved?: (id: bigint, percentage: number) => unknown
   /**
    * Called when a shard is stored, a dialog can have multiple shards.
    */
@@ -101,7 +101,8 @@ export const run = async (
 
   // null value signals that the current dialog has completed
   let dialogEntity: Type.DialogInfo | null = null
-
+  let dialogMessageCount: number
+  let messagesSoFar = 0
   let entities: EntityRecordData = {}
   let messages: Array<MessageData | ServiceMessageData> = []
   let messageLinks: Array<
@@ -149,7 +150,7 @@ export const run = async (
           // if start date is not the beginning of time get the first message
           // before the start date (if there is one), and then iterate from end
           // date to first message (exclusive).
-          const [firstMessage] = await callWithDialogsSync(
+          const messages = await callWithDialogsSync(
             () =>
               ctx.telegram.getMessages(dialogInput, {
                 limit: 1,
@@ -158,8 +159,24 @@ export const run = async (
             ctx.telegram,
             dialogID
           )
+          dialogMessageCount = messages.total || 0
+          const firstMessage = messages[0]
           minMsgId = firstMessage?.id
+        } else {
+          const messages = await callWithDialogsSync(
+            () =>
+              ctx.telegram.getMessages(dialogInput, {
+                limit: 1,
+              }),
+            ctx.telegram,
+            dialogID
+          )
+          dialogMessageCount = messages.total || 0
         }
+
+        console.log(
+          `retrieving ${dialogMessageCount} messages for dialog: ${dialogID}`
+        )
 
         messageIterator = ctx.telegram
           .iterMessages(dialogInput, {
@@ -202,7 +219,7 @@ export const run = async (
 
         if (!dialogRoot) throw new Error('missing dialog root')
         messageLinks = []
-
+        messagesSoFar = 0
         dialogDatas[dialogEntity.id.toString()] = dialogRoot
         dialogEntity = null // move onto the next dialog
         return
@@ -239,9 +256,6 @@ export const run = async (
           }
 
           messageIterator = null
-          await options?.onMessagesRetrieved?.(
-            BigInt(dialogEntity.id.toString())
-          )
           break
         }
 
@@ -296,7 +310,11 @@ export const run = async (
           break
         }
       }
-
+      messagesSoFar += messages.length
+      await options?.onMessagesRetrieved?.(
+        BigInt(dialogEntity.id.toString()),
+        messagesSoFar / dialogMessageCount
+      )
       console.log(`creating ${messages.length} messages`)
       let messagesRoot
       for await (const b of toAsyncIterable(
@@ -982,7 +1000,7 @@ const toDocumentData = withCleanUndef(
   }
 )
 
-const toDocumentAttributeData = cleanUndef(
+const toDocumentAttributeData = withCleanUndef(
   (attribute: Api.TypeDocumentAttribute): DocumentAttributeData => {
     switch (attribute.className) {
       case 'DocumentAttributeFilename':

@@ -1,4 +1,4 @@
-import { ExecuteJobRequest } from '@/api'
+import { ExecuteJobRequest, ToString } from '@/api'
 import { Context as RunnerContext } from './runner'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
@@ -48,18 +48,24 @@ class Handler {
     const totalDialogs = Object.keys(dialogs).length
     let progress = 0
     let dialogsRetrieved = 0
-    let dialogsCompleted = 0
     let totalBytesUploaded = 0
+    const dialogPercentages: Record<ToString<bigint>, number> = {}
 
+    const getDialogsCompleted = () => {
+      return Object.values(dialogPercentages).reduce(
+        (acc, percentage) => acc + percentage,
+        0
+      )
+    }
     /**
      * Calculates the progress of the backup job, excluding the final shard storage phase.
      * - Dialog retrieval accounts for 20% of the total progress.
-     * - Message retrieval accounts for 50% of the total progress.
+     * - Message retrieval accounts for 70% of the total progress.
      * @returns The current progress percentage of the backup job, excluding the last storage step.
      */
     const getDialogsProgress = () =>
       (dialogsRetrieved / totalDialogs) * 0.2 +
-      (dialogsCompleted / totalDialogs) * 0.5
+      (getDialogsCompleted() / totalDialogs) * 0.7
 
     try {
       await this.#db.updateJob(id, {
@@ -110,7 +116,7 @@ class Handler {
         /**
          * Called when all messages for a dialog have been retrieved
          */
-        onMessagesRetrieved: async (dialogId) => {
+        onMessagesRetrieved: async (dialogId, percentage) => {
           try {
             const currentJob = await this.#db.getJobByID(
               request.jobID,
@@ -120,8 +126,10 @@ class Handler {
               console.warn(`Job ${id} was canceled`)
               return
             }
-
-            dialogsCompleted++
+            console.log(
+              `Dialog ${dialogId.toString()} percentage retrieved: ${(percentage * 100).toFixed(2)}%`
+            )
+            dialogPercentages[dialogId.toString()] = percentage
             progress = getDialogsProgress()
 
             await this.#db.updateJob(id, {
@@ -144,11 +152,14 @@ class Handler {
         onShardStored: async (meta: CARMetadata) => {
           try {
             /**
-             * Called after all messages have been retrieved for all dialogs.
+             * Called as shards are uploaded to storage.
+             * We calculate the total size uploaded so far
+             * However, since we don't know the total size of the backup until all shards are uploaded,
+             * we don't upload the final progress until the last shard is stored.
              * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
              */
             totalBytesUploaded += meta.size
-            progress = totalBytesUploaded <= SHARD_SIZE ? 1 : 0.9
+            progress = totalBytesUploaded <= SHARD_SIZE ? 1 : progress
 
             await this.#db.updateJob(id, {
               id,
