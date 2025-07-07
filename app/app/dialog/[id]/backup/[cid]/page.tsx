@@ -229,74 +229,84 @@ function BackupDialog({
           className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
           style={{ height: 'calc(100vh - 64px)' }} // Header height compensation
         >
-          {filteredMessages.map((msg) => {
-            const date = formatDate(msg.date)
-            const showDate = lastRenderedDate !== date
-            if (showDate) lastRenderedDate = date
+          {filteredMessages.length === 0 ? (
+            <div className="flex flex-col items-center h-full justify-center">
+              <p className="text-sm italic text-muted-foreground text-center">
+                No messages found in the selected time period
+              </p>
+            </div>
+          ) : (
+            filteredMessages.map((msg) => {
+              const date = formatDate(msg.date)
+              const showDate = lastRenderedDate !== date
+              if (showDate) lastRenderedDate = date
 
-            const isOutgoing = msg.from === userId
-            const sender = msg.from
-              ? (participants[msg.from]?.name ?? 'Unknown')
-              : 'Anonymous'
+              const isOutgoing = msg.from === userId
+              const sender = msg.from
+                ? (participants[msg.from]?.name ?? 'Unknown')
+                : 'Anonymous'
 
-            const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
-            lastSenderId = msg.from ?? null
+              const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
+              lastSenderId = msg.from ?? null
 
-            let thumbSrc = ''
-            if (msg.from && participants[msg.from].photo?.strippedThumb) {
-              thumbSrc = toJPGDataURL(
-                decodeStrippedThumb(
-                  participants[msg.from].photo?.strippedThumb as Uint8Array
+              let thumbSrc = ''
+              if (msg.from && participants[msg.from].photo?.strippedThumb) {
+                thumbSrc = toJPGDataURL(
+                  decodeStrippedThumb(
+                    participants[msg.from].photo?.strippedThumb as Uint8Array
+                  )
                 )
-              )
-            }
-
-            let mediaUrl: string | undefined
-            if (msg.media?.content) {
-              const rawContent = mediaMap[msg.media.content.toString()]
-              const type =
-                msg.media.metadata.type === 'document'
-                  ? msg.media.metadata.document?.mimeType
-                  : ''
-              if (rawContent) {
-                mediaUrl = URL.createObjectURL(new Blob([rawContent], { type }))
               }
-            }
 
-            return (
-              <Fragment key={msg.id}>
-                {showDate && <ServiceMessage text={date} />}
-                {msg.type === 'message' && (
-                  <div
-                    className={`flex ${
-                      isOutgoing ? 'justify-end' : 'justify-start'
-                    }`}
-                  >
-                    <div className="flex flex-col max-w-[75%]">
-                      {showSenderHeader && (
-                        <UserInfo thumbSrc={thumbSrc} userName={sender} />
-                      )}
-                      {msg.media ? (
-                        <MessageWithMedia
-                          isOutgoing={isOutgoing}
-                          date={msg.date}
-                          message={msg.message}
-                          metadata={msg.media.metadata}
-                          mediaUrl={mediaUrl}
-                        />
-                      ) : (
-                        <Message
-                          isOutgoing={isOutgoing}
-                          date={msg.date}
-                          message={msg.message}
-                        />
-                      )}
+              let mediaUrl: string | undefined
+              if (msg.media?.content) {
+                const rawContent = mediaMap[msg.media.content.toString()]
+                const type =
+                  msg.media.metadata.type === 'document'
+                    ? msg.media.metadata.document?.mimeType
+                    : ''
+                if (rawContent) {
+                  mediaUrl = URL.createObjectURL(
+                    new Blob([rawContent], { type })
+                  )
+                }
+              }
+
+              return (
+                <Fragment key={msg.id}>
+                  {showDate && <ServiceMessage text={date} />}
+                  {msg.type === 'message' && (
+                    <div
+                      className={`flex ${
+                        isOutgoing ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div className="flex flex-col max-w-[75%]">
+                        {showSenderHeader && (
+                          <UserInfo thumbSrc={thumbSrc} userName={sender} />
+                        )}
+                        {msg.media ? (
+                          <MessageWithMedia
+                            isOutgoing={isOutgoing}
+                            date={msg.date}
+                            message={msg.message}
+                            metadata={msg.media.metadata}
+                            mediaUrl={mediaUrl}
+                          />
+                        ) : (
+                          <Message
+                            isOutgoing={isOutgoing}
+                            date={msg.date}
+                            message={msg.message}
+                          />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </Fragment>
-            )
-          })}
+                  )}
+                </Fragment>
+              )
+            })
+          )}
 
           {isLoadingMore && (
             <div className="text-center py-4">
