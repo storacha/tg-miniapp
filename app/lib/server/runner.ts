@@ -42,6 +42,7 @@ import {
   WallPaperSettingsData,
   MediaData,
 } from '@/api'
+import pRetry from 'p-retry'
 import * as Type from '@/api'
 import { Api, TelegramClient } from 'telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
@@ -60,6 +61,7 @@ type SpaceDID = DID<'key'>
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
 
+const MAX_DOCUMENT_SIZE = BigInt(10 * 1024 * 1024) // 10 MB
 const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
   return (
     media.className === 'MessageMediaPhoto' ||
@@ -290,9 +292,20 @@ export const run = async (
 
         let mediaRoot
         if (message.media && isDownloadableMedia(message.media)) {
-          const mediaBytes = new Uint8Array(
-            (await message.downloadMedia()) as Buffer
+          const mediaBytes = await pRetry(
+            () => {
+              return getMediaBytes(ctx, message)
+            },
+            {
+              retries: 5,
+              onFailedAttempt: (error) => {
+                console.warn(
+                  `Failed to download media for message ${message.id} due to Timeout: ${error.attemptNumber} attempt(s), ${error.retriesLeft} retries left`
+                )
+              },
+            }
           )
+
           if (mediaBytes.length === 0) throw new Error('missing media bytes')
 
           for await (const b of toAsyncIterable(
@@ -342,6 +355,74 @@ export const run = async (
   return root
 }
 
+const getMediaBytes = async (ctx: Context, message: Api.Message) => {
+  const media = message.media
+  if (media instanceof Api.MessageMediaDocument && media.video) {
+    const document = media.document
+    const altDocuments = media.altDocuments
+    if (
+      document instanceof Api.Document &&
+      BigInt(document.size.toString()) > MAX_DOCUMENT_SIZE
+    ) {
+      console.log(
+        `Video document size is too large: ${document.size}, trying alternative documents...`
+      )
+      let maxSoFar = BigInt(0)
+      let minOverSoFar = BigInt(document.size.toString())
+      const foundDocument = altDocuments?.findLast((doc) => {
+        if (!(doc instanceof Api.Document)) {
+          return false
+        }
+        console.log(
+          `Checking alternative document: ${doc.id}, size: ${doc.size}`
+        )
+        const docSize = BigInt(doc.size.toString())
+        const video = doc.attributes.find(
+          (attr) => attr.className === 'DocumentAttributeVideo'
+        )
+
+        if (!video || video.videoCodec !== 'h264') {
+          return false
+        }
+        console.log(`Found video codec: ${video.videoCodec}, checking size...`)
+        if (docSize > maxSoFar) {
+          if (docSize <= MAX_DOCUMENT_SIZE) {
+            maxSoFar = docSize
+            return true
+          }
+          // if the document is larger than the max size, we only consider it if it's smaller than the current minOverSoFar
+          if (maxSoFar === BigInt(0) && docSize < minOverSoFar) {
+            minOverSoFar = docSize
+            return true
+          }
+        }
+        return false
+      })
+      if (foundDocument && foundDocument instanceof Api.Document) {
+        console.log(
+          `Found alternative document: ${foundDocument.id}, size: ${foundDocument.size}`
+        )
+        const mediaBytes = await ctx.telegram.downloadFile(
+          new Api.InputDocumentFileLocation({
+            id: foundDocument.id,
+            accessHash: foundDocument.accessHash,
+            fileReference: foundDocument.fileReference,
+            thumbSize: '',
+          }),
+          {
+            fileSize: foundDocument.size,
+            dcId: foundDocument.dcId,
+          }
+        )
+        if (mediaBytes instanceof Buffer) {
+          return new Uint8Array(mediaBytes)
+        }
+      }
+    }
+  }
+
+  return new Uint8Array((await message.downloadMedia()) as Buffer)
+}
 const syncDialogEntity = async (client: TelegramClient, entityId: string) => {
   console.log(`Entity not found for ID: ${entityId}, trying to sync...`)
   for await (const dialog of client.iterDialogs()) {
