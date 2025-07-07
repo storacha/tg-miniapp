@@ -33,6 +33,30 @@ export const getTelegramClient = async (
     defaultClientParams
   )
 
+  /**
+   * Override console.error only during Telegram operations
+   * Skip errors related to TIMEOUT
+   * This is a workaround for the issue where Telegram client throws TIMEOUT errors an logs them without using the logger
+   */
+  const originalError = console.error
+  // eslint-disable-next-line
+  console.error = (...args: any[]) => {
+    const message = args[0]
+    if (
+      (typeof message === 'string' && message.includes('TIMEOUT')) ||
+      (message instanceof Error && message.message === 'TIMEOUT')
+    ) {
+      return
+    }
+    originalError.apply(console, args)
+  }
+
+  const originalDisconnect = telegramClient.disconnect.bind(telegramClient)
+  telegramClient.disconnect = async () => {
+    console.error = originalError
+    return originalDisconnect()
+  }
+
   if (!(await telegramClient.connect())) {
     throw new Error('failed to connect to telegram')
   }
