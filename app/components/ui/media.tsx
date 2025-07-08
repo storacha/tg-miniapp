@@ -8,6 +8,7 @@ import {
   ExternalLink,
   X,
   Loader2,
+  Sparkles,
 } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from '@/lib/utils'
@@ -27,6 +28,7 @@ import {
   DiceMediaData,
   StoryMediaData,
   DefaultPhotoData,
+  GiveawayMediaData,
 } from '@/api'
 import { useTelegram } from '@/providers/telegram'
 
@@ -109,6 +111,10 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
     }
     case 'story': {
       mediaContent = <StoryMedia metadata={metadata} />
+      break
+    }
+    case 'giveaway': {
+      mediaContent = <GiveawayMedia metadata={metadata} />
       break
     }
     case 'document': {
@@ -380,6 +386,76 @@ const DiceMedia = ({ metadata }: { metadata: DiceMediaData }) => {
         {metadata.emoticon}
       </span>
     </div>
+  )
+}
+
+interface GiveawayMediaProps {
+  metadata: GiveawayMediaData
+}
+
+export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
+  const {
+    prizeDescription,
+    quantity,
+    months,
+    countriesIso2,
+    untilDate,
+    onlyNewSubscribers,
+    winnersAreVisible,
+    channels,
+    stars,
+  } = metadata
+
+  const until = new Date(untilDate * 1000).toLocaleString()
+
+  return (
+    <Bubble>
+      <div className="flex flex-col w-64 gap-2">
+        <div className="flex items-center gap-2">
+          <div className="bg-yellow-400 p-2 rounded-full text-white">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <h2 className="font-semibold text-md">Giveaway</h2>
+        </div>
+
+        {prizeDescription && (
+          <p className="text-sm text-gray-800">{prizeDescription}</p>
+        )}
+
+        <div className="text-xs text-gray-600 space-y-1">
+          <p>
+            🎁 {quantity} winner{quantity > 1 ? 's' : ''}
+          </p>
+          {months && (
+            <p>
+              Duration: {months} month{months > 1 ? 's' : ''}
+            </p>
+          )}
+          {countriesIso2 && countriesIso2?.length > 0 && (
+            <p>🌍 Eligible: {countriesIso2.join(', ')}</p>
+          )}
+          {stars && <p>⭐ Stars: {stars}</p>}
+          <p>Ends: {until}</p>
+          {onlyNewSubscribers && <p>Only new subscribers</p>}
+          {winnersAreVisible && <p>Winners will be visible</p>}
+        </div>
+
+        {channels.length > 0 && (
+          <div className="text-xs text-gray-500 mt-2">
+            Required channels:{' '}
+            {channels.map((ch) => (
+              <span key={ch} className="text-blue-600">
+                {ch}{' '}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <button className="mt-2 px-3 py-1 text-sm rounded bg-blue-500 text-white hover:bg-blue-700 transition-colors">
+          participate
+        </button>
+      </div>
+    </Bubble>
   )
 }
 
