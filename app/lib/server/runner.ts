@@ -60,6 +60,7 @@ import bigInt from 'big-integer'
 type SpaceDID = DID<'key'>
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
+const updateInterval = 50
 
 const MAX_DOCUMENT_SIZE = BigInt(10 * 1024 * 1024) // 10 MB
 const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
@@ -154,16 +155,31 @@ export const run = async (
           // date to first message (exclusive).
           const messages = await callWithDialogsSync(
             () =>
-              ctx.telegram.getMessages(dialogInput, {
-                limit: 1,
-                offsetDate: period[0],
-              }),
+              ctx.telegram.invoke(
+                new Api.messages.GetHistory({
+                  peer: dialogInput,
+                  limit: 1,
+                  offsetDate: period[0],
+                })
+              ),
             ctx.telegram,
             dialogID
           )
-          dialogMessageCount = messages.total || 0
-          const firstMessage = messages[0]
-          minMsgId = firstMessage?.id
+          if (
+            messages instanceof Api.messages.MessagesSlice ||
+            messages instanceof Api.messages.ChannelMessages
+          ) {
+            const firstMessage = messages.messages[0]
+            dialogMessageCount = messages.offsetIdOffset || 0
+            minMsgId = firstMessage?.id
+          } else if (messages instanceof Api.messages.Messages) {
+            const firstMessage = messages.messages[0]
+            minMsgId = firstMessage?.id
+            dialogMessageCount = messages.messages.length
+          } else {
+            dialogMessageCount = messages.count || 0
+            minMsgId = undefined
+          }
         } else {
           const messages = await callWithDialogsSync(
             () =>
@@ -313,6 +329,15 @@ export const run = async (
         }
 
         messages.push(toMessageData(message, fromID, mediaRoot))
+        // for last segment (or only segment) upload more frequently
+        if (messagesSoFar + maxMessages > dialogMessageCount) {
+          if (messages.length % updateInterval === 0) {
+            await options?.onMessagesRetrieved?.(
+              BigInt(dialogEntity.id.toString()),
+              (messagesSoFar + messages.length) / dialogMessageCount
+            )
+          }
+        }
         if (messages.length === maxMessages) {
           break
         }
