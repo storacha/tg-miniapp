@@ -1,4 +1,4 @@
-import { ExecuteJobRequest, ToString } from '@/api'
+import { DeleteDialogFromJobRequest, ExecuteJobRequest, ToString } from '@/api'
 import { Context as RunnerContext } from './runner'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
@@ -217,5 +217,33 @@ class Handler {
         updated: Date.now(),
       })
     }
+  }
+
+  async deleteDialogFromJob(request: DeleteDialogFromJobRequest) {
+    const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
+    if (!job) throw new Error(`job not found: ${request.jobID}`)
+    // check if job was cancelled
+    if (job.status != 'completed') {
+      throw new Error(`job is not completed: ${request.jobID}`)
+    }
+    const { dialogs } = job.params
+    if (!dialogs[request.dialogID]) {
+      throw new Error(`dialog not found in job: ${request.dialogID}`)
+    }
+    delete dialogs[request.dialogID]
+    const newData = await Runner.deleteDialogFromBackup(
+      this,
+      request.dialogID,
+      job.data
+    )
+    await this.#db.updateJob(request.jobID, {
+      ...job,
+      params: {
+        ...job.params,
+        dialogs,
+      },
+      data: newData.toString(),
+      updated: Date.now(),
+    })
   }
 }

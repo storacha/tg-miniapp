@@ -8,7 +8,7 @@ import {
   DocumentAttributeData,
   DocumentData,
   EncryptedTaggedByteView,
-  Encrypter,
+  Cipher,
   EntityData,
   EntityID,
   EntityRecordData,
@@ -50,7 +50,7 @@ import * as raw from 'multiformats/codecs/raw'
 import { CARWriterStream } from 'carstream'
 import { Entity } from 'telegram/define'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
-import { createEncodeAndEncryptStream } from '@/lib/crypto'
+import { createEncodeAndEncryptStream, decryptAndDecode } from '@/lib/crypto'
 import { DID, Link, UnknownLink } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
 import { CARMetadata } from '@storacha/ui-react'
@@ -73,7 +73,7 @@ const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
 export interface Context {
   storacha: StorachaClient
   telegram: TelegramClient
-  cipher: Encrypter
+  cipher: Cipher
 }
 
 export interface Options {
@@ -92,30 +92,21 @@ export interface Options {
   onShardStored?: (meta: CARMetadata) => unknown
 }
 
-export const run = async (
+const backupDialog = async (
   ctx: Context,
-  space: SpaceDID,
-  dialogs: Type.DialogsById,
   period: AbsolutePeriod,
-  options?: Options
-): Promise<UnknownLink> => {
-  const dialogDatas: BackupData['dialogs'] = {}
-  const pendingDialogIDs = Object.keys(dialogs)
-
-  // null value signals that the current dialog has completed
-  let dialogEntity: Type.DialogInfo | null = null
-  let dialogMessageCount: number
-  let messagesSoFar = 0
+  options: Options | undefined,
+  messageIterator: AsyncIterator<Api.TypeMessage> | null,
+  dialogEntity: Type.DialogInfo,
+  minMsgId: number | undefined,
+  dialogMessageCount: number
+) => {
   let entities: EntityRecordData = {}
   let messages: Array<MessageData | ServiceMessageData> = []
   let messageLinks: Array<
     Link<EncryptedTaggedByteView<Array<MessageData | ServiceMessageData>>>
   > = []
-
-  // null value signals that no more messages will come and the current dialog
-  // can now be finalized
-  let messageIterator: AsyncIterator<Api.TypeMessage> | null = null
-  let minMsgId: number | undefined
+  let messagesSoFar = 0
 
   const blockStream = new ReadableStream<UnknownBlock>({
     async start() {
@@ -124,86 +115,6 @@ export const run = async (
       }
     },
     async pull(controller) {
-      if (!dialogEntity) {
-        // get the next dialog to back up
-        const dialogID = pendingDialogIDs.shift()
-        if (!dialogID) {
-          // we finished!
-          console.log(
-            `creating root with ${Object.entries(dialogDatas).length} dialogs`
-          )
-          const rootData: BackupModel = {
-            [versionTag]: { dialogs: dialogDatas, period },
-          }
-          for await (const b of toAsyncIterable(
-            createEncodeAndEncryptStream(dagCBOR, ctx.cipher, rootData)
-          )) {
-            controller.enqueue(b)
-          }
-          controller.close()
-          return
-        }
-
-        dialogEntity = { id: dialogID, ...dialogs[dialogID] }
-        await options?.onDialogRetrieved?.(BigInt(dialogID))
-        const dialogInput =
-          buildDialogInputPeer(dialogEntity) ?? bigInt(dialogID)
-
-        if (period[0] > 0) {
-          // if start date is not the beginning of time get the first message
-          // before the start date (if there is one), and then iterate from end
-          // date to first message (exclusive).
-          const messages = await callWithDialogsSync(
-            () =>
-              ctx.telegram.invoke(
-                new Api.messages.GetHistory({
-                  peer: dialogInput,
-                  limit: 1,
-                  offsetDate: period[0],
-                })
-              ),
-            ctx.telegram,
-            dialogID
-          )
-          if (
-            messages instanceof Api.messages.MessagesSlice ||
-            messages instanceof Api.messages.ChannelMessages
-          ) {
-            const firstMessage = messages.messages[0]
-            dialogMessageCount = messages.offsetIdOffset || 0
-            minMsgId = firstMessage?.id
-          } else if (messages instanceof Api.messages.Messages) {
-            const firstMessage = messages.messages[0]
-            minMsgId = firstMessage?.id
-            dialogMessageCount = messages.messages.length
-          } else {
-            dialogMessageCount = messages.count || 0
-            minMsgId = undefined
-          }
-        } else {
-          const messages = await callWithDialogsSync(
-            () =>
-              ctx.telegram.getMessages(dialogInput, {
-                limit: 1,
-              }),
-            ctx.telegram,
-            dialogID
-          )
-          dialogMessageCount = messages.total || 0
-        }
-
-        console.log(
-          `retrieving ${dialogMessageCount} messages for dialog: ${dialogID}`
-        )
-
-        messageIterator = ctx.telegram
-          .iterMessages(dialogInput, {
-            offsetDate: period[1],
-            minId: minMsgId,
-          })
-          [Symbol.asyncIterator]()
-      }
-
       if (!messageIterator) {
         // we ran out of messages, create entries and a dialog object
         console.log(`creating ${Object.entries(entities).length} entities`)
@@ -218,7 +129,6 @@ export const run = async (
         }
 
         if (!entitiesRoot) throw new Error('missing entities root')
-        entities = {}
 
         const dialogData: DialogData = {
           ...dialogEntity,
@@ -236,10 +146,6 @@ export const run = async (
         }
 
         if (!dialogRoot) throw new Error('missing dialog root')
-        messageLinks = []
-        messagesSoFar = 0
-        dialogDatas[dialogEntity.id.toString()] = dialogRoot
-        dialogEntity = null // move onto the next dialog
         return
       }
 
@@ -370,6 +276,169 @@ export const run = async (
     },
     { onShardStored: options?.onShardStored }
   )
+
+  return root as Link<EncryptedTaggedByteView<DialogData>>
+}
+
+const uploadRoot = async (
+  ctx: Context,
+  rootData: BackupModel,
+  options?: Options
+) => {
+  const blockStream = new ReadableStream<UnknownBlock>({
+    async pull(controller) {
+      for await (const b of toAsyncIterable(
+        createEncodeAndEncryptStream(dagCBOR, ctx.cipher, rootData)
+      )) {
+        controller.enqueue(b)
+      }
+      controller.close()
+      return
+    },
+  })
+  const root = await ctx.storacha.uploadCAR(
+    {
+      stream: () => blockStream.pipeThrough(new CARWriterStream()),
+    },
+    { onShardStored: options?.onShardStored }
+  )
+  return root
+}
+
+const gatewayURL =
+  process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'
+
+const getFromStoracha = async (cid: string) => {
+  const url = new URL(`/ipfs/${cid}`, gatewayURL)
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch: ${response.status} ${response.statusText} ${url}`
+    )
+  }
+  return response
+}
+
+export const deleteDialogFromBackup = async (
+  ctx: Context,
+  dialogID: ToString<EntityID>,
+  backupCid: string
+): Promise<UnknownLink> => {
+  const response = await getFromStoracha(backupCid)
+  const encryptedBackupRaw = new Uint8Array(await response.arrayBuffer())
+  const decryptedBackupRaw = (await decryptAndDecode(
+    ctx.cipher,
+    dagCBOR,
+    encryptedBackupRaw
+  )) as BackupModel
+  const dialogCid =
+    decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogID]
+  await ctx.storacha.remove(dialogCid, { shards: true })
+  delete decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogID]
+  return await uploadRoot(ctx, decryptedBackupRaw)
+}
+
+export const run = async (
+  ctx: Context,
+  space: SpaceDID,
+  dialogs: Type.DialogsById,
+  period: AbsolutePeriod,
+  options?: Options
+): Promise<UnknownLink> => {
+  const dialogDatas: BackupData['dialogs'] = {}
+  const pendingDialogIDs = Object.keys(dialogs)
+
+  // null value signals that the current dialog has completed
+  let dialogEntity: Type.DialogInfo | null = null
+  let dialogMessageCount: number
+
+  // null value signals that no more messages will come and the current dialog
+  // can now be finalized
+  let messageIterator: AsyncIterator<Api.TypeMessage> | null = null
+  let minMsgId: number | undefined
+
+  while (pendingDialogIDs.length > 0) {
+    // get the next dialog to back up
+    const dialogID = pendingDialogIDs.shift()
+    if (!dialogID) {
+      throw new Error('missing dialog ID')
+    }
+    dialogEntity = { id: dialogID, ...dialogs[dialogID] }
+    await options?.onDialogRetrieved?.(BigInt(dialogID))
+    const dialogInput = buildDialogInputPeer(dialogEntity) ?? bigInt(dialogID)
+
+    if (period[0] > 0) {
+      // if start date is not the beginning of time get the first message
+      // before the start date (if there is one), and then iterate from end
+      // date to first message (exclusive).
+      const messages = await callWithDialogsSync(
+        () =>
+          ctx.telegram.invoke(
+            new Api.messages.GetHistory({
+              peer: dialogInput,
+              limit: 1,
+              offsetDate: period[0],
+            })
+          ),
+        ctx.telegram,
+        dialogID
+      )
+      if (
+        messages instanceof Api.messages.MessagesSlice ||
+        messages instanceof Api.messages.ChannelMessages
+      ) {
+        const firstMessage = messages.messages[0]
+        dialogMessageCount = messages.offsetIdOffset || 0
+        minMsgId = firstMessage?.id
+      } else if (messages instanceof Api.messages.Messages) {
+        const firstMessage = messages.messages[0]
+        minMsgId = firstMessage?.id
+        dialogMessageCount = messages.messages.length
+      } else {
+        dialogMessageCount = messages.count || 0
+        minMsgId = undefined
+      }
+    } else {
+      const messages = await callWithDialogsSync(
+        () =>
+          ctx.telegram.getMessages(dialogInput, {
+            limit: 1,
+          }),
+        ctx.telegram,
+        dialogID
+      )
+      dialogMessageCount = messages.total || 0
+    }
+
+    console.log(
+      `retrieving ${dialogMessageCount} messages for dialog: ${dialogID}`
+    )
+
+    messageIterator = ctx.telegram
+      .iterMessages(dialogInput, {
+        offsetDate: period[1],
+        minId: minMsgId,
+      })
+      [Symbol.asyncIterator]()
+    dialogDatas[dialogEntity.id.toString()] = await backupDialog(
+      ctx,
+      period,
+      options,
+      messageIterator,
+      dialogEntity,
+      minMsgId,
+      dialogMessageCount
+    )
+  }
+
+  console.log(
+    `creating root with ${Object.entries(dialogDatas).length} dialogs`
+  )
+  const rootData: BackupModel = {
+    [versionTag]: { dialogs: dialogDatas, period },
+  }
+
+  const root = await uploadRoot(ctx, rootData, options)
   console.log(`backup job complete: ${root}`)
   return root
 }

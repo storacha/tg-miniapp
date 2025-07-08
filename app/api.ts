@@ -160,6 +160,11 @@ export interface ExecuteJobRequest extends ExecuteAuth, LoginRequest {
   jobID: JobID
 }
 
+export interface DeleteDialogFromJobRequest extends ExecuteAuth, LoginRequest {
+  jobID: JobID
+  dialogID: ToString<EntityID>
+}
+
 export interface CreateJobRequest extends ExecuteAuth {
   dialogs: DialogsById
   period: Period
