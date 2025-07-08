@@ -16,6 +16,10 @@ export async function getSession(): Promise<IronSession<TGSession>> {
   const session = await getIronSession<TGSession>(await cookies(), {
     password: SESSION_PASSWORD,
     cookieName: SESSION_COOKIE_NAME,
+    cookieOptions: {
+      secure: true,
+      sameSite: 'none',
+    },
   })
   return session
 }

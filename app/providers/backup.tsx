@@ -69,6 +69,7 @@ export interface ContextActions {
   ) => Promise<void>
   fetchMoreMessages: (limit: number) => Promise<void>
   cancelBackupJob: (job: JobID) => Promise<void>
+  resetBackup: () => void
   // setBackup: (id: Link|null) => void
   // setDialog: (id: bigint | null) => void
 }
@@ -90,6 +91,7 @@ export const ContextDefaultValue: ContextValue = [
     restoreBackup: () => Promise.reject(new Error('provider not setup')),
     fetchMoreMessages: () => Promise.reject(new Error('provider not setup')),
     cancelBackupJob: () => Promise.reject(new Error('provider not setup')),
+    resetBackup: () => Promise.reject(new Error('provider not setup')),
     // setBackup: () => {},
     // setDialog: () => {}
   },
@@ -338,7 +340,9 @@ export const Provider = ({
         console.debug(`found ${jobs.items.length} pending jobs`)
         setJobs(jobs.items)
       } catch (err: any) {
-        console.error('Error: handling job change event', err)
+        const msg = `Failed to list pending backups in job change handler`
+        console.error(msg, err)
+        setError(getErrorMessage(err), { title: msg })
         setJobsError(err)
       }
 
@@ -349,7 +353,9 @@ export const Provider = ({
         console.debug(`found ${backups.items.length} completed jobs`)
         setBackups(backups.items)
       } catch (err: any) {
-        console.error('Error: handling job change event', err)
+        const msg = `Failed to list completed backups in job change handler`
+        console.error(msg, err)
+        setError(getErrorMessage(err), { title: msg })
         setBackupsError(err)
       }
     }
@@ -378,6 +384,11 @@ export const Provider = ({
     }
   }, [jobStore])
 
+  const resetBackup = () => {
+    setRestoredBackup(undefined)
+    setRestoredBackupError(undefined)
+  }
+
   useEffect(() => {
     setJobsReady(!!jobStore)
   }, [jobStore])
@@ -391,6 +402,7 @@ export const Provider = ({
           jobsReady,
         },
         {
+          resetBackup,
           addBackupJob,
           removeBackupJob,
           restoreBackup,

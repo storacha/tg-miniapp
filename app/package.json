@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "test": "pnpm lint",
     "db:migrate": "node ./scripts/migrate.mjs",
+    "db:dev:console": "psql --username admin --password tg_backups_dev",
     "pages:build": "npx @cloudflare/next-on-pages",
     "pages:preview": "pnpm run pages:build && wrangler pages dev",
     "pages:deploy": "pnpm run pages:build && wrangler pages deploy"
@@ -30,6 +31,7 @@
     "@radix-ui/react-radio-group": "^1.2.2",
     "@radix-ui/react-slot": "^1.1.1",
     "@radix-ui/react-tabs": "^1.1.2",
+    "@sentry/nextjs": "^9.32.0",
     "@storacha/access": "^1.2.2",
     "@storacha/capabilities": "^1.7.0",
     "@storacha/client": "^1.4.0",

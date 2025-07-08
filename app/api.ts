@@ -1354,6 +1354,7 @@ export interface UnknownActionData {
 }
 
 export interface RestoredBackup {
+  backupCid: string
   dialogData: DialogData
   messages: MessageData[]
   mediaMap: Record<string, Uint8Array>
@@ -2130,6 +2131,7 @@ export interface LeaderboardUser {
   thumbSrc: string
   name: string
   points: number
+  isMe: boolean
 }
 
 export interface Podium {

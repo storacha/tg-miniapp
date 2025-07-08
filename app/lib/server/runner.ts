@@ -232,12 +232,6 @@ export const run = async (
         }
 
         if (done) {
-          if (messages.length === 0) {
-            throw new Error(
-              `No messages found for ${dialogEntity.name} in the selected time period.`
-            )
-          }
-
           messageIterator = null
           await options?.onMessagesRetrieved?.(
             BigInt(dialogEntity.id.toString())
@@ -291,7 +285,7 @@ export const run = async (
           if (!mediaRoot) throw new Error('missing media root')
         }
 
-        messages.push(toMessageData(message, mediaRoot))
+        messages.push(toMessageData(message, fromID, mediaRoot))
         if (messages.length === maxMessages) {
           break
         }
@@ -354,10 +348,9 @@ const callWithDialogsSync = async <T>(
 
 const toMessageData = (
   message: Api.Message | Api.MessageService,
+  from: ToString<bigint>,
   mediaRoot?: Link<EncryptedTaggedByteView<Uint8Array>>
 ): MessageData | ServiceMessageData => {
-  const from = message.fromId && toPeerID(message.fromId)
-
   if (message.className === 'MessageService') {
     const action = toActionData(message.action)
     if (!action) throw new Error('missing service message action')

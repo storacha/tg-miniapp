@@ -1,5 +1,6 @@
 import { AbsolutePeriod, DialogInfo } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useUserLocale } from '@/hooks/useUserLocale'
 import { getThumbSrc } from '@/lib/backup/utils'
 
 interface DialogItemProps {
@@ -10,25 +11,10 @@ interface DialogItemProps {
 export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
   const { name, initials, photo } = dialog
   const thumbSrc = getThumbSrc(photo?.strippedThumb)
-
-  let latestBackupDate
-  if (latestBackup) {
-    latestBackupDate = new Date(latestBackup[1] * 1000)
-    const isToday =
-      latestBackupDate.toDateString() === new Date().toDateString()
-    latestBackupDate = isToday
-      ? `Today ${latestBackupDate.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}`
-      : latestBackupDate.toLocaleString([], {
-          month: '2-digit',
-          day: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-  }
+  const { formatDateTime } = useUserLocale()
+  const latestBackupDate = latestBackup
+    ? formatDateTime(Number(latestBackup[1]))
+    : undefined
 
   return (
     <div className="flex gap-4 items-center w-full">
