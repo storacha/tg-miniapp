@@ -158,6 +158,8 @@ function BackupDialog({
   let lastRenderedDate: string | null = null
   let lastSenderId: string | null = null
 
+  console.log('messages', messages)
+
   const filteredMessages: MessageData[] = useMemo(
     () =>
       messages.filter((msg): msg is MessageData => {
