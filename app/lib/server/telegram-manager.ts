@@ -1,9 +1,11 @@
 import { TelegramClient } from 'telegram'
 import { StringSession } from 'telegram/sessions'
 import { TelegramClientParams } from 'telegram/client/telegramBaseClient'
-import { telegramAPIID, telegramAPIHash } from '@/lib/server/constants'
-
-const defaultClientParams: TelegramClientParams = { connectionRetries: 5 }
+import {
+  telegramAPIID,
+  telegramAPIHash,
+  defaultClientParams,
+} from '@/lib/server/constants'
 
 export const getTelegramClient = async (
   session: string

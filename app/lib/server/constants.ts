@@ -130,3 +130,11 @@ export const telegramAPIHash =
 export const mRachaPointsPerByte = parseFloat(
   process.env.NEXT_PUBLIC_POINTS_PER_BYTE ?? die('NEXT_PUBLIC_POINTS_PER_BYTE')
 )
+
+const appVersion = process.env.version ?? '1.0.0'
+export const defaultClientParams: TelegramClientParams = {
+  connectionRetries: 5,
+  deviceModel: 'Storacha',
+  systemVersion: 'Linux',
+  appVersion,
+}
