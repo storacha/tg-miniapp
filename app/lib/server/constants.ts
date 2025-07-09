@@ -3,6 +3,7 @@ import { connect } from '@ucanto/client'
 import { CAR, HTTP } from '@ucanto/transport'
 import { ed25519 } from '@ucanto/principal'
 import type { Service } from '@storacha/client/types'
+import { TelegramClientParams } from 'telegram/client/telegramBaseClient'
 
 let cachedServerConstants: {
   SERVER_IDENTITY_PRIVATE_KEY: string
@@ -130,3 +131,11 @@ export const telegramAPIHash =
 export const mRachaPointsPerByte = parseFloat(
   process.env.NEXT_PUBLIC_POINTS_PER_BYTE ?? die('NEXT_PUBLIC_POINTS_PER_BYTE')
 )
+
+const appVersion = process.env.version ?? '0.0.0'
+export const defaultClientParams: TelegramClientParams = {
+  connectionRetries: 5,
+  deviceModel: 'Storacha',
+  systemVersion: 'Linux',
+  appVersion,
+}
