@@ -62,9 +62,7 @@ export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
       <div className="flex-auto">
-        <h1 className="font-semibold text-foreground/80">
-          {name} {id}
-        </h1>
+        <h1 className="font-semibold text-foreground/80">{name}</h1>
         <p className="text-sm text-foreground/60">
           Last Backup:{' '}
           {latestBackupDate ?? <span className="text-red-900">Never</span>}

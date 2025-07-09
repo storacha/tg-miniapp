@@ -255,13 +255,11 @@ export const getHiResPhotoBlob = toResultFn(
       try {
         entity = await client.getEntity(id)
       } catch (e) {
-        // there seem to be a few entities that don't load properly using the code above
+        // there seem to be a few user entities that don't load properly using the code above
         // but do load if we construct the Peer manually, so do that as a fallback
         entity = new Api.InputPeerUser({
-          // @ts-expect-error TS thinks this shouldn't be a string, but the library is fine with it
-          userId: id,
-          // @ts-expect-error TS thinks this shouldn't be a string, but the library is fine with it
-          accessHash: accessHash ?? 0,
+          userId: bigInt(id),
+          accessHash: accessHash ? bigInt(accessHash) : bigInt(0),
         })
       }
       return await client.downloadProfilePhoto(entity)
