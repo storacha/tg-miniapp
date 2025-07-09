@@ -79,6 +79,8 @@ export const buildDialogInputPeer = (dialogInfo: DialogInfo) => {
     return new Api.InputPeerUser({ userId: bigId, accessHash: bigHash })
   } else if (dialogInfo.type === 'channel') {
     return new Api.InputPeerChannel({ channelId: bigId, accessHash: bigHash })
+  } else if (dialogInfo.type === 'chat') {
+    return new Api.InputPeerChat({ chatId: bigId })
   }
 
   return undefined
