@@ -1,6 +1,5 @@
 import { TelegramClient } from 'telegram'
 import { StringSession } from 'telegram/sessions'
-import { TelegramClientParams } from 'telegram/client/telegramBaseClient'
 import {
   telegramAPIID,
   telegramAPIHash,

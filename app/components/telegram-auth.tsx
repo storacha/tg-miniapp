@@ -210,7 +210,7 @@ export default function TelegramAuth() {
       new StringSession(tgSessionString),
       apiId,
       apiHash,
-      defaultClientParams
+      defaultClientParams as unknown as TelegramClientParams
     )
     setClient(newClient)
   }, [tgSessionString])
