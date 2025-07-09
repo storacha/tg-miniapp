@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.5.0](https://github.com/storacha/tg-miniapp/compare/v2.4.0...v2.5.0) (2025-07-09)
+
+
+### Features
+
+* **runner:** add video download size selection ([de7d85c](https://github.com/storacha/tg-miniapp/commit/de7d85ca6de895a3f464e62ae4f76bdeaaf7ca00))
+
+
+### Bug Fixes
+
+* allow cross-site requests to enable Telegram browser support ([b105a7f](https://github.com/storacha/tg-miniapp/commit/b105a7ff8f41476a3f4535e19decfbceb0918e44))
+* don't show ranking info if not loaded ([583842f](https://github.com/storacha/tg-miniapp/commit/583842fc5836926323c7efa47f1ff74f56a5c7d0))
+* don't show ranking info if not loaded ([443ccb7](https://github.com/storacha/tg-miniapp/commit/443ccb7af8262150831340a7317898af637c0738))
+* initdata not found ([a6d0e03](https://github.com/storacha/tg-miniapp/commit/a6d0e03bd926ea2c5c1d0fbe41eafdd702d09ea1))
+* lazy load image media ([#225](https://github.com/storacha/tg-miniapp/issues/225)) ([0a9441c](https://github.com/storacha/tg-miniapp/commit/0a9441c2b7509058008d8e702f676fe6a03f33a9))
+* only show telegram timeout error if client log level is set to debug ([fa0fa4f](https://github.com/storacha/tg-miniapp/commit/fa0fa4f126d96717a6c1f9bdd04f3a446413f16c))
+* **runner:** fix toDocumentAttributeData ([49a85c4](https://github.com/storacha/tg-miniapp/commit/49a85c4a74de84fef3ccbff836684f3b6b754c58))
+* **runner:** improve upload tracking ([0adfbb3](https://github.com/storacha/tg-miniapp/commit/0adfbb353d5b3d8c5d2d6fb8e4a06179157965f8))
+* show empty backup instead of throwing an error ([13e4371](https://github.com/storacha/tg-miniapp/commit/13e437107c4945d1561b169849dc44b660de8be0))
+* show empty backup instead of throwing an error ([328d0e6](https://github.com/storacha/tg-miniapp/commit/328d0e69e3aedf15d820950e376222df5023cf31))
+* **utils:** handle chat type ([cb0a150](https://github.com/storacha/tg-miniapp/commit/cb0a150be126e955edff6443c70dc0e13b73cdb9))
+
 ## [2.4.0](https://github.com/storacha/tg-miniapp/compare/v2.3.1...v2.4.0) (2025-07-01)
 
 
