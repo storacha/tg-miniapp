@@ -168,6 +168,7 @@ const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
       <img
         src={mediaUrl}
         alt={'Image'}
+        loading="lazy"
         className="max-w-[10rem] max-h-60 object-cover rounded-lg"
       />
     </div>
@@ -445,6 +446,7 @@ const FileMedia: React.FC<{
           <img
             src={thumbUrl}
             alt="File Thumbnail"
+            loading="lazy"
             className="w-12 h-12 object-cover rounded-md"
           />
         ) : (

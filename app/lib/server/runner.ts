@@ -42,6 +42,7 @@ import {
   WallPaperSettingsData,
   MediaData,
 } from '@/api'
+import pRetry from 'p-retry'
 import * as Type from '@/api'
 import { Api, TelegramClient } from 'telegram'
 import * as dagCBOR from '@ipld/dag-cbor'
@@ -59,7 +60,9 @@ import bigInt from 'big-integer'
 type SpaceDID = DID<'key'>
 const versionTag = 'tg-miniapp-backup@0.0.1'
 const maxMessages = 1_000
+const updateInterval = 50
 
+const MAX_DOCUMENT_SIZE = BigInt(10 * 1024 * 1024) // 10 MB
 const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
   return (
     media.className === 'MessageMediaPhoto' ||
@@ -82,7 +85,7 @@ export interface Options {
   /**
    * Called when all messages for a dialog have been retrieved
    */
-  onMessagesRetrieved?: (id: bigint) => unknown
+  onMessagesRetrieved?: (id: bigint, percentage: number) => unknown
   /**
    * Called when a shard is stored, a dialog can have multiple shards.
    */
@@ -101,7 +104,8 @@ export const run = async (
 
   // null value signals that the current dialog has completed
   let dialogEntity: Type.DialogInfo | null = null
-
+  let dialogMessageCount: number
+  let messagesSoFar = 0
   let entities: EntityRecordData = {}
   let messages: Array<MessageData | ServiceMessageData> = []
   let messageLinks: Array<
@@ -149,17 +153,48 @@ export const run = async (
           // if start date is not the beginning of time get the first message
           // before the start date (if there is one), and then iterate from end
           // date to first message (exclusive).
-          const [firstMessage] = await callWithDialogsSync(
+          const messages = await callWithDialogsSync(
+            () =>
+              ctx.telegram.invoke(
+                new Api.messages.GetHistory({
+                  peer: dialogInput,
+                  limit: 1,
+                  offsetDate: period[0],
+                })
+              ),
+            ctx.telegram,
+            dialogID
+          )
+          if (
+            messages instanceof Api.messages.MessagesSlice ||
+            messages instanceof Api.messages.ChannelMessages
+          ) {
+            const firstMessage = messages.messages[0]
+            dialogMessageCount = messages.offsetIdOffset || 0
+            minMsgId = firstMessage?.id
+          } else if (messages instanceof Api.messages.Messages) {
+            const firstMessage = messages.messages[0]
+            minMsgId = firstMessage?.id
+            dialogMessageCount = messages.messages.length
+          } else {
+            dialogMessageCount = messages.count || 0
+            minMsgId = undefined
+          }
+        } else {
+          const messages = await callWithDialogsSync(
             () =>
               ctx.telegram.getMessages(dialogInput, {
                 limit: 1,
-                offsetDate: period[0],
               }),
             ctx.telegram,
             dialogID
           )
-          minMsgId = firstMessage?.id
+          dialogMessageCount = messages.total || 0
         }
+
+        console.log(
+          `retrieving ${dialogMessageCount} messages for dialog: ${dialogID}`
+        )
 
         messageIterator = ctx.telegram
           .iterMessages(dialogInput, {
@@ -202,7 +237,7 @@ export const run = async (
 
         if (!dialogRoot) throw new Error('missing dialog root')
         messageLinks = []
-
+        messagesSoFar = 0
         dialogDatas[dialogEntity.id.toString()] = dialogRoot
         dialogEntity = null // move onto the next dialog
         return
@@ -232,16 +267,7 @@ export const run = async (
         }
 
         if (done) {
-          if (messages.length === 0) {
-            throw new Error(
-              `No messages found for ${dialogEntity.name} in the selected time period.`
-            )
-          }
-
           messageIterator = null
-          await options?.onMessagesRetrieved?.(
-            BigInt(dialogEntity.id.toString())
-          )
           break
         }
 
@@ -276,9 +302,20 @@ export const run = async (
 
         let mediaRoot
         if (message.media && isDownloadableMedia(message.media)) {
-          const mediaBytes = new Uint8Array(
-            (await message.downloadMedia()) as Buffer
+          const mediaBytes = await pRetry(
+            () => {
+              return getMediaBytes(ctx, message)
+            },
+            {
+              retries: 5,
+              onFailedAttempt: (error) => {
+                console.warn(
+                  `Failed to download media for message ${message.id} due to Timeout: ${error.attemptNumber} attempt(s), ${error.retriesLeft} retries left`
+                )
+              },
+            }
           )
+
           if (mediaBytes.length === 0) throw new Error('missing media bytes')
 
           for await (const b of toAsyncIterable(
@@ -292,11 +329,24 @@ export const run = async (
         }
 
         messages.push(toMessageData(message, fromID, mediaRoot))
+        // for last segment (or only segment) upload more frequently
+        if (messagesSoFar + maxMessages > dialogMessageCount) {
+          if (messages.length % updateInterval === 0) {
+            await options?.onMessagesRetrieved?.(
+              BigInt(dialogEntity.id.toString()),
+              (messagesSoFar + messages.length) / dialogMessageCount
+            )
+          }
+        }
         if (messages.length === maxMessages) {
           break
         }
       }
-
+      messagesSoFar += messages.length
+      await options?.onMessagesRetrieved?.(
+        BigInt(dialogEntity.id.toString()),
+        messagesSoFar / dialogMessageCount
+      )
       console.log(`creating ${messages.length} messages`)
       let messagesRoot
       for await (const b of toAsyncIterable(
@@ -324,6 +374,74 @@ export const run = async (
   return root
 }
 
+const getMediaBytes = async (ctx: Context, message: Api.Message) => {
+  const media = message.media
+  if (media instanceof Api.MessageMediaDocument && media.video) {
+    const document = media.document
+    const altDocuments = media.altDocuments
+    if (
+      document instanceof Api.Document &&
+      BigInt(document.size.toString()) > MAX_DOCUMENT_SIZE
+    ) {
+      console.log(
+        `Video document size is too large: ${document.size}, trying alternative documents...`
+      )
+      let maxSoFar = BigInt(0)
+      let minOverSoFar = BigInt(document.size.toString())
+      const foundDocument = altDocuments?.findLast((doc) => {
+        if (!(doc instanceof Api.Document)) {
+          return false
+        }
+        console.log(
+          `Checking alternative document: ${doc.id}, size: ${doc.size}`
+        )
+        const docSize = BigInt(doc.size.toString())
+        const video = doc.attributes.find(
+          (attr) => attr.className === 'DocumentAttributeVideo'
+        )
+
+        if (!video || video.videoCodec !== 'h264') {
+          return false
+        }
+        console.log(`Found video codec: ${video.videoCodec}, checking size...`)
+        if (docSize > maxSoFar) {
+          if (docSize <= MAX_DOCUMENT_SIZE) {
+            maxSoFar = docSize
+            return true
+          }
+          // if the document is larger than the max size, we only consider it if it's smaller than the current minOverSoFar
+          if (maxSoFar === BigInt(0) && docSize < minOverSoFar) {
+            minOverSoFar = docSize
+            return true
+          }
+        }
+        return false
+      })
+      if (foundDocument && foundDocument instanceof Api.Document) {
+        console.log(
+          `Found alternative document: ${foundDocument.id}, size: ${foundDocument.size}`
+        )
+        const mediaBytes = await ctx.telegram.downloadFile(
+          new Api.InputDocumentFileLocation({
+            id: foundDocument.id,
+            accessHash: foundDocument.accessHash,
+            fileReference: foundDocument.fileReference,
+            thumbSize: '',
+          }),
+          {
+            fileSize: foundDocument.size,
+            dcId: foundDocument.dcId,
+          }
+        )
+        if (mediaBytes instanceof Buffer) {
+          return new Uint8Array(mediaBytes)
+        }
+      }
+    }
+  }
+
+  return new Uint8Array((await message.downloadMedia()) as Buffer)
+}
 const syncDialogEntity = async (client: TelegramClient, entityId: string) => {
   console.log(`Entity not found for ID: ${entityId}, trying to sync...`)
   for await (const dialog of client.iterDialogs()) {
@@ -982,7 +1100,7 @@ const toDocumentData = withCleanUndef(
   }
 )
 
-const toDocumentAttributeData = cleanUndef(
+const toDocumentAttributeData = withCleanUndef(
   (attribute: Api.TypeDocumentAttribute): DocumentAttributeData => {
     switch (attribute.className) {
       case 'DocumentAttributeFilename':
