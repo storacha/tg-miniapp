@@ -1,5 +1,4 @@
 import { getHiResPhotoBlob } from '@/components/server'
-import { getBotToken } from '@/lib/server/constants'
 
 import { NextRequest } from 'next/server'
 

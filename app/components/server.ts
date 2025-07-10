@@ -255,6 +255,7 @@ export const getHiResPhotoBlob = toResultFn(
       try {
         entity = await client.getEntity(id)
       } catch (e) {
+        console.error(e)
         // there seem to be a few user entities that don't load properly using the code above
         // but do load if we construct the Peer manually, so do that as a fallback
         entity = new Api.InputPeerUser({

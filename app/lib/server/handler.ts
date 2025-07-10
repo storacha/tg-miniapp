@@ -61,15 +61,13 @@ class Handler {
         to: now,
       })
 
-      for (const [_, report] of Object.entries(usage)) {
-        // i don't think we allow people to create or own multiple
-        // spaces for now in the TG mini app
-        // if it happens in the future, we should account for it.
-        amountOfStorageUsed = Object.values(usage).reduce(
-          (sum, report) => sum + report.size.final,
-          0
-        )
-      }
+      // i don't think we allow people to create or own multiple
+      // spaces for now in the TG mini app
+      // if it happens in the future, we should account for it.
+      amountOfStorageUsed = Object.values(usage).reduce(
+        (sum, report) => sum + report.size.final,
+        0
+      )
     } catch (err) {
       console.error('Error while fetching usage report:', err)
     }

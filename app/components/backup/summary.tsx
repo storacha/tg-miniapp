@@ -22,7 +22,7 @@ export const Summary = ({
   starting,
   onSubmit,
 }: SummaryProps) => {
-  const [storageUsed, setStorageUsed] = useState()
+  const [storageUsed, setStorageUsed] = useState<number>()
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
     onSubmit()

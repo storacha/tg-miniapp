@@ -45,9 +45,10 @@ function useHighQualityProfilePhoto(
 }
 
 export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
-  const { id, name, initials, photo, dialogId, accessHash } = dialog
+  const { name, initials, photo, dialogId, accessHash } = dialog
   const lqThumbSrc = getThumbSrc(photo?.strippedThumb)
   const hqThumbSrc =
+    /* eslint-disable react-hooks/rules-of-hooks */
     dialogId && useHighQualityProfilePhoto(dialogId, accessHash)
 
   const { formatDateTime } = useUserLocale()
