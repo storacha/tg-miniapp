@@ -8,9 +8,6 @@ import { useMemo, useState } from 'react'
 import { useUserLocale } from '@/hooks/useUserLocale'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { EntityType } from '@/api'
-import { useW3 as useStoracha } from '@storacha/ui-react'
-import { CID } from 'multiformats'
-import { useGlobal } from '@/zustand/global'
 
 export default function BackupSelectionPage() {
   const { id } = useParams<{ id: string }>()
@@ -20,14 +17,12 @@ export default function BackupSelectionPage() {
   const type = searchParams.get('type')
   const { formatDate, formatTime } = useUserLocale()
 
-  const [{ client }] = useStoracha()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [selectedBackup, setSelectedBackup] = useState<{
     id: string
     cid: string
   } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const { space } = useGlobal()
 
   const dialogBackups = useMemo(
     () =>
@@ -59,13 +54,11 @@ export default function BackupSelectionPage() {
     if (!selectedBackup) return
     setIsDeleting(true)
     try {
-      deleteBackup(selectedBackup.id)
-      console.log('space', space)
-      if (client && space) {
-        client.setCurrentSpace(space)
-        const cid = CID.parse(selectedBackup.cid)
-        await client.remove(cid, { shards: true })
-      }
+      console.log(
+        `Deleting backup with ID: ${selectedBackup.id} and CID: ${selectedBackup.cid}`
+      )
+      await deleteBackup(selectedBackup.id, id)
+      console.log(`deletion completed`)
     } catch (error) {
       console.error(error)
     } finally {

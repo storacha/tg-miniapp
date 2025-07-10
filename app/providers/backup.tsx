@@ -12,11 +12,13 @@ import { cloudStorage } from '@telegram-apps/sdk-react'
 import {
   Backup,
   DialogsById,
+  EntityID,
   JobID,
   JobStorage,
   PendingJob,
   Period,
   RestoredBackup,
+  ToString,
 } from '@/api'
 import { Client as StorachaClient } from '@storacha/ui-react'
 import { TelegramClient } from '@/vendor/telegram'
@@ -70,7 +72,7 @@ export interface ContextActions {
   fetchMoreMessages: (limit: number) => Promise<void>
   cancelBackupJob: (job: JobID) => Promise<void>
   resetBackup: () => void
-  deleteBackup: (job: JobID) => Promise<void>
+  deleteBackup: (job: JobID, dialogID: ToString<EntityID>) => Promise<void>
   // setBackup: (id: Link|null) => void
   // setDialog: (id: bigint | null) => void
 }
@@ -330,14 +332,14 @@ export const Provider = ({
   )
 
   const deleteBackup = useCallback(
-    async (id: JobID) => {
+    async (id: JobID, dialogID: ToString<EntityID>) => {
       if (!jobStore) {
         setError('missing job store')
         return
       }
 
       try {
-        await jobStore.delete(id)
+        await jobStore.deleteDialog(id, dialogID)
       } catch (error: any) {
         const msg = 'Error deleting backup!'
         console.error(msg, error)

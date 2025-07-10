@@ -140,7 +140,7 @@ export interface JobStorage extends EventTarget {
   add: (dialogs: DialogsById, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
   cancel: (id: JobID) => Promise<void>
-  delete: (id: JobID) => Promise<void>
+  deleteDialog: (id: JobID, dialogID: ToString<EntityID>) => Promise<void>
 }
 
 export interface TelegramAuth {
@@ -161,7 +161,12 @@ export interface ExecuteJobRequest extends ExecuteAuth, LoginRequest {
   jobID: JobID
 }
 
-export interface DeleteDialogFromJobRequest extends ExecuteAuth, LoginRequest {
+export interface DeleteDialogFromJob extends ExecuteAuth, LoginRequest {
+  jobID: JobID
+  dialogID: ToString<EntityID>
+}
+
+export interface DeleteDialogFromJobRequest extends ExecuteAuth {
   jobID: JobID
   dialogID: ToString<EntityID>
 }
@@ -187,15 +192,13 @@ export interface CancelJobRequest {
   jobID: JobID
 }
 
-export type DeleteJobRequest = RemoveJobRequest
-
 export interface JobClient {
   createJob: (jr: CreateJobRequest) => Promise<Job>
   findJob: (jr: FindJobRequest) => Promise<Job>
   listJobs: (jr: ListJobsRequest) => Promise<Job[]>
   removeJob: (jr: RemoveJobRequest) => Promise<Job>
   cancelJob: (jr: CancelJobRequest) => Promise<Job>
-  deleteJob: (jr: DeleteJobRequest) => Promise<Job>
+  deleteDialogFromJob: (jr: DeleteDialogFromJobRequest) => Promise<void>
 }
 
 export interface Encrypter {

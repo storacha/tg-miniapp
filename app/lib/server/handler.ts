@@ -1,5 +1,5 @@
 import {
-  DeleteDialogFromJobRequest,
+  DeleteDialogFromJob,
   DialogsById,
   ExecuteJobRequest,
   ToString,
@@ -278,7 +278,7 @@ class Handler {
    * from storage. The dialog cannot be recovered after deletion. The method ensures
    * data consistency by atomically updating both the storage layer and job metadata.
    */
-  async deleteDialogFromJob(request: DeleteDialogFromJobRequest) {
+  async deleteDialogFromJob(request: DeleteDialogFromJob) {
     const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
 
@@ -297,12 +297,30 @@ class Handler {
     delete dialogs[request.dialogID]
 
     try {
-      // Removes the dialog's encrypted data from Storacha storage and creates a new backup root without the deleted dialog
-      const newData = await Runner.deleteDialogFromBackup(
-        this,
-        request.dialogID,
-        job.data
-      )
+      // is this dialog the only dialog in the job?
+      if (Object.keys(dialogs).length === 0) {
+        console.log(
+          `Deleting job ${request.jobID} because it has no dialogs left`
+        )
+        await this.#db.deleteJob(request.jobID, this.#dbUser.id)
+      } else {
+        // Removes the dialog's encrypted data from Storacha storage and creates a new backup root without the deleted dialog
+        const newData = await Runner.deleteDialogFromBackup(
+          this,
+          request.dialogID,
+          job.data
+        )
+
+        await this.#db.updateJob(request.jobID, {
+          ...job,
+          params: {
+            ...job.params,
+            dialogs, // update the dialogs in the job params
+          },
+          data: newData.toString(), // update the backup root with the new one
+          updated: Date.now(),
+        })
+      }
 
       if (pointsToSubtract > 0) {
         this.#dbUser = await this.#db.incrementUserPoints(
@@ -313,16 +331,6 @@ class Handler {
           `Subtracted ${pointsToSubtract} points from user ${this.#dbUser.id}`
         )
       }
-
-      await this.#db.updateJob(request.jobID, {
-        ...job,
-        params: {
-          ...job.params,
-          dialogs, // update the dialogs in the job params
-        },
-        data: newData.toString(), // update the backup root with the new one
-        updated: Date.now(),
-      })
     } catch (err) {
       throw new Error(
         `Failed to delete dialog ${request.dialogID} from job ${request.jobID}`,
