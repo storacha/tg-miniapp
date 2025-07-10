@@ -12,7 +12,7 @@ interface DialogItemProps {
 export const DialogItem = ({ dialog, latestBackup }: DialogItemProps) => {
   const { name, initials, photo, dialogId, accessHash } = dialog
   const lqThumbSrc = getThumbSrc(photo?.strippedThumb)
-  const hqThumbSrc = dialogId && useProfilePhoto(dialogId, accessHash)
+  const hqThumbSrc = useProfilePhoto(dialogId, accessHash)
 
   const { formatDateTime } = useUserLocale()
   const latestBackupDate = latestBackup

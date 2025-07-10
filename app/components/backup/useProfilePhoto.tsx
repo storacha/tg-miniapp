@@ -1,5 +1,3 @@
-import { DialogInfo, EntityData } from '@/api'
-import { getThumbSrc } from '@/lib/backup/utils'
 import { useGlobal } from '@/zustand/global'
 import { useState, useEffect } from 'react'
 
@@ -13,26 +11,25 @@ export function useProfilePhoto(
   const { tgSessionString } = useGlobal()
   useEffect(
     function () {
+      if (!entityId) return
       console.log('loading HQ for id ', entityId)
-      if (entityId) {
-        ;(async function () {
-          // session is required for this to work unless it's been cached
-          // but we keep it in a query param so that browsers with support for
-          // No-Vary-Search ignore it when considering whether to cache the image.
-          const query: { access?: string; session: string } = {
-            session: tgSessionString,
-          }
-          if (accessHash) query.access = accessHash
-          const queryString = new URLSearchParams(query).toString()
-          const url = `/api/entity/${encodeURIComponent(entityId)}/image${queryString ? `?${queryString}` : ''}`
-          const result = await fetch(url)
-          if (result.status === 200) {
-            setHqUrl(url)
-          }
-        })()
-      }
+      ;(async function () {
+        // session is required for this to work unless it's been cached
+        // but we keep it in a query param so that browsers with support for
+        // No-Vary-Search ignore it when considering whether to cache the image.
+        const query: { access?: string; session: string } = {
+          session: tgSessionString,
+        }
+        if (accessHash) query.access = accessHash
+        const queryString = new URLSearchParams(query).toString()
+        const url = `/api/entity/${encodeURIComponent(entityId)}/image${queryString ? `?${queryString}` : ''}`
+        const result = await fetch(url)
+        if (result.status === 200) {
+          setHqUrl(url)
+        }
+      })()
     },
-    [entityId]
+    [entityId, accessHash, tgSessionString]
   )
   return hqUrl
 }
