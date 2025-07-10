@@ -1,3 +1,4 @@
+import { CID } from 'multiformats'
 import {
   DeleteDialogFromJob,
   DialogsById,
@@ -302,7 +303,24 @@ class Handler {
         console.log(
           `Deleting job ${request.jobID} because it has no dialogs left`
         )
-        await this.#db.deleteJob(request.jobID, this.#dbUser.id)
+        try {
+          const cid = CID.parse(job.data)
+          await this.storacha.remove(cid, { shards: true })
+          await this.#db.deleteJob(request.jobID, this.#dbUser.id)
+        } catch (err) {
+          // @ts-expect-error err.cause doesn't typecheck
+          const errorName = (err.cause.name || '') as string
+          if (errorName === 'UploadNotFound') {
+            console.warn(
+              `Upload not found ${job.data} for job ${request.jobID}, removing job from DB`
+            )
+          } else {
+            throw new Error(
+              `Failed to delete job ${request.jobID} with data ${job.data}`,
+              { cause: err }
+            )
+          }
+        }
       } else {
         // Removes the dialog's encrypted data from Storacha storage and creates a new backup root without the deleted dialog
         const newData = await Runner.deleteDialogFromBackup(

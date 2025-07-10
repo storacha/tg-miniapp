@@ -13,6 +13,7 @@ import * as SpaceBlob from '@storacha/capabilities/space/blob'
 import * as SpaceIndex from '@storacha/capabilities/space/index'
 import * as Upload from '@storacha/capabilities/upload'
 import * as Filecoin from '@storacha/capabilities/filecoin'
+import * as SSstore from '@storacha/capabilities/store'
 
 export interface Context {
   storacha: StorachaClient
@@ -49,8 +50,12 @@ class Store extends EventTarget implements JobStorage {
       this.#serverDID,
       [
         SpaceBlob.add.can,
+        SpaceBlob.remove.can,
         SpaceIndex.add.can,
         Upload.add.can,
+        Upload.remove.can,
+        Upload.get.can,
+        SSstore.remove.can,
         Filecoin.offer.can,
       ],
       { expiration: new Date(Date.now() + defaultDuration).getTime() }

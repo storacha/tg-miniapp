@@ -145,6 +145,7 @@ const backupDialog = async (
         }
 
         if (!dialogRoot) throw new Error('missing dialog root')
+        controller.close()
         return
       }
 
