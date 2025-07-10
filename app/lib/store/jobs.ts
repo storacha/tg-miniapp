@@ -6,6 +6,8 @@ import * as SpaceIndex from '@storacha/capabilities/space/index'
 import * as Upload from '@storacha/capabilities/upload'
 import * as Filecoin from '@storacha/capabilities/filecoin'
 import * as Usage from '@storacha/capabilities/usage'
+import { MAX_FREE_BYTES } from '../server/constants'
+import { formatBytes } from '../utils'
 
 export interface Context {
   storacha: StorachaClient
@@ -83,6 +85,44 @@ class Store extends EventTarget implements JobStorage {
 
   async add(dialogs: DialogsById, period: Period) {
     console.debug('job store adding job...')
+    try {
+      const space = this.#storacha.currentSpace()
+      if (!space) {
+        throw new Error('No space found. Try again.')
+      }
+      const now = new Date()
+      const usage = await this.#storacha.capability.usage.report(space?.did(), {
+        from: new Date(
+          now.getUTCFullYear(),
+          now.getUTCMonth() - 1,
+          now.getUTCDate(),
+          0,
+          0,
+          0,
+          0
+        ),
+        to: now,
+      })
+
+      const amountOfStorageUsed = Object.values(usage).reduce(
+        (sum, report) => sum + report.size.final,
+        0
+      )
+
+      if (amountOfStorageUsed >= MAX_FREE_BYTES) {
+        // ...or delete old backups
+        // i suppose we can add the phrase above when the delete feature is ready.
+        throw new Error(
+          `You have reached your ${formatBytes(MAX_FREE_BYTES)} free storage limit. Upgrade your account`
+        )
+      }
+    } catch (err) {
+      if ((err as Error)?.message?.includes('free storage limit')) {
+        throw err
+      }
+      console.warn('Could not check storage usage before job creation:', err)
+    }
+
     const job = await this.#jobClient.createJob({
       dialogs,
       period,

@@ -72,14 +72,6 @@ class Handler {
       console.error('Error while fetching usage report:', err)
     }
 
-    if (amountOfStorageUsed && amountOfStorageUsed >= MAX_FREE_BYTES) {
-      // ...or delete old backups
-      // i suppose we can add the phrase above when the delete feature is ready.
-      throw new Error(
-        `You have reached your ${formatBytes(MAX_FREE_BYTES)} free storage limit. Upgrade your account`
-      )
-    }
-
     const started = Date.now()
     const totalDialogs = Object.keys(dialogs).length
     let progress = 0
