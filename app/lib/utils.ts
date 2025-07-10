@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { MAX_FREE_BYTES } from './server/constants'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -100,6 +101,19 @@ export const cleanUndef = <T extends object>(obj: T): T => {
     }
   }
   return obj
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes <= 1024) return `${bytes}B`
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let i = -1
+  do {
+    bytes = bytes / 1024
+    i++
+  } while (bytes >= 1024 && i < units.length - 1)
+  {
+    return `${bytes.toFixed(2)}${units[i]}`
+  }
 }
 
 export const withCleanUndef =

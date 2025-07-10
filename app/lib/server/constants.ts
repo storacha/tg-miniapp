@@ -45,6 +45,8 @@ export const getServerConstants = () => {
   return cachedServerConstants
 }
 
+export const MAX_FREE_BYTES = 100 * 1024 * 1024
+
 let cachedServerIdentity: ed25519.Signer.Signer
 
 type DidWeb = `did:web:${string}`

@@ -28,6 +28,8 @@ import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { useError } from './error'
 import { getErrorMessage } from '@/lib/errorhandling'
 import { LRUCache } from 'lru-cache'
+import { MAX_FREE_BYTES } from '@/lib/server/constants'
+import { formatBytes } from '@/lib/utils'
 
 export interface Result<T> {
   items: T[]
@@ -286,7 +288,12 @@ export const Provider = ({
       } catch (error: any) {
         const msg = 'Error adding backup job!'
         console.error(msg, error)
-        setError(getErrorMessage(error), { title: msg })
+        const normalizedErrorMsg = error?.message?.includes(
+          formatBytes(MAX_FREE_BYTES)
+        )
+          ? `You’ve used up your ${formatBytes(MAX_FREE_BYTES)} free storage. Please upgrade to continue backing up your chats.`
+          : getErrorMessage(error)
+        setError(normalizedErrorMsg, { title: msg })
         return undefined
       }
     },

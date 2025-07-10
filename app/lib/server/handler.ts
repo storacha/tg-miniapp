@@ -3,8 +3,9 @@ import { Context as RunnerContext } from './runner'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
 import { CARMetadata } from '@storacha/ui-react'
-import { mRachaPointsPerByte } from './constants'
+import { MAX_FREE_BYTES, mRachaPointsPerByte } from './constants'
 import { SHARD_SIZE } from '@storacha/upload-client'
+import { formatBytes } from '../utils'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -43,6 +44,43 @@ class Handler {
       created,
       params: { space, dialogs, period },
     } = job
+
+    const now = new Date()
+    let amountOfStorageUsed: number | null = null
+    try {
+      const usage = await this.storacha.capability.usage.report(space, {
+        from: new Date(
+          now.getUTCFullYear(),
+          now.getUTCMonth() - 1,
+          now.getUTCDate(),
+          0,
+          0,
+          0,
+          0
+        ),
+        to: now,
+      })
+
+      for (const [_, report] of Object.entries(usage)) {
+        // i don't think we allow people to create or own multiple
+        // spaces for now in the TG mini app
+        // if it happens in the future, we should account for it.
+        amountOfStorageUsed = Object.values(usage).reduce(
+          (sum, report) => sum + report.size.final,
+          0
+        )
+      }
+    } catch (err) {
+      console.error('Error while fetching usage report:', err)
+    }
+
+    if (amountOfStorageUsed && amountOfStorageUsed >= MAX_FREE_BYTES) {
+      // ...or delete old backups
+      // i suppose we can add the phrase above when the delete feature is ready.
+      throw new Error(
+        `You have reached your ${formatBytes(MAX_FREE_BYTES)} free storage limit. Upgrade your account`
+      )
+    }
 
     const started = Date.now()
     const totalDialogs = Object.keys(dialogs).length
@@ -159,6 +197,14 @@ class Handler {
              * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
              */
             totalBytesUploaded += meta.size
+            if (
+              amountOfStorageUsed &&
+              amountOfStorageUsed + meta.size > MAX_FREE_BYTES
+            ) {
+              throw new Error(
+                `This backup would exceed your ${formatBytes(MAX_FREE_BYTES)}storage limit.`
+              )
+            }
             progress = totalBytesUploaded <= SHARD_SIZE ? 1 : progress
 
             await this.#db.updateJob(id, {
