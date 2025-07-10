@@ -1,4 +1,9 @@
-import { DeleteDialogFromJobRequest, ExecuteJobRequest, ToString } from '@/api'
+import {
+  DeleteDialogFromJobRequest,
+  DialogsById,
+  ExecuteJobRequest,
+  ToString,
+} from '@/api'
 import { Context as RunnerContext } from './runner'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
@@ -15,6 +20,23 @@ export const create = async (ctx: Context) => {
   return new Handler(ctx)
 }
 
+/**
+ * Handler is responsible for managing backup jobs and dialog operations within the Storacha Telegram Mini App.
+ *
+ * This class orchestrates the execution, progress tracking, and completion of backup jobs, as well as the deletion of dialogs from completed jobs.
+ * It interacts with the database, Telegram API, encryption utilities, and storage services to ensure reliable backup and restoration workflows.
+ *
+ * Key Responsibilities:
+ * - Initiates and monitors backup jobs, updating progress and handling cancellation or failure scenarios.
+ * - Calculates and updates job progress based on dialog and message retrieval, as well as storage shard uploads.
+ * - Awards user points based on the total data uploaded upon successful backup completion.
+ * - Allows deletion of specific dialogs from completed jobs, updating both storage and job metadata accordingly.
+ *
+ * Dependencies are injected via the constructor, including storage, Telegram, cipher, and database interfaces.
+ *
+ * @remarks
+ * This class is intended for server-side use within the Telegram Mini App workspace and assumes trusted access to user and job context.
+ */
 class Handler {
   storacha
   telegram
@@ -50,6 +72,7 @@ class Handler {
     let dialogsRetrieved = 0
     let totalBytesUploaded = 0
     const dialogPercentages: Record<ToString<bigint>, number> = {}
+    const dialogSizes: Record<ToString<bigint>, number> = {}
 
     const getDialogsCompleted = () => {
       return Object.values(dialogPercentages).reduce(
@@ -149,8 +172,16 @@ class Handler {
           }
         },
 
-        onShardStored: async (meta: CARMetadata) => {
+        onShardStored: async (
+          meta: CARMetadata,
+          dialogId?: ToString<bigint>
+        ) => {
           try {
+            if (dialogId) {
+              // this mean this shards are for a single dialog backup
+              dialogSizes[dialogId] = (dialogSizes[dialogId] || 0) + meta.size
+            }
+
             /**
              * Called as shards are uploaded to storage.
              * We calculate the total size uploaded so far
@@ -193,10 +224,27 @@ class Handler {
         `user ${this.#dbUser.id} points after backup: ${this.#dbUser.points}`
       )
 
+      const dialogsWithBackupInfo: DialogsById = {}
+      for (const [dialogId, dialogInfo] of Object.entries(dialogs)) {
+        const dialogSize = dialogSizes[dialogId] || 0
+        const dialogPoints = dialogSize * mRachaPointsPerByte
+
+        dialogsWithBackupInfo[dialogId] = {
+          ...dialogInfo,
+          backupInfo: {
+            size: dialogSize,
+            pointsEarned: dialogPoints,
+          },
+        }
+      }
+
       await this.#db.updateJob(id, {
         id,
         status: 'completed',
-        params,
+        params: {
+          ...job.params,
+          dialogs: dialogsWithBackupInfo,
+        },
         data: data.toString(),
         created,
         started,
@@ -219,31 +267,67 @@ class Handler {
     }
   }
 
+  /**
+   * Removes a dialog from a completed backup job and updates all related data structures.
+   *
+   * @param request - Contains jobID and dialogID for the dialog to be deleted
+   * @throws {Error} If the job is not found, not completed, or dialog doesn't exist in the job
+   *
+   * @remarks
+   * This is a destructive operation that permanently removes the dialog's backup data
+   * from storage. The dialog cannot be recovered after deletion. The method ensures
+   * data consistency by atomically updating both the storage layer and job metadata.
+   */
   async deleteDialogFromJob(request: DeleteDialogFromJobRequest) {
     const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
-    // check if job was cancelled
+
+    // Validates that the job exists and is in 'completed' status
     if (job.status != 'completed') {
       throw new Error(`job is not completed: ${request.jobID}`)
     }
+
     const { dialogs } = job.params
     if (!dialogs[request.dialogID]) {
       throw new Error(`dialog not found in job: ${request.dialogID}`)
     }
+
+    const pointsToSubtract =
+      dialogs[request.dialogID].backupInfo?.pointsEarned || 0
     delete dialogs[request.dialogID]
-    const newData = await Runner.deleteDialogFromBackup(
-      this,
-      request.dialogID,
-      job.data
-    )
-    await this.#db.updateJob(request.jobID, {
-      ...job,
-      params: {
-        ...job.params,
-        dialogs,
-      },
-      data: newData.toString(),
-      updated: Date.now(),
-    })
+
+    try {
+      // Removes the dialog's encrypted data from Storacha storage and creates a new backup root without the deleted dialog
+      const newData = await Runner.deleteDialogFromBackup(
+        this,
+        request.dialogID,
+        job.data
+      )
+
+      if (pointsToSubtract > 0) {
+        this.#dbUser = await this.#db.incrementUserPoints(
+          this.#dbUser.id,
+          -pointsToSubtract
+        )
+        console.log(
+          `Subtracted ${pointsToSubtract} points from user ${this.#dbUser.id}`
+        )
+      }
+
+      await this.#db.updateJob(request.jobID, {
+        ...job,
+        params: {
+          ...job.params,
+          dialogs, // update the dialogs in the job params
+        },
+        data: newData.toString(), // update the backup root with the new one
+        updated: Date.now(),
+      })
+    } catch (err) {
+      throw new Error(
+        `Failed to delete dialog ${request.dialogID} from job ${request.jobID}`,
+        { cause: err }
+      )
+    }
   }
 }

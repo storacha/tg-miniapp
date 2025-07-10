@@ -66,10 +66,9 @@ const MAX_DOCUMENT_SIZE = BigInt(10 * 1024 * 1024) // 10 MB
 const isDownloadableMedia = (media: Api.TypeMessageMedia): boolean => {
   return (
     media.className === 'MessageMediaPhoto' ||
-    media.className === 'MessageMediaDocument' // this can represent a video, audio or other document types
+    media.className === 'MessageMediaDocument' // this can represent a video, audio or other document type
   )
 }
-
 export interface Context {
   storacha: StorachaClient
   telegram: TelegramClient
@@ -89,7 +88,7 @@ export interface Options {
   /**
    * Called when a shard is stored, a dialog can have multiple shards.
    */
-  onShardStored?: (meta: CARMetadata) => unknown
+  onShardStored?: (meta: CARMetadata, dialogId?: ToString<bigint>) => unknown
 }
 
 const backupDialog = async (
@@ -101,9 +100,9 @@ const backupDialog = async (
   minMsgId: number | undefined,
   dialogMessageCount: number
 ) => {
-  let entities: EntityRecordData = {}
+  const entities: EntityRecordData = {}
   let messages: Array<MessageData | ServiceMessageData> = []
-  let messageLinks: Array<
+  const messageLinks: Array<
     Link<EncryptedTaggedByteView<Array<MessageData | ServiceMessageData>>>
   > = []
   let messagesSoFar = 0
@@ -248,12 +247,15 @@ const backupDialog = async (
           break
         }
       }
+
       messagesSoFar += messages.length
       await options?.onMessagesRetrieved?.(
         BigInt(dialogEntity.id.toString()),
         messagesSoFar / dialogMessageCount
       )
+
       console.log(`creating ${messages.length} messages`)
+
       let messagesRoot
       for await (const b of toAsyncIterable(
         createEncodeAndEncryptStream(dagCBOR, ctx.cipher, messages)
@@ -270,14 +272,18 @@ const backupDialog = async (
     },
   })
 
-  const root = await ctx.storacha.uploadCAR(
+  const dialogRoot = await ctx.storacha.uploadCAR(
     {
       stream: () => blockStream.pipeThrough(new CARWriterStream()),
     },
-    { onShardStored: options?.onShardStored }
+    {
+      onShardStored: (meta: CARMetadata) => {
+        options?.onShardStored?.(meta, dialogEntity.id)
+      },
+    }
   )
 
-  return root as Link<EncryptedTaggedByteView<DialogData>>
+  return dialogRoot as Link<EncryptedTaggedByteView<DialogData>>
 }
 
 const uploadRoot = async (
@@ -296,12 +302,14 @@ const uploadRoot = async (
       return
     },
   })
+
   const root = await ctx.storacha.uploadCAR(
     {
       stream: () => blockStream.pipeThrough(new CARWriterStream()),
     },
     { onShardStored: options?.onShardStored }
   )
+
   return root
 }
 
@@ -333,6 +341,11 @@ export const deleteDialogFromBackup = async (
   )) as BackupModel
   const dialogCid =
     decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogID]
+
+  if (!dialogCid) {
+    throw new Error(`Dialog with ID ${dialogID} not found in backup`)
+  }
+
   await ctx.storacha.remove(dialogCid, { shards: true })
   delete decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogID]
   return await uploadRoot(ctx, decryptedBackupRaw)
@@ -420,6 +433,7 @@ export const run = async (
         minId: minMsgId,
       })
       [Symbol.asyncIterator]()
+
     dialogDatas[dialogEntity.id.toString()] = await backupDialog(
       ctx,
       period,

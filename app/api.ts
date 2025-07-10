@@ -260,6 +260,10 @@ export interface DialogInfo extends EntityData {
   /** This is the entity ID + a prefix indicating the type of dialog */
   dialogId?: ToString<EntityID>
   accessHash?: string
+  backupInfo?: {
+    size: number
+    pointsEarned: number
+  }
 }
 
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>
