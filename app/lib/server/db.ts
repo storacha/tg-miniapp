@@ -105,6 +105,7 @@ export interface TGDatabase {
   rank(input: UserInput): Promise<Ranking | undefined>
   createJob(input: JobInput): Promise<Job>
   getJobByID(id: string, userId: string): Promise<Job>
+  deleteJob(id: string, userId: string): Promise<void>
   getJobsByUserID(userId: string): Promise<Job[]>
   updateJob(id: string, input: Job): Promise<Job>
   removeJob(id: string, userId: string): Promise<void>
@@ -127,7 +128,7 @@ export function getDB(): TGDatabase {
         select * from users
         where telegram_id = ${input.telegramId} and storacha_space = ${
           input.storachaSpace
-        } 
+        }
       `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
@@ -200,7 +201,7 @@ export function getDB(): TGDatabase {
         insert into jobs ${sql(
           // @ts-expect-error Uint8Array is automatically converted to object
           input
-        )} 
+        )}
         returning *
       `
       if (!results[0]) {
@@ -212,6 +213,13 @@ export function getDB(): TGDatabase {
         stringifyWithUIntArrays({ action: 'add', job })
       )
       return job
+    },
+    async deleteJob(id, userId) {
+      if (!id) return
+      await sql<DbJob[]>`
+        delete from jobs
+        where id = ${id} and user_id = ${userId}
+      `
     },
     async getJobByID(id, userId) {
       const results = await sql<DbJob[]>`

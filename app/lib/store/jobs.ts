@@ -1,5 +1,13 @@
 import { Client as StorachaClient } from '@storacha/ui-react'
-import { JobID, JobStorage, Period, JobClient, DialogsById } from '@/api'
+import {
+  JobID,
+  JobStorage,
+  Period,
+  JobClient,
+  DialogsById,
+  ToString,
+  EntityID,
+} from '@/api'
 import { Principal } from '@ipld/dag-ucan'
 import * as SpaceBlob from '@storacha/capabilities/space/blob'
 import * as SpaceIndex from '@storacha/capabilities/space/index'
@@ -90,6 +98,18 @@ class Store extends EventTarget implements JobStorage {
     this.target.dispatchEvent(new CustomEvent('add', { detail: job }))
     console.debug(`job store added job: ${job.id} status: ${job.status}`)
     return job
+  }
+
+  async deleteDialog(id: JobID, dialogID: ToString<EntityID>) {
+    console.debug('deleting job...')
+    const job = await this.#jobClient.deleteDialogFromJob({
+      jobID: id,
+      dialogID,
+      spaceDelegation: await this.#spaceDelegation(),
+      encryptionPassword: this.#encryptionPassword,
+    })
+    this.target.dispatchEvent(new CustomEvent('delete', { detail: job }))
+    console.debug(`job store deleted job: ${id}`)
   }
 
   async remove(id: JobID) {

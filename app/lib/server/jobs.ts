@@ -139,9 +139,11 @@ export const handleJob = async (request: ExecuteJobRequest) => {
 export const deleteDialogFromJob = async (
   request: DeleteDialogFromJobRequest
 ) => {
-  const handler = await initializeHandler(request)
+  const session = await getSession()
+  const req = { ...request, ...session }
+  const handler = await initializeHandler(req)
   try {
-    return await handler.deleteDialogFromJob(request)
+    return await handler.deleteDialogFromJob(req)
   } finally {
     handler.telegram.disconnect()
   }

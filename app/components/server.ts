@@ -23,6 +23,7 @@ import {
   listJobs as jobsListJob,
   removeJob as jobsRemoveJob,
   cancelJob as jobsCancelJob,
+  deleteDialogFromJob as jobsDeleteDialogFromJob,
 } from '@/lib/server/jobs'
 import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
@@ -73,6 +74,7 @@ export const findJob = toResultFn(jobsFindJob)
 export const listJobs = toResultFn(jobsListJob)
 export const removeJob = toResultFn(jobsRemoveJob)
 export const cancelJob = toResultFn(jobsCancelJob)
+export const deleteDialogFromJob = toResultFn(jobsDeleteDialogFromJob)
 
 const withClient = <T extends [...unknown[]], U>(
   fn: (client: TelegramClient, ...args: T) => Promise<U>
