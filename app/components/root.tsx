@@ -29,6 +29,7 @@ import {
   login,
   removeJob,
   cancelJob,
+  deleteDialogFromJob,
 } from './server'
 import { ErrorPage } from './error'
 import TelegramAuth from './telegram-auth'
@@ -176,6 +177,8 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
           listJobs: async (jr) => fromResult(await listJobs(jr)),
           removeJob: async (jr) => fromResult(await removeJob(jr)),
           cancelJob: async (jr) => fromResult(await cancelJob(jr)),
+          deleteDialogFromJob: async (jr) =>
+            fromResult(await deleteDialogFromJob(jr)),
         },
       })
       // setup a remove listener for async updates
