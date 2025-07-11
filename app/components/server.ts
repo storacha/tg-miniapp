@@ -10,7 +10,7 @@ import {
   Ranking,
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
-import { TelegramClient } from 'telegram'
+import { TelegramClient, Api } from 'telegram'
 import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
@@ -28,7 +28,6 @@ import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
 import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
-import { Api } from '@/vendor/telegram'
 import { clearSession } from '@/lib/server/session'
 
 const names = supervillains
@@ -218,7 +217,6 @@ export const getLeaderboard = toResultFn(
         nameIndex++
       }
 
-      console.log('ME?!?!?', id, me, me.id.toString())
       leaderboard.push({
         id,
         name,
