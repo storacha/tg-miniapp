@@ -15,7 +15,7 @@ export function useProfilePhoto(
       console.log('loading HQ for id ', entityId)
       ;(async function () {
         // session is required for this to work unless it's been cached
-        // but we keep it in a query param so that browsers with support for
+        // but we keep it in a query param rather than the URL so that browsers with support for
         // No-Vary-Search ignore it when considering whether to cache the image.
         const query: { access?: string; session: string } = {
           session: tgSessionString,
