@@ -178,20 +178,21 @@ class Handler {
           dialogId?: ToString<bigint>
         ) => {
           try {
-            if (dialogId) {
-              // this mean this shards are for a single dialog backup
-              dialogSizes[dialogId] = (dialogSizes[dialogId] || 0) + meta.size
-            }
-
-            /**
-             * Called as shards are uploaded to storage.
-             * We calculate the total size uploaded so far
-             * However, since we don't know the total size of the backup until all shards are uploaded,
-             * we don't upload the final progress until the last shard is stored.
-             * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
-             */
             totalBytesUploaded += meta.size
-            progress = totalBytesUploaded <= SHARD_SIZE ? 1 : progress
+
+            if (dialogId) {
+              // Dialog-level shard storage
+              dialogSizes[dialogId] = (dialogSizes[dialogId] || 0) + meta.size
+            } else {
+              /**
+               * Called as shards are uploaded to storage.
+               * We calculate the total size uploaded so far
+               * However, since we don't know the total size of the backup until all shards are uploaded,
+               * we don't upload the final progress until the last shard is stored.
+               * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
+               */
+              progress = totalBytesUploaded <= SHARD_SIZE ? 1 : progress
+            }
 
             await this.#db.updateJob(id, {
               id,
