@@ -207,7 +207,6 @@ export default function TelegramAuth() {
 
   useEffect(() => {
     const newClient = new TelegramClient(
-      // @ts-expect-error for some reason, it is expecting StringSession but string was supplied
       new StringSession(tgSessionString),
       apiId,
       apiHash,
@@ -277,7 +276,6 @@ export default function TelegramAuth() {
           throw new Error('login user and user using the app must match')
         }
       }
-      // @ts-expect-error needs Session. not 'string' | Session | undefined
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
       logTelegramLoginSuccess()
@@ -332,7 +330,6 @@ export default function TelegramAuth() {
           throw new Error('login user and user using the app must match')
         }
       }
-      // @ts-expect-error needs Session. not 'string' | Session | undefined
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

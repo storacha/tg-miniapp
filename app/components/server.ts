@@ -28,8 +28,8 @@ import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
 import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
+import { Api } from '@/vendor/telegram'
 import { clearSession } from '@/lib/server/session'
-import { Api } from 'telegram'
 
 const names = supervillains
   .map((value) => ({ value, sort: Math.random() }))
@@ -240,30 +240,6 @@ export const getRanking = toResultFn(
     ): Promise<Ranking | undefined> => {
       const id = await _getMe(client)
       return await getDB().rank({ telegramId: id, storachaSpace: space })
-    }
-  )
-)
-
-export const getHiResPhotoBlob = toResultFn(
-  withClient(
-    async (
-      client: TelegramClient,
-      id: string,
-      accessHash?: string
-    ): Promise<string | Buffer | undefined> => {
-      let entity
-      try {
-        entity = await client.getEntity(id)
-      } catch (e) {
-        console.error(e)
-        // there seem to be a few user entities that don't load properly using the code above
-        // but do load if we construct the Peer manually, so do that as a fallback
-        entity = new Api.InputPeerUser({
-          userId: bigInt(id),
-          accessHash: accessHash ? bigInt(accessHash) : bigInt(0),
-        })
-      }
-      return await client.downloadProfilePhoto(entity)
     }
   )
 )
