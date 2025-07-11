@@ -39,7 +39,7 @@ function useHighQualityProfilePhoto(
         })()
       }
     },
-    [entityId]
+    [entityId, accessHash, tgSessionString]
   )
   return hqUrl
 }
