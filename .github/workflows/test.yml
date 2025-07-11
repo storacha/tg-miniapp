@@ -1,6 +1,10 @@
 name: Test
 on:
-  workflow_call:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: [main]
 jobs:
   test:
     name: Test
@@ -11,5 +15,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/pnpm
+      - uses: ./.github/actions/env-setup
       - run: pnpm lint
+      - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm build
