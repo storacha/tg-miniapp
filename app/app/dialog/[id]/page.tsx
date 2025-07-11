@@ -57,8 +57,12 @@ export default function BackupSelectionPage() {
       console.log(
         `Deleting backup with ID: ${selectedBackup.id} and CID: ${selectedBackup.cid}`
       )
+      const onlyOne = dialogBackups.length === 1
       await deleteBackup(selectedBackup.id, id)
       console.log(`deletion completed`)
+      if (onlyOne) {
+        router.push('/')
+      }
     } catch (error) {
       console.error(error)
     } finally {

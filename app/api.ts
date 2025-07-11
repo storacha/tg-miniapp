@@ -263,16 +263,17 @@ export interface DialogData extends EntityData {
   messages: DialogDataMessages
 }
 
+export interface SizeRewardInfo {
+  size: number
+  points: number
+}
 export interface DialogInfo extends EntityData {
   initials: string
   isPublic: boolean
   /** This is the entity ID + a prefix indicating the type of dialog */
   dialogId?: ToString<EntityID>
   accessHash?: string
-  backupInfo?: {
-    size: number
-    pointsEarned: number
-  }
+  sizeRewardInfo?: SizeRewardInfo
 }
 
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>

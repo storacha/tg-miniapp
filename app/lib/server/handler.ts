@@ -233,9 +233,9 @@ class Handler {
 
         dialogsWithBackupInfo[dialogId] = {
           ...dialogInfo,
-          backupInfo: {
+          sizeRewardInfo: {
             size: dialogSize,
-            pointsEarned: dialogPoints,
+            points: dialogPoints,
           },
         }
       }
@@ -295,7 +295,7 @@ class Handler {
     }
 
     const pointsToSubtract =
-      dialogs[request.dialogID].backupInfo?.pointsEarned || 0
+      dialogs[request.dialogID].sizeRewardInfo?.points || 0
     delete dialogs[request.dialogID]
 
     try {
