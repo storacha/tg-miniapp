@@ -21,6 +21,7 @@ import { useBackups } from '@/providers/backup'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { ChatHeader } from '@/components/layouts/chat-header'
 import { Loading } from '@/components/ui/loading'
+import { useProfilePhoto } from '@/components/backup/useProfilePhoto'
 
 type BackupDialogProps = {
   userId: string
@@ -30,6 +31,7 @@ type BackupDialogProps = {
   mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
   onScrollBottom: () => Promise<void>
+  dialogThumbSrc: string
 }
 
 const formatTime = (timestamp: number) =>
@@ -147,6 +149,7 @@ function BackupDialog({
   isLoading,
   participants,
   onScrollBottom,
+  dialogThumbSrc,
 }: BackupDialogProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -172,13 +175,6 @@ function BackupDialog({
       }),
     [messages]
   )
-
-  let dialogThumbSrc = ''
-  if (dialog.photo?.strippedThumb) {
-    dialogThumbSrc = toJPGDataURL(
-      decodeStrippedThumb(dialog.photo?.strippedThumb)
-    )
-  }
 
   useEffect(() => {
     const handleScroll = async () => {
@@ -323,7 +319,7 @@ export default function Page() {
   const router = useRouter()
   const [{}, { getMe }] = useTelegram()
   const [
-    { restoredBackup },
+    { backups, restoredBackup },
     { restoreBackup, fetchMoreMessages, resetBackup },
   ] = useBackups()
   const { id, cid: backupCid } = useParams<{ id: string; cid: string }>()
@@ -332,12 +328,34 @@ export default function Page() {
   const [userId, setUserId] = useState<string>()
 
   const dialog = restoredBackup.item?.dialogData
-  let dialogThumbSrc = ''
+
+  // Find the DialogInfo from backup params to get dialogId and accessHash for high quality images
+  const dialogInfo = useMemo(() => {
+    if (!dialog || !backups.items.length) return null
+
+    const normalizedDialogId = getNormalizedEntityId(dialog.id, dialog.type)
+
+    // Find the backup job that created this backup
+    const relevantBackup = backups.items.find(
+      (backup) =>
+        backup.data === backupCid && backup.params.dialogs[normalizedDialogId]
+    )
+
+    return relevantBackup?.params.dialogs[normalizedDialogId] || null
+  }, [dialog, backups.items, backupCid])
+
+  let lqThumbSrc = ''
   if (restoredBackup.item?.dialogData.photo?.strippedThumb) {
-    dialogThumbSrc = toJPGDataURL(
+    lqThumbSrc = toJPGDataURL(
       decodeStrippedThumb(restoredBackup.item.dialogData.photo?.strippedThumb)
     )
   }
+
+  const hqThumbSrc = useProfilePhoto(
+    dialogInfo?.dialogId,
+    dialogInfo?.accessHash
+  )
+  const dialogThumbSrc = hqThumbSrc || lqThumbSrc
 
   const normalizedId = useMemo(
     () => getNormalizedEntityId(id, type),
@@ -397,6 +415,7 @@ export default function Page() {
           mediaMap={restoredBackup.item.mediaMap}
           participants={restoredBackup.item.participants}
           onScrollBottom={handleFetchMoreMessages}
+          dialogThumbSrc={dialogThumbSrc}
         />
       ) : (
         <>
