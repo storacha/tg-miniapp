@@ -34,8 +34,8 @@ export async function POST(request: Request) {
 
   const message = await request.json()
 
-  await handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
-  return Response.json({})
+  handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
+  return Response.json({}, { status: 202 })
 }
 
 export async function GET() {
