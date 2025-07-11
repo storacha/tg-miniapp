@@ -3,6 +3,9 @@ description: "Set up .env file"
 
 runs:
   using: "composite"
+  defaults:
+    run:
+      working-directory: ./app
   steps:
     - name: create .env from .env.tpl
       shell: bash
