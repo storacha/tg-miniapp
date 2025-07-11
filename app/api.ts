@@ -111,6 +111,10 @@ export interface CompletedJob extends BaseJob {
   status: 'completed'
   /** Link to the actual backup data. */
   data: string
+  /** Points the user earned with this job */
+  points: number
+  /** Total size in bytes */
+  size: number
   /** Timestamp of when this backup was started. */
   started: number
   /** Timestamp of when this backup completed successfully. */

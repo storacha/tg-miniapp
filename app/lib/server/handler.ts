@@ -248,6 +248,8 @@ class Handler {
           dialogs: dialogsWithBackupInfo,
         },
         data: data.toString(),
+        points: pointsEarned,
+        size: totalBytesUploaded,
         created,
         started,
         finished: Date.now(),
@@ -294,8 +296,8 @@ class Handler {
       throw new Error(`dialog not found in job: ${request.dialogID}`)
     }
 
-    const pointsToSubtract =
-      dialogs[request.dialogID].sizeRewardInfo?.points || 0
+    let pointsToSubtract = dialogs[request.dialogID].sizeRewardInfo?.points || 0
+    const dialogSize = dialogs[request.dialogID].sizeRewardInfo?.size || 0
     delete dialogs[request.dialogID]
 
     try {
@@ -308,6 +310,7 @@ class Handler {
           const cid = CID.parse(job.data)
           await this.storacha.remove(cid, { shards: true })
           await this.#db.deleteJob(request.jobID, this.#dbUser.id)
+          pointsToSubtract = job.points
         } catch (err) {
           // @ts-expect-error err.cause doesn't typecheck
           const errorName = (err.cause.name || '') as string
@@ -330,12 +333,17 @@ class Handler {
           job.data
         )
 
+        const points = job.points - pointsToSubtract
+        const size = job.size - dialogSize
+
         await this.#db.updateJob(request.jobID, {
           ...job,
           params: {
             ...job.params,
             dialogs, // update the dialogs in the job params
           },
+          points,
+          size,
           data: newData.toString(), // update the backup root with the new one
           updated: Date.now(),
         })

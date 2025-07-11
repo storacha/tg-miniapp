@@ -79,6 +79,8 @@ export interface DbJob {
   cause: string | null
   finishedAt: Date | null
   dataCid: string | null
+  points: number
+  size: number
   createdAt: Date
   updatedAt: Date
 }
@@ -94,6 +96,8 @@ type JobInput = Input<
   | 'cause'
   | 'finishedAt'
   | 'dataCid'
+  | 'points'
+  | 'size'
   | 'createdAt'
   | 'updatedAt'
 >
@@ -294,6 +298,8 @@ const toDbJobParams = (job: Job): DbJobParams => {
     cause: null,
     finishedAt: null,
     dataCid: null,
+    points: 0,
+    size: 0,
     createdAt: new Date(job.created),
     updatedAt: new Date(job.updated),
   }
@@ -330,6 +336,8 @@ const toDbJobParams = (job: Job): DbJobParams => {
         startedAt: new Date(job.started),
         finishedAt: new Date(job.finished),
         dataCid: job.data,
+        points: job.points ?? 0,
+        size: job.size ?? 0,
       }
   }
 }
@@ -429,6 +437,8 @@ const fromDbJob = (dbJob: DbJob): Job => {
         started: dbJob.startedAt.getTime(),
         finished: dbJob.finishedAt.getDate(),
         data: dbJob.dataCid,
+        points: dbJob.points,
+        size: dbJob.size,
       }
   }
 }
