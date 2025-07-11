@@ -1,6 +1,42 @@
-import { getHiResPhotoBlob } from '@/components/server'
-
+import bigInt from 'big-integer'
+import { Api, TelegramClient } from 'telegram'
 import { NextRequest } from 'next/server'
+
+import { Result } from '@ucanto/client'
+import { getTelegramClient } from '@/lib/server/telegram-manager'
+
+async function tryHardToFetchEntity(
+  client: TelegramClient,
+  id: string,
+  accessHash?: string
+) {
+  try {
+    return await client.getEntity(id)
+  } catch {
+    // there seem to be a few user entities that don't load properly using the code above
+    // but do load if we construct the Peer manually, so do that as a fallback
+    return new Api.InputPeerUser({
+      userId: bigInt(id),
+      accessHash: accessHash ? bigInt(accessHash) : bigInt(0),
+    })
+  }
+}
+
+async function getHiResPhotoBlob(
+  sessionString: string,
+  id: string,
+  accessHash?: string
+): Promise<Result<string | Buffer | undefined>> {
+  try {
+    const client = await getTelegramClient(sessionString)
+    const entity = await tryHardToFetchEntity(client, id, accessHash)
+    return { ok: await client.downloadProfilePhoto(entity) }
+  } catch (e) {
+    // @ts-expect-error e has no type, ignore
+    const message = e.message
+    return { error: { message } }
+  }
+}
 
 export async function GET(
   request: NextRequest,
