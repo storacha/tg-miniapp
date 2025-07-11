@@ -10,6 +10,7 @@
     "lint": "next lint",
     "format": "prettier --write .",
     "test": "pnpm lint",
+    "typecheck": "tsc --noEmit",
     "db:migrate": "node ./scripts/migrate.mjs",
     "db:dev:console": "psql --username admin --password tg_backups_dev",
     "pages:build": "npx @cloudflare/next-on-pages",

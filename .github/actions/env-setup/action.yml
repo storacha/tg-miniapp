@@ -1,0 +1,11 @@
+name: env-setup
+description: "Set up .env file"
+
+runs:
+  using: "composite"
+  steps:
+    - name: create .env from .env.tpl
+      shell: bash
+      run: |
+        cp app/.env.tpl app/.env
+        echo "NEXT_PUBLIC_SERVER_DID='did:key:z6Mkk89bC3JrVqKie71YEcc5M1SMVxuCgNx6zLZ8SYJsxALi'" >> app/.env
