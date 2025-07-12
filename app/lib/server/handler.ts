@@ -2,9 +2,9 @@ import { ExecuteJobRequest, ToString } from '@/api'
 import { Context as RunnerContext } from './runner'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
-import { CARMetadata } from '@storacha/ui-react'
 import { mRachaPointsPerByte } from './constants'
 import { SHARD_SIZE } from '@storacha/upload-client'
+import { logJobEvent } from './logger'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -77,7 +77,16 @@ class Handler {
         progress: 0,
         updated: Date.now(),
       })
-
+      const correlationId = (request as { correlationId?: string })?.correlationId;
+      logJobEvent({
+        level: 'info',
+        jobId: id,
+        userId: this.#dbUser.id,
+        step: 'jobStart',
+        phase: 'init',
+        correlationId,
+        message: 'Job started',
+      })
       const data = await Runner.run(this, space, dialogs, period, {
         /**
          * Called when a dialog entity is created and ready for processing
@@ -89,13 +98,21 @@ class Handler {
               this.#dbUser.id
             )
             if (currentJob?.status === 'canceled') {
-              console.warn(`Job ${id} was canceled`)
+              // Job was canceled before dialog retrieval completed
+              logJobEvent({
+                level: 'warn',
+                jobId: id,
+                userId: this.#dbUser.id,
+                step: 'onDialogRetrieved',
+                phase: 'processing',
+                correlationId,
+                dialogId: dialogId.toString(),
+                message: 'Job was canceled during dialog retrieval',
+              })
               return
             }
-
             dialogsRetrieved++
             progress = getDialogsProgress()
-
             await this.#db.updateJob(id, {
               id,
               status: 'running',
@@ -105,14 +122,32 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+            logJobEvent({
+              level: 'info',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onDialogRetrieved',
+              phase: 'processing',
+              correlationId,
+              dialogId: dialogId.toString(),
+              message: 'Dialog retrieved',
+              progress,
+            })
           } catch (err) {
-            console.error(
-              `Error updating progress during dialog ${dialogId.toString()} retrieval:`,
-              err
-            )
+            // Error occurred while updating progress during dialog retrieval
+            logJobEvent({
+              level: 'error',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onDialogRetrieved',
+              phase: 'processing',
+              correlationId,
+              dialogId: dialogId.toString(),
+              message: 'Error updating progress during dialog retrieval',
+              error: err instanceof Error ? err.message : String(err),
+            })
           }
         },
-
         /**
          * Called when all messages for a dialog have been retrieved
          */
@@ -123,15 +158,32 @@ class Handler {
               this.#dbUser.id
             )
             if (currentJob?.status === 'canceled') {
-              console.warn(`Job ${id} was canceled`)
+              // Job was canceled before messages retrieval completed
+              logJobEvent({
+                level: 'warn',
+                jobId: id,
+                userId: this.#dbUser.id,
+                step: 'onMessagesRetrieved',
+                phase: 'processing',
+                correlationId,
+                dialogId: dialogId.toString(),
+                message: 'Job was canceled during messages retrieval',
+              })
               return
             }
-            console.log(
-              `Dialog ${dialogId.toString()} percentage retrieved: ${(percentage * 100).toFixed(2)}%`
-            )
+            logJobEvent({
+              level: 'info',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onMessagesRetrieved',
+              phase: 'processing',
+              correlationId,
+              dialogId: dialogId.toString(),
+              message: 'Dialog percentage retrieved',
+              percentage,
+            })
             dialogPercentages[dialogId.toString()] = percentage
             progress = getDialogsProgress()
-
             await this.#db.updateJob(id, {
               id,
               status: 'running',
@@ -141,15 +193,37 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+            logJobEvent({
+              level: 'info',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onMessagesRetrieved',
+              phase: 'processing',
+              correlationId,
+              dialogId: dialogId.toString(),
+              message: 'Messages retrieved for dialog',
+              progress,
+            })
           } catch (err) {
-            console.error(
-              `Error updating progress during messages retried for dialog ${dialogId.toString()}:`,
-              err
-            )
+            // Error occurred while updating progress during messages retrieval
+            logJobEvent({
+              level: 'error',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onMessagesRetrieved',
+              phase: 'processing',
+              correlationId,
+              dialogId: dialogId.toString(),
+              message: 'Error updating progress during messages retrieval',
+              error: err instanceof Error ? err.message : String(err),
+            })
           }
         },
-
-        onShardStored: async (meta: CARMetadata) => {
+        /**
+         * Called after all messages have been retrieved for all dialogs.
+         * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
+         */
+        onShardStored: async (meta) => {
           try {
             /**
              * Called as shards are uploaded to storage.
@@ -160,7 +234,6 @@ class Handler {
              */
             totalBytesUploaded += meta.size
             progress = totalBytesUploaded <= SHARD_SIZE ? 1 : progress
-
             await this.#db.updateJob(id, {
               id,
               status: 'running',
@@ -170,29 +243,59 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+            logJobEvent({
+              level: 'info',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onShardStored',
+              phase: 'finalizing',
+              correlationId,
+              message: 'Shard stored',
+              meta,
+              progress,
+            })
           } catch (err) {
-            console.error('Error updating progress during shard storage:', err)
+            // Error occurred while updating progress during shard storage
+            logJobEvent({
+              level: 'error',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onShardStored',
+              phase: 'finalizing',
+              correlationId,
+              message: 'Error updating progress during shard storage',
+              error: err instanceof Error ? err.message : String(err),
+            })
           }
         },
       })
-
       // Only award points after successful backup completion
       const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
-      console.log(
-        `user ${this.#dbUser.id} total size uploaded: ${totalBytesUploaded} bytes, points earned: ${pointsEarned}`
-      )
-
-      console.log(
-        `user ${this.#dbUser.id} points before backup: ${this.#dbUser.points}`
-      )
+      logJobEvent({
+        level: 'info',
+        jobId: id,
+        userId: this.#dbUser.id,
+        step: 'jobPointsAward',
+        phase: 'finalizing',
+        correlationId,
+        message: 'Points awarded after backup',
+        pointsEarned,
+        totalBytesUploaded,
+      })
       this.#dbUser = await this.#db.incrementUserPoints(
         this.#dbUser.id,
         pointsEarned
       )
-      console.log(
-        `user ${this.#dbUser.id} points after backup: ${this.#dbUser.points}`
-      )
-
+      logJobEvent({
+        level: 'info',
+        jobId: id,
+        userId: this.#dbUser.id,
+        step: 'jobComplete',
+        phase: 'complete',
+        correlationId,
+        message: 'Job completed',
+        points: this.#dbUser.points,
+      })
       await this.#db.updateJob(id, {
         id,
         status: 'completed',
@@ -204,7 +307,18 @@ class Handler {
         updated: Date.now(),
       })
     } catch (err) {
-      console.error('backup failed', err)
+      // Backup job failed
+      const correlationId = (request as { correlationId?: string })?.correlationId;
+      logJobEvent({
+        level: 'error',
+        jobId: id,
+        userId: this.#dbUser.id,
+        step: 'jobFailed',
+        phase: 'error',
+        correlationId,
+        message: 'Backup job failed',
+        error: err instanceof Error ? err.message : String(err),
+      })
       await this.#db.updateJob(id, {
         id,
         status: 'failed',
