@@ -10,6 +10,7 @@ import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { useGlobal } from '@/zustand/global'
 import { getRanking } from '../server'
 import { useError } from '@/providers/error'
+import { useBackups } from '@/providers/backup'
 
 export default function Head() {
   const router = useRouter()
@@ -17,21 +18,29 @@ export default function Head() {
   const { tgSessionString, space } = useGlobal()
   const [ranking, setRanking] = useState<Ranking | undefined>()
   const { setError } = useError()
+  const [{ backups }] = useBackups()
 
-  useEffect(() => {
-    if (!space) {
-      return
+  const fetchRanking = async () => {
+    if (!space) return
+
+    try {
+      const ranking = fromResult(await getRanking(tgSessionString, space))
+      setRanking(ranking)
+    } catch (error) {
+      setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
+      setRanking(undefined)
     }
-    ;(async () => {
-      try {
-        const ranking = fromResult(await getRanking(tgSessionString, space))
-        setRanking(ranking)
-      } catch (error) {
-        setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
-        setRanking(undefined)
-      }
-    })()
+  }
+
+  // Initial fetch
+  useEffect(() => {
+    fetchRanking()
   }, [tgSessionString, space])
+
+  // Listen for backup changes
+  useEffect(() => {
+    fetchRanking()
+  }, [backups.items]) // Refetch when backups change
 
   return (
     <div className="bg-background rounded-sm">

@@ -7,6 +7,7 @@ import {
   RemoveJobRequest,
   LoginRequest,
   CancelJobRequest,
+  DeleteDialogFromJobRequest,
 } from '@/api'
 import { Delegation, DID, Signer } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
@@ -130,6 +131,19 @@ export const handleJob = async (request: ExecuteJobRequest) => {
   const handler = await initializeHandler(request)
   try {
     return await handler.handleJob(request)
+  } finally {
+    handler.telegram.disconnect()
+  }
+}
+
+export const deleteDialogFromJob = async (
+  request: DeleteDialogFromJobRequest
+) => {
+  const session = await getSession()
+  const req = { ...request, ...session }
+  const handler = await initializeHandler(req)
+  try {
+    return await handler.deleteDialogFromJob(req)
   } finally {
     handler.telegram.disconnect()
   }
