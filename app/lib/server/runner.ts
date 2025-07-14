@@ -340,15 +340,14 @@ export const deleteDialogFromBackup = async (
     dagCBOR,
     encryptedBackupRaw
   )) as BackupModel
-  const dialogCid =
-    decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogID]
+  const dialogCid = decryptedBackupRaw[versionTag].dialogs[dialogID]
 
   if (!dialogCid) {
     throw new Error(`Dialog with ID ${dialogID} not found in backup`)
   }
 
   await ctx.storacha.remove(dialogCid, { shards: true })
-  delete decryptedBackupRaw['tg-miniapp-backup@0.0.1'].dialogs[dialogID]
+  delete decryptedBackupRaw[versionTag].dialogs[dialogID]
   return await uploadRoot(ctx, decryptedBackupRaw)
 }
 
