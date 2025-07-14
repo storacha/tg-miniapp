@@ -38,6 +38,9 @@ yarn-error.log*
 scripts/db-tunnel/prod
 scripts/db-tunnel/staging
 
+# Claude!
+.claude
+
 # Misc
 .DS_Store
 *.pem
