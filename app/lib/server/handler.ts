@@ -31,22 +31,8 @@ class Handler {
     this.#dbUser = dbUser
   }
 
-  async handleJob(request: ExecuteJobRequest) {
-    const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
-    if (!job) throw new Error(`job not found: ${request.jobID}`)
-    // check if job was cancelled
-    if (job.status != 'queued') {
-      return
-    }
-    const {
-      id,
-      params,
-      created,
-      params: { space, dialogs, period },
-    } = job
-
+  async getStorachaUsage(space: `did:key:${string}`): Promise<number | null> {
     const now = new Date()
-    let amountOfStorageUsed: number | null = null
     try {
       const usage = await this.storacha.capability.usage.report(space, {
         from: new Date(
@@ -64,14 +50,33 @@ class Handler {
       // i don't think we allow people to create or own multiple
       // spaces for now in the TG mini app
       // if it happens in the future, we should account for it.
-      amountOfStorageUsed = Object.values(usage).reduce(
+      return Object.values(usage).reduce(
         (sum, report) => sum + report.size.final,
         0
       )
     } catch (err) {
       console.error('Error while fetching usage report:', err)
+      throw new Error(`Failed to fetch usage report.`, { cause: err })
     }
+  }
 
+  async handleJob(request: ExecuteJobRequest) {
+    const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
+    if (!job) throw new Error(`job not found: ${request.jobID}`)
+    // check if job was cancelled
+    if (job.status != 'queued') {
+      return
+    }
+    const {
+      id,
+      params,
+      created,
+      params: { space, dialogs, period },
+    } = job
+
+    // Track errors from the onShardStored callback.
+    // Note: Throwing inside onShardStored does not halt the backup process, so we record any errors here for later handling.
+    let onShardStoredError: Error | null = null
     const started = Date.now()
     const totalDialogs = Object.keys(dialogs).length
     let progress = 0
@@ -112,6 +117,7 @@ class Handler {
          */
         onDialogRetrieved: async (dialogId) => {
           try {
+            if (onShardStoredError) throw onShardStoredError
             const currentJob = await this.#db.getJobByID(
               request.jobID,
               this.#dbUser.id
@@ -138,6 +144,10 @@ class Handler {
               `Error updating progress during dialog ${dialogId.toString()} retrieval:`,
               err
             )
+            throw new Error(
+              `Failed to retrieve dialog ${dialogId.toString()}.`,
+              { cause: err }
+            )
           }
         },
 
@@ -146,6 +156,8 @@ class Handler {
          */
         onMessagesRetrieved: async (dialogId, percentage) => {
           try {
+            if (onShardStoredError) throw onShardStoredError
+
             const currentJob = await this.#db.getJobByID(
               request.jobID,
               this.#dbUser.id
@@ -174,11 +186,30 @@ class Handler {
               `Error updating progress during messages retried for dialog ${dialogId.toString()}:`,
               err
             )
+            throw new Error(
+              `Failed to retrieve messages for dialog ${dialogId.toString()}.`,
+              { cause: err }
+            )
           }
         },
 
         onShardStored: async (meta: CARMetadata) => {
           try {
+            const amountOfStorageUsed = await this.getStorachaUsage(space)
+            if (
+              amountOfStorageUsed &&
+              amountOfStorageUsed + meta.size > MAX_FREE_BYTES
+            ) {
+              console.warn(
+                `Backup for user ${this.#dbUser.id} would exceed storage limit: ${formatBytes(
+                  amountOfStorageUsed + meta.size
+                )} > ${formatBytes(MAX_FREE_BYTES)}`
+              )
+              onShardStoredError = new Error(
+                `This backup would exceed your ${formatBytes(MAX_FREE_BYTES)} storage limit.`
+              )
+            }
+
             /**
              * Called as shards are uploaded to storage.
              * We calculate the total size uploaded so far
@@ -187,14 +218,6 @@ class Handler {
              * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
              */
             totalBytesUploaded += meta.size
-            if (
-              amountOfStorageUsed &&
-              amountOfStorageUsed + meta.size > MAX_FREE_BYTES
-            ) {
-              throw new Error(
-                `This backup would exceed your ${formatBytes(MAX_FREE_BYTES)}storage limit.`
-              )
-            }
             progress = totalBytesUploaded <= SHARD_SIZE ? 1 : progress
 
             await this.#db.updateJob(id, {
@@ -208,9 +231,16 @@ class Handler {
             })
           } catch (err) {
             console.error('Error updating progress during shard storage:', err)
+            if (onShardStoredError) {
+              // TODO: this does not halt the upload process, it still uploads the shards
+              throw onShardStoredError
+            }
           }
         },
       })
+
+      // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
+      if (onShardStoredError) throw onShardStoredError
 
       // Only award points after successful backup completion
       const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
