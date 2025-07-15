@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.7.0](https://github.com/storacha/tg-miniapp/compare/v2.6.0...v2.7.0) (2025-07-15)
+
+
+### Features
+
+* stop backup when people exceed the free storage limit ([b7e9976](https://github.com/storacha/tg-miniapp/commit/b7e9976dcc0ed35b1b226d461fb12eb982f2c4b5))
+
+
+### Bug Fixes
+
+* add missing usage check on onShardStored ([e0a681d](https://github.com/storacha/tg-miniapp/commit/e0a681d6789821107fbb9bca9f10dfe3f91b1939))
+
 ## [2.6.0](https://github.com/storacha/tg-miniapp/compare/v2.5.0...v2.6.0) (2025-07-14)
 
 ### Features
