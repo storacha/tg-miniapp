@@ -6,7 +6,8 @@ import { useBackups } from '@/providers/backup'
 import { useGlobal } from '@/zustand/global'
 import { formatBytes } from '@/lib/utils'
 import { useState, useEffect } from 'react'
-import { MAX_FREE_BYTES } from '@/lib/server/constants'
+import { useError } from '@/providers/error'
+import { getErrorMessage } from '@/lib/errorhandling'
 
 export interface SummaryProps {
   chats: DialogsById
@@ -30,6 +31,7 @@ export const Summary = ({
   const [{ jobsReady }, {}] = useBackups()
   const [{ client }] = useStoracha()
   const { space } = useGlobal()
+  const { setError } = useError()
   const chatsLength = Object.keys(chats).length
 
   useEffect(() => {
@@ -58,7 +60,9 @@ export const Summary = ({
         )
         setStorageUsed(total)
       } catch (err) {
-        console.error('Failed to fetch storage usage:', err)
+        const title = 'Failed to fetch storage usage'
+        console.error(title, err)
+        setError(getErrorMessage(err), { title })
       }
     }
 
@@ -74,8 +78,7 @@ export const Summary = ({
         <p className="text-sm">Check the details before we start.</p>
         {typeof storageUsed === 'number' && (
           <p className="text-center text-sm text-muted-foreground">
-            You have used {formatBytes(storageUsed)} of your free{' '}
-            {formatBytes(MAX_FREE_BYTES)} storage.
+            Total storage usage: {formatBytes(storageUsed)}
           </p>
         )}
       </div>

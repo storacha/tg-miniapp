@@ -53,20 +53,7 @@ class Handler {
     this.#dbUser = dbUser
   }
 
-  async handleJob(request: ExecuteJobRequest) {
-    const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
-    if (!job) throw new Error(`job not found: ${request.jobID}`)
-    // check if job was cancelled
-    if (job.status != 'queued') {
-      return
-    }
-    const {
-      id,
-      params,
-      created,
-      params: { space, dialogs, period },
-    } = job
-
+  async getStorachaUsage(space: `did:key:${string}`): Promise<number | null> {
     const now = new Date()
     try {
       const usage = await this.storacha.capability.usage.report(space, {
@@ -91,8 +78,27 @@ class Handler {
       )
     } catch (err) {
       console.error('Error while fetching usage report:', err)
+      throw new Error(`Failed to fetch usage report.`, { cause: err })
     }
+  }
 
+  async handleJob(request: ExecuteJobRequest) {
+    const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
+    if (!job) throw new Error(`job not found: ${request.jobID}`)
+    // check if job was cancelled
+    if (job.status != 'queued') {
+      return
+    }
+    const {
+      id,
+      params,
+      created,
+      params: { space, dialogs, period },
+    } = job
+
+    // Track errors from the onShardStored callback.
+    // Note: Throwing inside onShardStored does not halt the backup process, so we record any errors here for later handling.
+    let onShardStoredError: Error | null = null
     const started = Date.now()
     const totalDialogs = Object.keys(dialogs).length
     let progress = 0
@@ -134,6 +140,7 @@ class Handler {
          */
         onDialogRetrieved: async (dialogId) => {
           try {
+            if (onShardStoredError) throw onShardStoredError
             const currentJob = await this.#db.getJobByID(
               request.jobID,
               this.#dbUser.id
@@ -160,6 +167,10 @@ class Handler {
               `Error updating progress during dialog ${dialogId.toString()} retrieval:`,
               err
             )
+            throw new Error(
+              `Failed to retrieve dialog ${dialogId.toString()}.`,
+              { cause: err }
+            )
           }
         },
 
@@ -168,6 +179,8 @@ class Handler {
          */
         onMessagesRetrieved: async (dialogId, percentage) => {
           try {
+            if (onShardStoredError) throw onShardStoredError
+
             const currentJob = await this.#db.getJobByID(
               request.jobID,
               this.#dbUser.id
@@ -195,6 +208,10 @@ class Handler {
             console.error(
               `Error updating progress during messages retried for dialog ${dialogId.toString()}:`,
               err
+            )
+            throw new Error(
+              `Failed to retrieve messages for dialog ${dialogId.toString()}.`,
+              { cause: err }
             )
           }
         },
@@ -231,9 +248,16 @@ class Handler {
             })
           } catch (err) {
             console.error('Error updating progress during shard storage:', err)
+            if (onShardStoredError) {
+              // TODO: this does not halt the upload process, it still uploads the shards
+              throw onShardStoredError
+            }
           }
         },
       })
+
+      // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
+      if (onShardStoredError) throw onShardStoredError
 
       // Only award points after successful backup completion
       const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
