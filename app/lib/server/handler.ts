@@ -98,6 +98,7 @@ class Handler {
 
     // Track errors from the onShardStored callback.
     // Note: Throwing inside onShardStored does not halt the backup process, so we record any errors here for later handling.
+    /* eslint-disable-next-line prefer-const */
     let onShardStoredError: Error | null = null
     const started = Date.now()
     const totalDialogs = Object.keys(dialogs).length
