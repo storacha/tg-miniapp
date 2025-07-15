@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.8.0](https://github.com/storacha/tg-miniapp/compare/v2.7.0...v2.8.0) (2025-07-15)
+
+
+### Features
+
+* set app name to avoid showing pricing table in email ([1878c0a](https://github.com/storacha/tg-miniapp/commit/1878c0a79770a62127fd86f729545d14cb61aa12))
+
 ## [2.7.0](https://github.com/storacha/tg-miniapp/compare/v2.6.0...v2.7.0) (2025-07-15)
 
 
