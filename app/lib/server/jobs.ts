@@ -28,7 +28,7 @@ import { extract } from '@ucanto/core/delegation'
 import { getTelegramClient } from './telegram-manager'
 import { getDB } from './db'
 import { getSession } from './session'
-import { logJobEvent } from './logger'
+import { createLogger } from './logger'
 
 export const login = async (request: LoginRequest) => {
   validateInitData(request.telegramAuth.initData, getBotToken())
@@ -42,6 +42,7 @@ export const createJob = async (
   request: CreateJobRequest,
   queueFn: (jr: ExecuteJobRequest) => Promise<void>
 ) => {
+  const logger = createLogger()
   const session = await getSession()
   const telegramId = getTelegramId(session.telegramAuth)
   const db = getDB()
@@ -63,13 +64,11 @@ export const createJob = async (
     telegramAuth: session.telegramAuth,
     jobID: job.id,
   })
-  logJobEvent({
-    level: 'info',
+  logger.info('Job created and queued', {
     jobId: job.id,
     userId: dbUser.id,
     step: 'createJob',
     phase: 'init',
-    message: `Job created and queued`,
     status: job.status,
   })
   return job
@@ -106,28 +105,25 @@ export const removeJob = async (request: RemoveJobRequest) => {
     telegramId: telegramId.toString(),
   })
   const job = await db.getJobByID(request.jobID, dbUser.id)
+  const logger = createLogger({ jobId: job.id, userId: dbUser.id })
+
   if (job.status == 'running') {
-    logJobEvent({
-      level: 'warn',
-      jobId: job.id,
-      userId: dbUser.id,
+    logger.warn('Attempted to remove running job', {
       step: 'removeJob',
       phase: 'processing',
-      message: 'Attempted to remove running job',
       status: job.status,
     })
     throw new Error('job is already running')
   }
+
   await db.removeJob(request.jobID, dbUser.id)
-  logJobEvent({
-    level: 'info',
-    jobId: job.id,
-    userId: dbUser.id,
+
+  logger.info('Job removed', {
     step: 'removeJob',
     phase: 'processing',
-    message: `Job removed`,
     status: job.status,
   })
+
   return job
 }
 
@@ -140,21 +136,21 @@ export const cancelJob = async (request: CancelJobRequest) => {
     telegramId: telegramId.toString(),
   })
   const job = await db.getJobByID(request.jobID, dbUser.id)
+  const logger = createLogger({ jobId: job.id, userId: dbUser.id })
+
   await db.updateJob(request.jobID, {
     ...job,
     status: 'canceled',
     updated: Date.now(),
     finished: Date.now(),
   })
-  logJobEvent({
-    level: 'info',
-    jobId: job.id,
-    userId: dbUser.id,
+
+  logger.info('Job canceled', {
     step: 'cancelJob',
-    phase: 'processing',
-    message: `Job canceled`,
-    status: 'canceled',
+    phase: 'completed',
+    status: job.status,
   })
+
   return job
 }
 
