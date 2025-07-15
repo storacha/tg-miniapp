@@ -47,3 +47,6 @@ LOCAL_URL=http://localhost:3000
 NEXT_PUBLIC_HUMANODE_AUTH_URL=https://auth.demo-storacha-2025-03-31.oauth2.humanode.io/oauth2/auth
 NEXT_PUBLIC_HUMANODE_CLIENT_ID=e9756297-b2d1-4bbe-a139-a9ad1cdc43ee
 NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL=https://staging.up.web3.storage/oauth/humanode/callback
+
+NEXT_PUBLIC_STRIPE_PRICING_TABLE_ID=prctbl_1RjOGxF6A5ufQX5vx64EJkEz
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51LO87hF6A5ufQX5viNsPTbuErzfavdrEFoBuaJJPfoIhzQXdOUdefwL70YewaXA32ZrSRbK4U4fqebC7SVtyeNcz00qmgNgueC
