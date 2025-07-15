@@ -8,10 +8,12 @@ import {
 import { Context as RunnerContext } from './runner'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
+import { CARMetadata } from '@storacha/ui-react'
 import { MAX_FREE_BYTES, mRachaPointsPerByte } from './constants'
 import { SHARD_SIZE } from '@storacha/upload-client'
 import { formatBytes } from '../utils'
 import { logJobEvent } from './logger'
+import { getErrorMessage } from '../errorhandling'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -135,7 +137,8 @@ class Handler {
         progress: 0,
         updated: Date.now(),
       })
-      const correlationId = (request as { correlationId?: string })?.correlationId;
+      const correlationId = (request as { correlationId?: string })
+        ?.correlationId
       logJobEvent({
         level: 'info',
         jobId: id,
@@ -203,7 +206,7 @@ class Handler {
               correlationId,
               dialogId: dialogId.toString(),
               message: 'Error updating progress during dialog retrieval',
-              error: err instanceof Error ? err.message : String(err),
+              error: getErrorMessage(err),
             })
             throw new Error(
               `Failed to retrieve dialog ${dialogId.toString()}.`,
@@ -236,11 +239,22 @@ class Handler {
               })
               return
             }
-            console.log(
-              `Dialog ${dialogId.toString()} percentage retrieved: ${(percentage * 100).toFixed(2)}%`
-            )
+
             dialogPercentages[dialogId.toString()] = percentage
             progress = getDialogsProgress()
+
+            logJobEvent({
+              level: 'info',
+              jobId: id,
+              userId: this.#dbUser.id,
+              step: 'onMessagesRetrieved',
+              phase: 'processing',
+              correlationId,
+              dialogId: dialogId.toString(),
+              message: `Dialog message retrieval progress: ${(percentage * 100).toFixed(2)}%`,
+              progress,
+            })
+
             await this.#db.updateJob(id, {
               id,
               status: 'running',
@@ -250,6 +264,7 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+
             logJobEvent({
               level: 'info',
               jobId: id,
@@ -272,7 +287,7 @@ class Handler {
               correlationId,
               dialogId: dialogId.toString(),
               message: 'Error updating progress during messages retrieval',
-              error: err instanceof Error ? err.message : String(err),
+              error: getErrorMessage(err),
             })
             throw new Error(
               `Failed to retrieve messages for dialog ${dialogId.toString()}.`,
@@ -280,7 +295,7 @@ class Handler {
             )
           }
         },
-      
+
         onShardStored: async (
           meta: CARMetadata,
           dialogId?: ToString<bigint>
@@ -325,6 +340,7 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+
             logJobEvent({
               level: 'info',
               jobId: id,
@@ -359,8 +375,26 @@ class Handler {
       // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
       if (onShardStoredError) throw onShardStoredError
 
+
+      logJobEvent({
+        level: 'info',
+        jobId: id,
+        userId: this.#dbUser.id,
+        step: 'jobPointsAward',
+        phase: 'finalizing',
+        correlationId,
+        message: 'Points before backup',
+        points: this.#dbUser.points,
+        totalBytesUploaded,
+      })
+
       // Only award points after successful backup completion
       const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
+      this.#dbUser = await this.#db.incrementUserPoints(
+        this.#dbUser.id,
+        pointsEarned
+      )
+
       logJobEvent({
         level: 'info',
         jobId: id,
@@ -371,20 +405,6 @@ class Handler {
         message: 'Points awarded after backup',
         pointsEarned,
         totalBytesUploaded,
-      })
-      this.#dbUser = await this.#db.incrementUserPoints(
-        this.#dbUser.id,
-        pointsEarned
-      )
-        logJobEvent({
-        level: 'info',
-        jobId: id,
-        userId: this.#dbUser.id,
-        step: 'jobComplete',
-        phase: 'complete',
-        correlationId,
-        message: 'Job completed',
-        points: this.#dbUser.points,
       })
 
       const dialogsWithBackupInfo: DialogsById = {}
@@ -416,9 +436,21 @@ class Handler {
         finished: Date.now(),
         updated: Date.now(),
       })
+
+      logJobEvent({
+        level: 'info',
+        jobId: id,
+        userId: this.#dbUser.id,
+        step: 'jobComplete',
+        phase: 'complete',
+        correlationId,
+        message: 'Job completed',
+        points: this.#dbUser.points,
+      })
     } catch (err) {
       // Backup job failed
-      const correlationId = (request as { correlationId?: string })?.correlationId;
+      const correlationId = (request as { correlationId?: string })
+        ?.correlationId
       logJobEvent({
         level: 'error',
         jobId: id,
