@@ -1,5 +1,43 @@
 # Changelog
 
+## [2.6.0](https://github.com/storacha/tg-miniapp/compare/v2.5.0...v2.6.0) (2025-07-14)
+
+
+### Features
+
+* add a CLAUDE.md to make it easier to CLAUDE ([f7158c8](https://github.com/storacha/tg-miniapp/commit/f7158c8ea5f07016c1f901e45eb02574e0be636c))
+* add a CLAUDE.md to make it easier to CLAUDE ([8e87ff3](https://github.com/storacha/tg-miniapp/commit/8e87ff327d6109807d573264d36722f251019bf7))
+* add ability to delete backups ([89c2888](https://github.com/storacha/tg-miniapp/commit/89c28888a31ebab57d31b839abcd46230545a156))
+* add ability to delete backups ([15459db](https://github.com/storacha/tg-miniapp/commit/15459dbadac3899dcbdd3c6300b1706ae3490843))
+* add delete backup ([83fa39d](https://github.com/storacha/tg-miniapp/commit/83fa39dcedb2161726f594530e0aa9fc6224c5cb))
+* add points and size columns to jobs table for accurate point deduction on dialog deletion ([befb809](https://github.com/storacha/tg-miniapp/commit/befb809d6cb820c6b5ea73dfb29e4a9d896e60bf))
+* call delete backup from client side ([9258d48](https://github.com/storacha/tg-miniapp/commit/9258d489d316112313104e71a9865a041e4445f4))
+* reintroduce high quality image fetcher ([d81b886](https://github.com/storacha/tg-miniapp/commit/d81b8864d5a613af1426531c071dbbf131bd229f))
+* subtract points on backup deletion ([b01fce9](https://github.com/storacha/tg-miniapp/commit/b01fce99dd2ae7b010ef214ec79f5402a170c965))
+
+
+### Bug Fixes
+
+* add build and test to CI ([aa7801f](https://github.com/storacha/tg-miniapp/commit/aa7801fd9fca48d3d9760176286979b0cf9fb4c7))
+* add build and test to CI ([fa48518](https://github.com/storacha/tg-miniapp/commit/fa485188e20cf32ee6b77e4417c99bd1545defe4))
+* add missing deps to hook ([0077429](https://github.com/storacha/tg-miniapp/commit/0077429e16b21a10e4d125e4859bdb3769eb4be3))
+* fetch high quality images for profile pictures in the list of chats ([7e2ef50](https://github.com/storacha/tg-miniapp/commit/7e2ef50febf177ad683474c5adf368795c1979bf))
+* get build working ([d9f16ac](https://github.com/storacha/tg-miniapp/commit/d9f16ac3794af583f9e0edd2e65ec72a50231f24))
+* I don't think defaults actually works here ([8c06cf8](https://github.com/storacha/tg-miniapp/commit/8c06cf854bba38da4876a877c5cd8de3d93154af))
+* ignore .claude ([27b6523](https://github.com/storacha/tg-miniapp/commit/27b652328b537d72eaeee7ee8ef09c449384f75d))
+* ignore .claude ([6529694](https://github.com/storacha/tg-miniapp/commit/6529694e54a636ccecc7a6336946c14f09693e84))
+* initialize env in test and build ([b4dfd51](https://github.com/storacha/tg-miniapp/commit/b4dfd5161b38a8353a5b26f7b014c96564559086))
+* lint ([b4fdef6](https://github.com/storacha/tg-miniapp/commit/b4fdef63f976daf0ad6a475c1f15bbb6f9fd6312))
+* progress calculation ([11b9092](https://github.com/storacha/tg-miniapp/commit/11b909266eab69d4efd66e9c5e9463605d1a8a1d))
+* ranking update ([9b60a58](https://github.com/storacha/tg-miniapp/commit/9b60a583d300cadf69ecb050eeb77eed1b40df4d))
+* remove complete backup from space if there's only one dialog ([8c3ddfb](https://github.com/storacha/tg-miniapp/commit/8c3ddfb8f9a909c99d40f78de6450a8ae46e792f))
+* rename telegram session ([ee9e0d4](https://github.com/storacha/tg-miniapp/commit/ee9e0d42d54274a0e1b74deec2615dcbc88cf0bd))
+* Revert "Merge pull request [#224](https://github.com/storacha/tg-miniapp/issues/224) from storacha/feat/hq-images" ([6aac385](https://github.com/storacha/tg-miniapp/commit/6aac3858a7f0116d143d2dd066a3efde4f8a43d9))
+* try setting working directory in env setup ([5629b96](https://github.com/storacha/tg-miniapp/commit/5629b9692c5079fde3af4012afc6c3cdec2d71df))
+* use env vars to config sentry ([4b797d7](https://github.com/storacha/tg-miniapp/commit/4b797d738d752a9c556d8c1151f078a34c5ec19a))
+* use high quality images in the chat header too ([bf24c0b](https://github.com/storacha/tg-miniapp/commit/bf24c0b872bd6b1efb35426aee8508c18b2e1c9f))
+* use high quality images in the chat header too ([6db1adc](https://github.com/storacha/tg-miniapp/commit/6db1adcca2e11ab19ad7b3144c2ab9de18be5f15))
+
 ## [2.5.0](https://github.com/storacha/tg-miniapp/compare/v2.4.0...v2.5.0) (2025-07-09)
 
 
