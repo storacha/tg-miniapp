@@ -10,7 +10,7 @@ import {
   Ranking,
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
-import { TelegramClient } from 'telegram'
+import { TelegramClient, Api } from 'telegram'
 import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
@@ -23,12 +23,12 @@ import {
   listJobs as jobsListJob,
   removeJob as jobsRemoveJob,
   cancelJob as jobsCancelJob,
+  deleteDialogFromJob as jobsDeleteDialogFromJob,
 } from '@/lib/server/jobs'
 import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
 import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
-import { Api } from '@/vendor/telegram'
 import { clearSession } from '@/lib/server/session'
 
 const names = supervillains
@@ -73,6 +73,7 @@ export const findJob = toResultFn(jobsFindJob)
 export const listJobs = toResultFn(jobsListJob)
 export const removeJob = toResultFn(jobsRemoveJob)
 export const cancelJob = toResultFn(jobsCancelJob)
+export const deleteDialogFromJob = toResultFn(jobsDeleteDialogFromJob)
 
 const withClient = <T extends [...unknown[]], U>(
   fn: (client: TelegramClient, ...args: T) => Promise<U>
@@ -218,7 +219,6 @@ export const getLeaderboard = toResultFn(
         nameIndex++
       }
 
-      console.log('ME?!?!?', id, me, me.id.toString())
       leaderboard.push({
         id,
         name,

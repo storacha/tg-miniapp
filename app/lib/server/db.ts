@@ -79,6 +79,8 @@ export interface DbJob {
   cause: string | null
   finishedAt: Date | null
   dataCid: string | null
+  points: number
+  size: number
   createdAt: Date
   updatedAt: Date
 }
@@ -94,6 +96,8 @@ type JobInput = Input<
   | 'cause'
   | 'finishedAt'
   | 'dataCid'
+  | 'points'
+  | 'size'
   | 'createdAt'
   | 'updatedAt'
 >
@@ -105,6 +109,7 @@ export interface TGDatabase {
   rank(input: UserInput): Promise<Ranking | undefined>
   createJob(input: JobInput): Promise<Job>
   getJobByID(id: string, userId: string): Promise<Job>
+  deleteJob(id: string, userId: string): Promise<void>
   getJobsByUserID(userId: string): Promise<Job[]>
   updateJob(id: string, input: Job): Promise<Job>
   removeJob(id: string, userId: string): Promise<void>
@@ -127,7 +132,7 @@ export function getDB(): TGDatabase {
         select * from users
         where telegram_id = ${input.telegramId} and storacha_space = ${
           input.storachaSpace
-        } 
+        }
       `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
@@ -200,7 +205,7 @@ export function getDB(): TGDatabase {
         insert into jobs ${sql(
           // @ts-expect-error Uint8Array is automatically converted to object
           input
-        )} 
+        )}
         returning *
       `
       if (!results[0]) {
@@ -212,6 +217,13 @@ export function getDB(): TGDatabase {
         stringifyWithUIntArrays({ action: 'add', job })
       )
       return job
+    },
+    async deleteJob(id, userId) {
+      if (!id) return
+      await sql<DbJob[]>`
+        delete from jobs
+        where id = ${id} and user_id = ${userId}
+      `
     },
     async getJobByID(id, userId) {
       const results = await sql<DbJob[]>`
@@ -286,6 +298,8 @@ const toDbJobParams = (job: Job): DbJobParams => {
     cause: null,
     finishedAt: null,
     dataCid: null,
+    points: 0,
+    size: 0,
     createdAt: new Date(job.created),
     updatedAt: new Date(job.updated),
   }
@@ -322,6 +336,8 @@ const toDbJobParams = (job: Job): DbJobParams => {
         startedAt: new Date(job.started),
         finishedAt: new Date(job.finished),
         dataCid: job.data,
+        points: job.points ?? 0,
+        size: job.size ?? 0,
       }
   }
 }
@@ -421,6 +437,8 @@ const fromDbJob = (dbJob: DbJob): Job => {
         started: dbJob.startedAt.getTime(),
         finished: dbJob.finishedAt.getDate(),
         data: dbJob.dataCid,
+        points: dbJob.points,
+        size: dbJob.size,
       }
   }
 }
