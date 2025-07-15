@@ -9,8 +9,9 @@ import { Context as RunnerContext } from './runner'
 import * as Runner from './runner'
 import { TGDatabase, User } from './db'
 import { CARMetadata } from '@storacha/ui-react'
-import { mRachaPointsPerByte } from './constants'
+import { MAX_FREE_BYTES, mRachaPointsPerByte } from './constants'
 import { SHARD_SIZE } from '@storacha/upload-client'
+import { formatBytes } from '../utils'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -222,6 +223,20 @@ class Handler {
           dialogId?: ToString<bigint>
         ) => {
           try {
+            const amountOfStorageUsed = await this.getStorachaUsage(space)
+            if (
+              amountOfStorageUsed &&
+              amountOfStorageUsed + meta.size > MAX_FREE_BYTES
+            ) {
+              console.warn(
+                `Backup for user ${this.#dbUser.id} would exceed storage limit: ${formatBytes(
+                  amountOfStorageUsed + meta.size
+                )} > ${formatBytes(MAX_FREE_BYTES)}`
+              )
+              onShardStoredError = new Error(
+                `This backup would exceed your ${formatBytes(MAX_FREE_BYTES)} storage limit.`
+              )
+            }
             totalBytesUploaded += meta.size
 
             if (dialogId) {
