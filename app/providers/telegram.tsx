@@ -127,7 +127,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     if (user) {
       setUser({
         id: user.id,
-        name: user.firstName + (user.lastName ? ` ${user.lastName}` : ''),
+        name: `${user.firstName} ${user.lastName ?? ''}`,
       })
     }
   }, [user, setUser])
