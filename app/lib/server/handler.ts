@@ -12,6 +12,8 @@ import { CARMetadata } from '@storacha/ui-react'
 import { MAX_FREE_BYTES, mRachaPointsPerByte } from './constants'
 import { SHARD_SIZE } from '@storacha/upload-client'
 import { formatBytes } from '../utils'
+import { createLogger } from './logger'
+import { getErrorMessage } from '../errorhandling'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -86,23 +88,40 @@ class Handler {
   async handleJob(request: ExecuteJobRequest) {
     const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
-    // check if job was cancelled
-    if (job.status != 'queued') {
-      return
-    }
+
     const {
       id,
       params,
       created,
       params: { space, dialogs, period },
     } = job
+    const totalDialogs = Object.keys(dialogs).length
+
+    const logContext = {
+      jobId: request.jobID,
+      userId: this.#dbUser.id,
+      periodFrom: period[0],
+      periodTo: period[1] ?? Date.now() / 1000,
+      totalDialogs,
+    }
+    const logger = createLogger(logContext)
+
+    // Validates that the job exists and is in 'queued' status
+    // check if job was cancelled
+    if (job.status != 'queued') {
+      logger.warn('Job not in queued status', {
+        step: 'handleJob',
+        phase: 'validation',
+        status: job.status,
+      })
+      return
+    }
 
     // Track errors from the onShardStored callback.
     // Note: Throwing inside onShardStored does not halt the backup process, so we record any errors here for later handling.
     /* eslint-disable-next-line prefer-const */
     let onShardStoredError: Error | null = null
     const started = Date.now()
-    const totalDialogs = Object.keys(dialogs).length
     let progress = 0
     let dialogsRetrieved = 0
     let totalBytesUploaded = 0
@@ -136,6 +155,12 @@ class Handler {
         updated: Date.now(),
       })
 
+      logger.info('Job started', {
+        step: 'jobStart',
+        phase: 'init',
+        progress,
+      })
+
       const data = await Runner.run(this, space, dialogs, period, {
         /**
          * Called when a dialog entity is created and ready for processing
@@ -147,8 +172,14 @@ class Handler {
               request.jobID,
               this.#dbUser.id
             )
+
             if (currentJob?.status === 'canceled') {
-              console.warn(`Job ${id} was canceled`)
+              // Job was canceled before dialog retrieval completed
+              logger.warn('Job was canceled', {
+                dialogId: dialogId.toString(),
+                step: 'onDialogRetrieved',
+                phase: 'processing',
+              })
               return
             }
 
@@ -164,18 +195,30 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+
+            logger.addContext({
+              phase: 'processing',
+              progress,
+              dialogsRetrieved,
+            })
+            logger.info('Dialog retrieved', {
+              dialogId: dialogId.toString(),
+              step: 'onDialogRetrieved',
+            })
           } catch (err) {
-            console.error(
-              `Error updating progress during dialog ${dialogId.toString()} retrieval:`,
-              err
-            )
+            // Error occurred while updating progress during dialog retrieval
+            logger.error('Error updating progress during dialog retrieval', {
+              dialogId: dialogId.toString(),
+              step: 'onDialogRetrieved',
+              phase: 'processing',
+              error: getErrorMessage(err),
+            })
             throw new Error(
               `Failed to retrieve dialog ${dialogId.toString()}.`,
               { cause: err }
             )
           }
         },
-
         /**
          * Called when all messages for a dialog have been retrieved
          */
@@ -188,12 +231,14 @@ class Handler {
               this.#dbUser.id
             )
             if (currentJob?.status === 'canceled') {
-              console.warn(`Job ${id} was canceled`)
+              // Job was canceled before messages retrieval completed
+              logger.warn('Job was canceled', {
+                dialogId: dialogId.toString(),
+                step: 'onMessagesRetrieved',
+              })
               return
             }
-            console.log(
-              `Dialog ${dialogId.toString()} percentage retrieved: ${(percentage * 100).toFixed(2)}%`
-            )
+
             dialogPercentages[dialogId.toString()] = percentage
             progress = getDialogsProgress()
 
@@ -206,11 +251,20 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+
+            logger.addContext({ progress })
+            logger.info('Messages retrieved for dialog', {
+              dialogId: dialogId.toString(),
+              step: 'onMessagesRetrieved',
+              dialogProgress: percentage,
+            })
           } catch (err) {
-            console.error(
-              `Error updating progress during messages retried for dialog ${dialogId.toString()}:`,
-              err
-            )
+            // Error occurred while updating progress during messages retrieval
+            logger.error('Error updating progress during messages retrieval', {
+              dialogId: dialogId.toString(),
+              step: 'onMessagesRetrieved',
+              error: getErrorMessage(err),
+            })
             throw new Error(
               `Failed to retrieve messages for dialog ${dialogId.toString()}.`,
               { cause: err }
@@ -251,6 +305,7 @@ class Handler {
                * If the total uploaded bytes are less than SHARD_SIZE, the backup job is considered complete.
                */
               progress = totalBytesUploaded <= SHARD_SIZE ? 1 : progress
+              logger.addContext({ phase: 'finalizing', totalBytesUploaded })
             }
 
             await this.#db.updateJob(id, {
@@ -262,8 +317,19 @@ class Handler {
               progress,
               updated: Date.now(),
             })
+
+            logger.info('Shard stored', {
+              step: 'onShardStored',
+              progress,
+              totalBytesUploaded,
+            })
           } catch (err) {
-            console.error('Error updating progress during shard storage:', err)
+            // Error occurred while updating progress during shard storage
+            logger.error('Error updating progress during shard storage', {
+              step: 'onShardStored',
+              phase: 'error',
+              error: getErrorMessage(err),
+            })
             if (onShardStoredError) {
               // TODO: this does not halt the upload process, it still uploads the shards
               throw onShardStoredError
@@ -275,22 +341,24 @@ class Handler {
       // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
       if (onShardStoredError) throw onShardStoredError
 
+
+      // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
+      if (onShardStoredError) throw onShardStoredError
+
+
+      const userPointsBefore = this.#dbUser.points
       // Only award points after successful backup completion
       const pointsEarned = totalBytesUploaded * mRachaPointsPerByte
-      console.log(
-        `user ${this.#dbUser.id} total size uploaded: ${totalBytesUploaded} bytes, points earned: ${pointsEarned}`
-      )
-
-      console.log(
-        `user ${this.#dbUser.id} points before backup: ${this.#dbUser.points}`
-      )
       this.#dbUser = await this.#db.incrementUserPoints(
         this.#dbUser.id,
         pointsEarned
       )
-      console.log(
-        `user ${this.#dbUser.id} points after backup: ${this.#dbUser.points}`
-      )
+
+      logger.info('Backup job completed! Awarded points to user', {
+        step: 'jobPointsAward',
+        pointsBefore: userPointsBefore,
+        pointsEarned: this.#dbUser.points,
+      })
 
       const dialogsWithBackupInfo: DialogsById = {}
       for (const [dialogId, dialogInfo] of Object.entries(dialogs)) {
@@ -321,8 +389,19 @@ class Handler {
         finished: Date.now(),
         updated: Date.now(),
       })
+
+      logger.info('Job completed', {
+        step: 'jobComplete',
+        phase: 'complete',
+      })
     } catch (err) {
-      console.error('backup failed', err)
+      // Backup job failed
+      logger.error('Backup job failed', {
+        step: 'jobFailed',
+        phase: 'error',
+        error: getErrorMessage(err),
+      })
+
       await this.#db.updateJob(id, {
         id,
         status: 'failed',
@@ -352,6 +431,12 @@ class Handler {
     const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
 
+    const logger = createLogger({
+      jobId: request.jobID,
+      dialogId: request.dialogID,
+      userId: this.#dbUser.id,
+    })
+
     // Validates that the job exists and is in 'completed' status
     if (job.status != 'completed') {
       throw new Error(`job is not completed: ${request.jobID}`)
@@ -362,28 +447,29 @@ class Handler {
       throw new Error(`dialog not found in job: ${request.dialogID}`)
     }
 
+    const userPointsBefore = this.#dbUser.points
     let pointsToSubtract = dialogs[request.dialogID].sizeRewardInfo?.points || 0
     const dialogSize = dialogs[request.dialogID].sizeRewardInfo?.size || 0
     delete dialogs[request.dialogID]
 
+    logger.info('Deleting dialog backup from job', {
+      dialogPoints: pointsToSubtract,
+      dialogSize,
+    })
+
     try {
       // is this dialog the only dialog in the job?
       if (Object.keys(dialogs).length === 0) {
-        console.log(
-          `Deleting job ${request.jobID} because it has no dialogs left`
-        )
+        logger.info('Deleting entire job because it has no dialogs left')
+        const cid = CID.parse(job.data)
+
         try {
-          const cid = CID.parse(job.data)
           await this.storacha.remove(cid, { shards: true })
-          await this.#db.deleteJob(request.jobID, this.#dbUser.id)
-          pointsToSubtract = job.points
         } catch (err) {
           // @ts-expect-error err.cause doesn't typecheck
           const errorName = (err.cause.name || '') as string
           if (errorName === 'UploadNotFound') {
-            console.warn(
-              `Upload not found ${job.data} for job ${request.jobID}, removing job from DB`
-            )
+            logger.warn('Upload not found, removing job from DB')
           } else {
             throw new Error(
               `Failed to delete job ${request.jobID} with data ${job.data}`,
@@ -391,6 +477,10 @@ class Handler {
             )
           }
         }
+
+        await this.#db.deleteJob(request.jobID, this.#dbUser.id)
+        pointsToSubtract = job.points
+        logger.info('Deleted job and its backup data')
       } else {
         // Removes the dialog's encrypted data from Storacha storage and creates a new backup root without the deleted dialog
         const newData = await Runner.deleteDialogFromBackup(
@@ -420,9 +510,10 @@ class Handler {
           this.#dbUser.id,
           -pointsToSubtract
         )
-        console.log(
-          `Subtracted ${pointsToSubtract} points from user ${this.#dbUser.id}`
-        )
+        logger.info('Subtracted points from user', {
+          pointsBefore: userPointsBefore,
+          pointsAfter: this.#dbUser.points,
+        })
       }
     } catch (err) {
       throw new Error(
