@@ -8,7 +8,7 @@ const CURRENT_VERSION = '1'
 interface User {
   id: number
   name: string
-  email: string
+  email?: string
 }
 
 const saveSessionToString = (session?: Session | string) => {
@@ -67,7 +67,7 @@ interface GlobalState {
 
 export const useGlobal = create<GlobalState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isFirstLogin: true,
       isOnboarded: false,
       isStorachaAuthorized: false,
@@ -79,7 +79,17 @@ export const useGlobal = create<GlobalState>()(
       setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
       setIsStorachaAuthorized: (isStorachaAuthorized) =>
         set({ isStorachaAuthorized }),
-      setUser: (user) => set({ user }),
+      setUser: (user) => {
+        const currentUser = get().user
+        if (currentUser && user && currentUser.id !== user.id) {
+          // User switched - clear all storage and reload
+          localStorage.clear()
+          sessionStorage.clear()
+          window.location.reload()
+          return
+        }
+        set({ user })
+      },
       setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
       setSpace: (space) => set({ space }),
       setTgSessionString: (tgSessionString) =>
