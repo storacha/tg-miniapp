@@ -65,6 +65,7 @@
     "p-map": "^7.0.3",
     "p-queue": "^8.1.0",
     "p-retry": "^6.2.1",
+    "pdfjs-dist": "^5.3.93",
     "postgres": "^3.4.7",
     "postgres-shift": "^0.1.0",
     "react": "^19.0.0",
