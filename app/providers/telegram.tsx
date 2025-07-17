@@ -122,13 +122,6 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     loadMoreDialogs()
   }, [tgSessionString])
 
-  // Update global user state when Telegram user changes
-  useEffect(() => {
-    if (user) {
-      useGlobal.persist.setOptions({ name: `global-state-${user.id}` })
-    }
-  }, [user])
-
   const logout = useCallback(async () => {
     try {
       setIsTgAuthorized(false)

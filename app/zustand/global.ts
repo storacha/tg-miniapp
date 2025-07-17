@@ -66,28 +66,62 @@ interface GlobalState {
   setTgSessionString: (session?: Session | string) => void
 }
 
-export const useGlobal = create<GlobalState>()(
-  persist(
-    (set) => ({
-      isFirstLogin: true,
-      isOnboarded: false,
-      isStorachaAuthorized: false,
-      user: null,
-      phoneNumber: '',
-      space: null,
-      tgSessionString: '',
-      setIsFirstLogin: (isFirstLogin) => set({ isFirstLogin }),
-      setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
-      setIsStorachaAuthorized: (isStorachaAuthorized) =>
-        set({ isStorachaAuthorized }),
-      setUser: (user) => set({ user }),
-      setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
-      setSpace: (space) => set({ space }),
-      setTgSessionString: (tgSessionString) =>
-        set({ tgSessionString: saveSessionToString(tgSessionString) }),
-    }),
-    {
-      name: 'global-storage',
-    }
+// Create a factory function that generates user-specific stores
+const createUserGlobalStore = (userId: number) => {
+  return create<GlobalState>()(
+    persist(
+      (set) => ({
+        isFirstLogin: true,
+        isOnboarded: false,
+        isStorachaAuthorized: false,
+        user: null,
+        phoneNumber: '',
+        space: null,
+        tgSessionString: '',
+        setIsFirstLogin: (isFirstLogin) => set({ isFirstLogin }),
+        setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
+        setIsStorachaAuthorized: (isStorachaAuthorized) =>
+          set({ isStorachaAuthorized }),
+        setUser: (user) => set({ user }),
+        setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
+        setSpace: (space) => set({ space }),
+        setTgSessionString: (tgSessionString) =>
+          set({ tgSessionString: saveSessionToString(tgSessionString) }),
+      }),
+      {
+        name: `global-storage-${userId}`, // Each user gets their own storage key
+      }
+    )
   )
-)
+}
+
+// Cache to store user-specific stores
+const userStores = new Map<number, ReturnType<typeof createUserGlobalStore>>()
+
+// Function to get or create a store for a specific user
+export const getUserGlobalStore = (userId: number) => {
+  if (!userStores.has(userId)) {
+    userStores.set(userId, createUserGlobalStore(userId))
+  }
+  return userStores.get(userId)!
+}
+
+// Hook that uses the current user's store
+export const useGlobal = () => {
+  // On server side, return a temporary store
+  if (typeof window === 'undefined') {
+    return getUserGlobalStore(-1)() // Use -1 to clearly indicate SSR
+  }
+
+  // on the client we should be reliably able to call this
+  const user = useSignal(initData.user)
+
+  // but if the user isn't defined for some reason, that's an error
+  if (!user) {
+    throw new Error(
+      'No Telegram user available - useGlobal must be used within a Telegram Mini App context'
+    )
+  }
+
+  return getUserGlobalStore(user.id)()
+}
