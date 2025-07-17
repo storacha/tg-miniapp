@@ -68,7 +68,7 @@ export const Context = createContext<ContextValue>(ContextDefaultValue)
  * the context.
  */
 export const Provider = ({ children }: PropsWithChildren): ReactNode => {
-  const { tgSessionString, setTgSessionString, setUser } = useGlobal()
+  const { tgSessionString, setTgSessionString } = useGlobal()
   const [isTgAuthorized, setIsTgAuthorized] = useState(false)
   const [isValidating, setIsValidating] = useState(true)
   const { setError } = useError()
@@ -125,12 +125,9 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   // Update global user state when Telegram user changes
   useEffect(() => {
     if (user) {
-      setUser({
-        id: user.id,
-        name: `${user.firstName} ${user.lastName ?? ''}`,
-      })
+      useGlobal.persist.setOptions({ name: `global-state-${user.id}` })
     }
-  }, [user, setUser])
+  }, [user])
 
   const logout = useCallback(async () => {
     try {

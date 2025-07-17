@@ -1,4 +1,5 @@
 import { Session, StringSession } from '@/vendor/telegram/sessions'
+import { useSignal, initData } from '@telegram-apps/sdk-react'
 import { SpaceDID } from '@storacha/ui-react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
@@ -67,7 +68,7 @@ interface GlobalState {
 
 export const useGlobal = create<GlobalState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       isFirstLogin: true,
       isOnboarded: false,
       isStorachaAuthorized: false,
@@ -79,17 +80,7 @@ export const useGlobal = create<GlobalState>()(
       setIsOnboarded: (isOnboarded) => set({ isOnboarded }),
       setIsStorachaAuthorized: (isStorachaAuthorized) =>
         set({ isStorachaAuthorized }),
-      setUser: (user) => {
-        const currentUser = get().user
-        if (currentUser && user && currentUser.id !== user.id) {
-          // User switched - clear all storage and reload
-          localStorage.clear()
-          sessionStorage.clear()
-          window.location.reload()
-          return
-        }
-        set({ user })
-      },
+      setUser: (user) => set({ user }),
       setPhoneNumber: (phoneNumber) => set({ phoneNumber }),
       setSpace: (space) => set({ space }),
       setTgSessionString: (tgSessionString) =>
