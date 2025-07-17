@@ -14,6 +14,7 @@ import { SHARD_SIZE } from '@storacha/upload-client'
 import { formatBytes } from '../utils'
 import { createLogger } from './logger'
 import { getErrorMessage } from '../errorhandling'
+import { getStorachaUsage } from '../storacha'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -54,35 +55,6 @@ class Handler {
     this.cipher = cipher
     this.#db = db
     this.#dbUser = dbUser
-  }
-
-  async getStorachaUsage(space: `did:key:${string}`): Promise<number | null> {
-    const now = new Date()
-    try {
-      const usage = await this.storacha.capability.usage.report(space, {
-        from: new Date(
-          now.getUTCFullYear(),
-          now.getUTCMonth() - 1,
-          now.getUTCDate(),
-          0,
-          0,
-          0,
-          0
-        ),
-        to: now,
-      })
-
-      // i don't think we allow people to create or own multiple
-      // spaces for now in the TG mini app
-      // if it happens in the future, we should account for it.
-      return Object.values(usage).reduce(
-        (sum, report) => sum + report.size.final,
-        0
-      )
-    } catch (err) {
-      console.error('Error while fetching usage report:', err)
-      throw new Error(`Failed to fetch usage report.`, { cause: err })
-    }
   }
 
   async handleJob(request: ExecuteJobRequest) {
@@ -277,20 +249,26 @@ class Handler {
           dialogId?: ToString<bigint>
         ) => {
           try {
-            const amountOfStorageUsed = await this.getStorachaUsage(space)
-            if (
-              amountOfStorageUsed &&
-              amountOfStorageUsed + meta.size > MAX_FREE_BYTES
-            ) {
-              console.warn(
-                `Backup for user ${this.#dbUser.id} would exceed storage limit: ${formatBytes(
-                  amountOfStorageUsed + meta.size
-                )} > ${formatBytes(MAX_FREE_BYTES)}`
-              )
+            const amountOfStorageUsed = await getStorachaUsage(
+              this.storacha,
+              space
+            )
+            const newStorageUsage = amountOfStorageUsed + meta.size
+            const shouldStopUpload = false // await isStorageLimitExceeded(this.storacha, newStorageUsage) TODO: need to request plan get
+
+            if (amountOfStorageUsed && shouldStopUpload) {
+              logger.warn('Backup storage limit exceeded', {
+                step: 'onShardStored',
+                phase: 'processing',
+                dialogId,
+                totalSize: newStorageUsage,
+              })
+
               onShardStoredError = new Error(
                 `This backup would exceed your ${formatBytes(MAX_FREE_BYTES)} storage limit.`
               )
             }
+
             totalBytesUploaded += meta.size
 
             if (dialogId) {
@@ -341,10 +319,8 @@ class Handler {
       // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
       if (onShardStoredError) throw onShardStoredError
 
-
       // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
       if (onShardStoredError) throw onShardStoredError
-
 
       const userPointsBefore = this.#dbUser.points
       // Only award points after successful backup completion

@@ -17,6 +17,8 @@ import * as Usage from '@storacha/capabilities/usage'
 import { MAX_FREE_BYTES } from '../server/constants'
 import { formatBytes } from '../utils'
 import * as SSstore from '@storacha/capabilities/store'
+import { getStorachaUsage, isStorageLimitExceeded } from '../storacha'
+import { Plan } from '@storacha/capabilities'
 
 export interface Context {
   storacha: StorachaClient
@@ -61,6 +63,7 @@ class Store extends EventTarget implements JobStorage {
         SSstore.remove.can,
         Filecoin.offer.can,
         Usage.report.can,
+        Plan.get.can,
       ],
       { expiration: new Date(Date.now() + defaultDuration).getTime() }
     )
@@ -103,28 +106,13 @@ class Store extends EventTarget implements JobStorage {
       if (!space) {
         throw new Error('No space found. Try again.')
       }
-      const now = new Date()
-      const usage = await this.#storacha.capability.usage.report(space?.did(), {
-        from: new Date(
-          now.getUTCFullYear(),
-          now.getUTCMonth() - 1,
-          now.getUTCDate(),
-          0,
-          0,
-          0,
-          0
-        ),
-        to: now,
-      })
-
-      const amountOfStorageUsed = Object.values(usage).reduce(
-        (sum, report) => sum + report.size.final,
-        0
+      // check if the user has enough storage space
+      const amountOfStorageUsed = await getStorachaUsage(
+        this.#storacha,
+        space.did()
       )
 
-      if (amountOfStorageUsed >= MAX_FREE_BYTES) {
-        // ...or delete old backups
-        // i suppose we can add the phrase above when the delete feature is ready.
+      if (await isStorageLimitExceeded(this.#storacha, amountOfStorageUsed)) {
         throw new Error(
           `You have reached your ${formatBytes(MAX_FREE_BYTES)} free storage limit. Upgrade your account`
         )
