@@ -13,6 +13,7 @@ import { AccountDID } from '@storacha/access'
 
 // default to 1 hour
 const defaultDuration = 1000 * 60 * 60
+const STORACHA_TRIAL_PLAN = 'did:web:trial.storacha.network'
 
 /**
  * Fetches Storacha storage usage for a given space
@@ -52,7 +53,10 @@ export const getStorachaUsage = async (
   }
 }
 
-export const isPayingAccount = async (client: StorachaClient) => {
+export const isPayingAccount = async (
+  client: StorachaClient,
+  accountDID?: AccountDID
+) => {
   if (!client) throw new Error('Storacha client is not initialized')
   try {
     const account = Object.values(client.accounts())[0]
@@ -60,23 +64,25 @@ export const isPayingAccount = async (client: StorachaClient) => {
     let planResult
     if (account) {
       planResult = await account.plan.get()
-    } else {
+    } else if (accountDID) {
       const proofs = client.proofs([
         {
           can: 'plan/get',
-          with: 'did:mailto:outlook.com:natalie.bravo',
+          with: accountDID,
         },
       ])
 
       const receipt = await client.agent.invokeAndExecute(Plan.get, {
-        with: 'did:mailto:outlook.com:natalie.bravo',
+        with: accountDID,
         proofs,
       })
       planResult = receipt.out
+    } else {
+      throw new Error('No account or accountDID provided to check plan')
     }
     if (planResult.error) throw planResult.error
     const plan = planResult.ok
-    return plan.product !== 'did:web:trial.storacha.network'
+    return plan.product !== STORACHA_TRIAL_PLAN
   } catch (error) {
     console.error('Error while checking account plan:', error)
     throw new Error(`Failed to check account plan`, { cause: error })
@@ -85,9 +91,10 @@ export const isPayingAccount = async (client: StorachaClient) => {
 
 export const isStorageLimitExceeded = async (
   client: StorachaClient,
-  usage: number
+  usage: number,
+  accountDID?: AccountDID
 ) => {
-  if (await isPayingAccount(client)) {
+  if (await isPayingAccount(client, accountDID)) {
     return false
   }
   // if the user is not a paying account, we check if they are over the free limit

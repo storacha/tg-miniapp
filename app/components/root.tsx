@@ -172,6 +172,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
               initData: launchParams.initDataRaw || '',
             },
             spaceDID: space,
+            accountDID: user.email as AccountDID,
           })
         )
       } catch (err) {

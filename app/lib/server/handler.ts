@@ -15,6 +15,7 @@ import { formatBytes } from '../utils'
 import { createLogger } from './logger'
 import { getErrorMessage } from '../errorhandling'
 import { getStorachaUsage, isStorageLimitExceeded } from '../storacha'
+import { AccountDID } from '@storacha/access'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -256,8 +257,9 @@ class Handler {
             const newStorageUsage = amountOfStorageUsed + meta.size
             const shouldStopUpload = await isStorageLimitExceeded(
               this.storacha,
-              newStorageUsage
-            ) // TODO: need to request plan get
+              newStorageUsage,
+              this.#dbUser.storachaAccount as AccountDID
+            )
 
             if (amountOfStorageUsed && shouldStopUpload) {
               logger.warn('Backup storage limit exceeded', {

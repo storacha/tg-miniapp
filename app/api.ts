@@ -1,3 +1,4 @@
+import { AccountDID } from '@storacha/access'
 import {
   Block,
   ByteView,
@@ -153,6 +154,7 @@ export interface TelegramAuth {
 }
 
 export interface LoginRequest {
+  accountDID: AccountDID
   spaceDID: SpaceDID
   telegramAuth: TelegramAuth
 }
