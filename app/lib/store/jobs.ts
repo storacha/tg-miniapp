@@ -1,4 +1,4 @@
-import { Client as StorachaClient } from '@storacha/ui-react'
+import { AccountDID, Client as StorachaClient } from '@storacha/ui-react'
 import {
   JobID,
   JobStorage,
@@ -9,26 +9,21 @@ import {
   EntityID,
 } from '@/api'
 import { Principal } from '@ipld/dag-ucan'
-import * as SpaceBlob from '@storacha/capabilities/space/blob'
-import * as SpaceIndex from '@storacha/capabilities/space/index'
-import * as Upload from '@storacha/capabilities/upload'
-import * as Filecoin from '@storacha/capabilities/filecoin'
-import * as Usage from '@storacha/capabilities/usage'
-import { MAX_FREE_BYTES } from '../server/constants'
 import { formatBytes } from '../utils'
-import * as SSstore from '@storacha/capabilities/store'
-import { getStorachaUsage, isStorageLimitExceeded } from '../storacha'
-import { Plan } from '@storacha/capabilities'
+import { MAX_FREE_BYTES } from '../server/constants'
+import {
+  createServerDelegations,
+  getStorachaUsage,
+  isStorageLimitExceeded,
+} from '../storacha'
 
 export interface Context {
   storacha: StorachaClient
   serverDID: Principal
+  accountDID: AccountDID
   encryptionPassword: string
   jobClient: JobClient
 }
-
-// default to 1 hour
-const defaultDuration = 1000 * 60 * 60
 
 export const create = async (ctx: Context) => {
   return new Store(ctx)
@@ -40,39 +35,30 @@ class Store extends EventTarget implements JobStorage {
   #storacha
   #serverDID
   #jobClient
+  #accountDID
 
-  constructor({ encryptionPassword, storacha, serverDID, jobClient }: Context) {
+  constructor({
+    encryptionPassword,
+    storacha,
+    serverDID,
+    jobClient,
+    accountDID,
+  }: Context) {
     super()
     this.#encryptionPassword = encryptionPassword
     this.#storacha = storacha
     this.#serverDID = serverDID
     this.#jobClient = jobClient
+    this.#accountDID = accountDID
     this.target = this
   }
 
   async #spaceDelegation() {
-    const delegation = await this.#storacha.createDelegation(
+    return createServerDelegations(
+      this.#storacha,
       this.#serverDID,
-      [
-        SpaceBlob.add.can,
-        SpaceBlob.remove.can,
-        SpaceIndex.add.can,
-        Upload.add.can,
-        Upload.remove.can,
-        Upload.get.can,
-        SSstore.remove.can,
-        Filecoin.offer.can,
-        Usage.report.can,
-        Plan.get.can,
-      ],
-      { expiration: new Date(Date.now() + defaultDuration).getTime() }
+      this.#accountDID
     )
-    const result = await delegation.archive()
-
-    if (result.error) {
-      throw result.error
-    }
-    return result.ok
   }
 
   find(id: JobID) {

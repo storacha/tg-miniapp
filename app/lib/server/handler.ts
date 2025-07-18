@@ -14,7 +14,7 @@ import { SHARD_SIZE } from '@storacha/upload-client'
 import { formatBytes } from '../utils'
 import { createLogger } from './logger'
 import { getErrorMessage } from '../errorhandling'
-import { getStorachaUsage } from '../storacha'
+import { getStorachaUsage, isStorageLimitExceeded } from '../storacha'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -254,7 +254,10 @@ class Handler {
               space
             )
             const newStorageUsage = amountOfStorageUsed + meta.size
-            const shouldStopUpload = false // await isStorageLimitExceeded(this.storacha, newStorageUsage) TODO: need to request plan get
+            const shouldStopUpload = await isStorageLimitExceeded(
+              this.storacha,
+              newStorageUsage
+            ) // TODO: need to request plan get
 
             if (amountOfStorageUsed && shouldStopUpload) {
               logger.warn('Backup storage limit exceeded', {
@@ -308,16 +311,19 @@ class Handler {
               phase: 'error',
               error: getErrorMessage(err),
             })
-            if (onShardStoredError) {
-              // TODO: this does not halt the upload process, it still uploads the shards
-              throw onShardStoredError
+
+            if (!onShardStoredError) {
+              onShardStoredError = new Error(
+                `Failed to upload shard for dialog ${dialogId}.`,
+                { cause: err }
+              )
             }
+
+            // TODO: this does not halt the upload process, it still uploads the shards
+            throw onShardStoredError
           }
         },
       })
-
-      // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
-      if (onShardStoredError) throw onShardStoredError
 
       // Since throwing on onShardStored does not halt the backup process, we at least register the job as failed, but the shards will still be uploaded.
       if (onShardStoredError) throw onShardStoredError

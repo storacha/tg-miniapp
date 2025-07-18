@@ -3,6 +3,7 @@
 import { useEffect, useState, type PropsWithChildren } from 'react'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import {
+  AccountDID,
   Provider as StorachaProvider,
   useW3 as useStoracha,
 } from '@storacha/ui-react'
@@ -127,8 +128,13 @@ const AppContent = (props: PropsWithChildren) => {
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
   const [{ client: storacha }] = useStoracha()
   const [{ launchParams }] = useTelegram()
-  const { isStorachaAuthorized, space, tgSessionString, setIsFirstLogin } =
-    useGlobal()
+  const {
+    isStorachaAuthorized,
+    space,
+    tgSessionString,
+    setIsFirstLogin,
+    user,
+  } = useGlobal()
   const [jobs, setJobs] = useState<JobStorage>()
   const { setError } = useError()
 
@@ -138,7 +144,13 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
       let encryptionPassword = await cloudStorage.getItem('encryption-password')
       setIsFirstLogin(!encryptionPassword)
 
-      if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
+      if (
+        !storacha ||
+        !tgSessionString ||
+        !isStorachaAuthorized ||
+        !space ||
+        !user
+      ) {
         return
       }
 
@@ -169,6 +181,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
       const jobs = await createJobStorage({
         serverDID: serverDID,
+        accountDID: user.email as AccountDID,
         storacha,
         encryptionPassword,
         jobClient: {

@@ -1,5 +1,18 @@
+import { delegate } from '@ucanto/core'
+import { Principal } from '@ipld/dag-ucan'
+import * as Plan from '@storacha/capabilities/plan'
+import * as Usage from '@storacha/capabilities/usage'
+import * as Upload from '@storacha/capabilities/upload'
+import * as SSstore from '@storacha/capabilities/store'
+import * as Filecoin from '@storacha/capabilities/filecoin'
+import * as SpaceBlob from '@storacha/capabilities/space/blob'
+import * as SpaceIndex from '@storacha/capabilities/space/index'
 import { Client as StorachaClient } from '@storacha/client'
 import { MAX_FREE_BYTES } from './server/constants'
+import { AccountDID } from '@storacha/access'
+
+// default to 1 hour
+const defaultDuration = 1000 * 60 * 60
 
 /**
  * Fetches Storacha storage usage for a given space
@@ -43,10 +56,24 @@ export const isPayingAccount = async (client: StorachaClient) => {
   if (!client) throw new Error('Storacha client is not initialized')
   try {
     const account = Object.values(client.accounts())[0]
-    if (!account) {
-      return false
+
+    let planResult
+    if (account) {
+      planResult = await account.plan.get()
+    } else {
+      const proofs = client.proofs([
+        {
+          can: 'plan/get',
+          with: 'did:mailto:outlook.com:natalie.bravo',
+        },
+      ])
+
+      const receipt = await client.agent.invokeAndExecute(Plan.get, {
+        with: 'did:mailto:outlook.com:natalie.bravo',
+        proofs,
+      })
+      planResult = receipt.out
     }
-    const planResult = await account.plan.get()
     if (planResult.error) throw planResult.error
     const plan = planResult.ok
     return plan.product !== 'did:web:trial.storacha.network'
@@ -65,4 +92,40 @@ export const isStorageLimitExceeded = async (
   }
   // if the user is not a paying account, we check if they are over the free limit
   return usage > MAX_FREE_BYTES
+}
+
+export const createServerDelegations = async (
+  client: StorachaClient,
+  audienceDID: Principal,
+  accountDID: AccountDID
+) => {
+  const space = client.currentSpace()
+  if (!space) {
+    throw new Error('No space found!')
+  }
+
+  const delegation = await delegate({
+    issuer: client.agent.issuer,
+    audience: audienceDID,
+    capabilities: [
+      { can: SpaceBlob.add.can, with: space.did() },
+      { can: SpaceBlob.remove.can, with: space.did() },
+      { can: SpaceIndex.add.can, with: space.did() },
+      { can: Upload.add.can, with: space.did() },
+      { can: Upload.remove.can, with: space.did() },
+      { can: SSstore.remove.can, with: space.did() },
+      { can: Filecoin.offer.can, with: space.did() },
+      { can: Usage.report.can, with: space.did() },
+      { can: Plan.get.can, with: accountDID },
+    ],
+    proofs: client.proofs(),
+    expiration: new Date(Date.now() + defaultDuration).getTime(),
+  })
+
+  const result = await delegation.archive()
+
+  if (result.error) {
+    throw result.error
+  }
+  return result.ok
 }
