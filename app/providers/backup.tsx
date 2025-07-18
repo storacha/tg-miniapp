@@ -292,12 +292,7 @@ export const Provider = ({
       } catch (error: any) {
         const msg = 'Error adding backup job!'
         console.error(msg, error)
-        const normalizedErrorMsg = error?.message?.includes(
-          formatBytes(MAX_FREE_BYTES)
-        )
-          ? `You’ve used up your ${formatBytes(MAX_FREE_BYTES)} free storage. Please upgrade to continue backing up your chats.`
-          : getErrorMessage(error)
-        setError(normalizedErrorMsg, { title: msg })
+        setError(getErrorMessage(error), { title: msg })
         return undefined
       }
     },

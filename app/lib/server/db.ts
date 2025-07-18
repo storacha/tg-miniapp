@@ -52,6 +52,7 @@ export const sql = postgres({
 export interface User {
   id: string
   telegramId: string
+  storachaAccount?: string
   storachaSpace: string
   points: number
   createdAt: Date
@@ -130,10 +131,8 @@ export function getDB(): TGDatabase {
         select * from ins
         union
         select * from users
-        where telegram_id = ${input.telegramId} and storacha_space = ${
-          input.storachaSpace
-        }
-      `
+        where telegram_id = ${input.telegramId} and storacha_space = ${input.storachaSpace}      
+        `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
       }

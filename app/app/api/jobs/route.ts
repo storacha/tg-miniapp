@@ -46,6 +46,7 @@ export async function GET() {
     const telegramId = getTelegramId(session.telegramAuth)
     const dbUser = await db.findOrCreateUser({
       storachaSpace: session.spaceDID,
+      storachaAccount: session.accountDID,
       telegramId: telegramId.toString(),
     })
     console.log('subscribing updates for user', dbUser.id)

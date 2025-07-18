@@ -127,8 +127,13 @@ const AppContent = (props: PropsWithChildren) => {
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
   const [{ client: storacha }] = useStoracha()
   const [{ launchParams }] = useTelegram()
-  const { isStorachaAuthorized, space, tgSessionString, setIsFirstLogin } =
-    useGlobal()
+  const {
+    isStorachaAuthorized,
+    space,
+    tgSessionString,
+    setIsFirstLogin,
+    user,
+  } = useGlobal()
   const [jobs, setJobs] = useState<JobStorage>()
   const { setError } = useError()
 
@@ -138,7 +143,13 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
       let encryptionPassword = await cloudStorage.getItem('encryption-password')
       setIsFirstLogin(!encryptionPassword)
 
-      if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
+      if (
+        !storacha ||
+        !tgSessionString ||
+        !isStorachaAuthorized ||
+        !space ||
+        !user
+      ) {
         return
       }
 
@@ -160,6 +171,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
               initData: launchParams.initDataRaw || '',
             },
             spaceDID: space,
+            accountDID: user.accountDID,
           })
         )
       } catch (err) {
@@ -169,6 +181,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
       const jobs = await createJobStorage({
         serverDID: serverDID,
+        accountDID: user.accountDID,
         storacha,
         encryptionPassword,
         jobClient: {

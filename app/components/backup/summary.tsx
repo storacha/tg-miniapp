@@ -8,6 +8,7 @@ import { formatBytes } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { useError } from '@/providers/error'
 import { getErrorMessage } from '@/lib/errorhandling'
+import { getStorachaUsage } from '@/lib/storacha'
 
 export interface SummaryProps {
   chats: DialogsById
@@ -38,27 +39,9 @@ export const Summary = ({
     const fetchStorageUsage = async () => {
       if (!space || !client) return
 
-      const now = new Date()
-      const usagePeriod = {
-        from: new Date(
-          now.getUTCFullYear(),
-          now.getUTCMonth() - 1,
-          now.getUTCDate(),
-          0,
-          0,
-          0,
-          0
-        ),
-        to: now,
-      }
-
       try {
-        const usage = await client.capability.usage.report(space, usagePeriod)
-        const total = Object.values(usage).reduce(
-          (sum, report) => sum + report.size.final,
-          0
-        )
-        setStorageUsed(total)
+        const usage = await getStorachaUsage(client, space)
+        setStorageUsed(usage)
       } catch (err) {
         const title = 'Failed to fetch storage usage'
         console.error(title, err)
