@@ -1,5 +1,5 @@
 import { Session, StringSession } from '@/vendor/telegram/sessions'
-import { SpaceDID } from '@storacha/ui-react'
+import { AccountDID, SpaceDID } from '@storacha/ui-react'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { Buffer } from 'buffer/'
@@ -8,7 +8,7 @@ const CURRENT_VERSION = '1'
 interface User {
   id: number
   name: string
-  email: string
+  accountDID: AccountDID
 }
 
 const saveSessionToString = (session?: Session | string) => {

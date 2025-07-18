@@ -173,7 +173,7 @@ export const StorachaConnect = ({
       setUser({
         id: user?.id || 0,
         name: `${user?.firstName} ${user?.lastName || ''}`.trim(),
-        email: fromEmail(parseEmail(email)),
+        accountDID: fromEmail(parseEmail(email)),
       })
 
       const account = await client.login(parseEmail(email), {

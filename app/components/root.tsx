@@ -3,7 +3,6 @@
 import { useEffect, useState, type PropsWithChildren } from 'react'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import {
-  AccountDID,
   Provider as StorachaProvider,
   useW3 as useStoracha,
 } from '@storacha/ui-react'
@@ -172,7 +171,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
               initData: launchParams.initDataRaw || '',
             },
             spaceDID: space,
-            accountDID: user.email as AccountDID,
+            accountDID: user.accountDID,
           })
         )
       } catch (err) {
@@ -182,7 +181,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
       const jobs = await createJobStorage({
         serverDID: serverDID,
-        accountDID: user.email as AccountDID,
+        accountDID: user.accountDID,
         storacha,
         encryptionPassword,
         jobClient: {
