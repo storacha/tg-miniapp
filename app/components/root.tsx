@@ -61,19 +61,19 @@ if (typeof window !== 'undefined') {
 export function Root(props: PropsWithChildren) {
   const didMount = useDidMount()
   const [{ isTgAuthorized }] = useTelegram()
-  const { isOnboarded, tgSessionString, setTgSessionString } = useGlobal()
+  const { isOnboarded, tgSessionString, setTgSessionString, user } = useGlobal()
 
   useEffect(() => {
-    if (isTgAuthorized && !tgSessionString) {
+    if (isTgAuthorized && !tgSessionString && user) {
       console.log('setting session')
-      const defaultSessionName = 'tg-session'
+      const defaultSessionName = `tg-session-${user.id}`
       const session =
         typeof localStorage !== 'undefined'
           ? new StoreSession(defaultSessionName)
           : new StringSession()
       setTgSessionString(session)
     }
-  }, [tgSessionString])
+  }, [isTgAuthorized, tgSessionString, user, setTgSessionString])
 
   if (!didMount) {
     return (
