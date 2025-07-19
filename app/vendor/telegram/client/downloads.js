@@ -90,7 +90,19 @@ class DirectDownloadIter extends requestIter_1.RequestIter {
             const result = await this.client.invokeWithSender(this.request, this._sender);
             this._timedOut = false;
             if (result instanceof tl_1.Api.upload.FileCdnRedirect) {
-                throw new Error("CDN Not supported. Please Add an issue in github");
+                // Attempt to download from CDN URL as a fallback workaround
+                if (result.cdnFileHash && result.cdnFileUrl) {
+                    try {
+                        const response = await fetch(result.cdnFileUrl);
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch CDN file: ${response.status} ${response.statusText}`);
+                        }
+                        return await response.arrayBuffer();
+                    } catch (err) {
+                        throw new Error(`CDN file download failed: ${err.message}`);
+                    }
+                }
+                throw new Error("CDN file download not supported: missing CDN URL");
             }
             return result.bytes;
         }
