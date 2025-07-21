@@ -62,6 +62,10 @@ export const isPayingAccount = async (
     const account = Object.values(client.accounts())[0]
 
     let planResult
+    /**
+     * On the client side, the user is logged in and we can fetch the plan directly from the account.
+     * On the server side, we only have a delegation, so we must use the provided accountDID and invoke the plan/get capability.
+     */
     if (account) {
       planResult = await account.plan.get()
     } else if (accountDID) {

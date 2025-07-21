@@ -124,15 +124,16 @@ export function getDB(): TGDatabase {
   return {
     async findOrCreateUser(input) {
       const results = await sql<User[]>`
-        with ins as (
-        insert into users ${sql(input)} on conflict do nothing
-        returning *
-        )
-        select * from ins
-        union
-        select * from users
-        where telegram_id = ${input.telegramId} and storacha_space = ${input.storachaSpace}      
-        `
+        insert into users ${sql(input)}
+        on conflict (telegram_id, storacha_space) 
+        do update set 
+          storacha_account = case 
+            when users.storacha_account is null and excluded.storacha_account is not null
+            then excluded.storacha_account
+            else users.storacha_account
+          end
+        returning *      
+      `
       if (!results[0]) {
         throw new Error('error inserting or locating user')
       }
