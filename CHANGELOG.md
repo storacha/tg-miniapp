@@ -2,32 +2,37 @@
 
 ## [2.9.0](https://github.com/storacha/tg-miniapp/compare/v2.8.0...v2.9.0) (2025-07-16)
 
+
 ### Features
 
-- add structured, contextual logging to job execution flow ([53ba9e0](https://github.com/storacha/tg-miniapp/commit/53ba9e0f3bbf705a32b69dc2324bbf2a3374b3d2))
-- improved job logging with context ([046cbb0](https://github.com/storacha/tg-miniapp/commit/046cbb025d91f653efdc9f629cfbcfb56302f6ab))
+* add structured, contextual logging to job execution flow ([53ba9e0](https://github.com/storacha/tg-miniapp/commit/53ba9e0f3bbf705a32b69dc2324bbf2a3374b3d2))
+* improved job logging with context ([046cbb0](https://github.com/storacha/tg-miniapp/commit/046cbb025d91f653efdc9f629cfbcfb56302f6ab))
+
 
 ### Bug Fixes
 
-- **build:** fix build errors ([1bfd724](https://github.com/storacha/tg-miniapp/commit/1bfd72485a4825ab77525ef3f671bf7647289aba))
-- conflicts with main ([5d734fb](https://github.com/storacha/tg-miniapp/commit/5d734fb574e6cf8b0123cbe85f54a6b62ae25b64))
-- **jobs:** run processing asyncronously ([c2d7d46](https://github.com/storacha/tg-miniapp/commit/c2d7d46f5257f1947287d7f120642732fc1b6d1d))
+* **build:** fix build errors ([1bfd724](https://github.com/storacha/tg-miniapp/commit/1bfd72485a4825ab77525ef3f671bf7647289aba))
+* conflicts with main ([5d734fb](https://github.com/storacha/tg-miniapp/commit/5d734fb574e6cf8b0123cbe85f54a6b62ae25b64))
+* **jobs:** run processing asyncronously ([c2d7d46](https://github.com/storacha/tg-miniapp/commit/c2d7d46f5257f1947287d7f120642732fc1b6d1d))
 
 ## [2.8.0](https://github.com/storacha/tg-miniapp/compare/v2.7.0...v2.8.0) (2025-07-15)
 
+
 ### Features
 
-- set app name to avoid showing pricing table in email ([1878c0a](https://github.com/storacha/tg-miniapp/commit/1878c0a79770a62127fd86f729545d14cb61aa12))
+* set app name to avoid showing pricing table in email ([1878c0a](https://github.com/storacha/tg-miniapp/commit/1878c0a79770a62127fd86f729545d14cb61aa12))
 
 ## [2.7.0](https://github.com/storacha/tg-miniapp/compare/v2.6.0...v2.7.0) (2025-07-15)
 
+
 ### Features
 
-- stop backup when people exceed the free storage limit ([b7e9976](https://github.com/storacha/tg-miniapp/commit/b7e9976dcc0ed35b1b226d461fb12eb982f2c4b5))
+* stop backup when people exceed the free storage limit ([b7e9976](https://github.com/storacha/tg-miniapp/commit/b7e9976dcc0ed35b1b226d461fb12eb982f2c4b5))
+
 
 ### Bug Fixes
 
-- add missing usage check on onShardStored ([e0a681d](https://github.com/storacha/tg-miniapp/commit/e0a681d6789821107fbb9bca9f10dfe3f91b1939))
+* add missing usage check on onShardStored ([e0a681d](https://github.com/storacha/tg-miniapp/commit/e0a681d6789821107fbb9bca9f10dfe3f91b1939))
 
 ## [2.6.0](https://github.com/storacha/tg-miniapp/compare/v2.5.0...v2.6.0) (2025-07-14)
 
