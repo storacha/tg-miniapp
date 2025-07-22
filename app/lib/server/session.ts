@@ -3,11 +3,11 @@ import { cookies } from 'next/headers'
 
 import { getServerConstants } from '@/lib/server/constants'
 import { SpaceDID, TelegramAuth } from '@/api'
-
-export type AccountDID = string
+import { AccountDID } from '@storacha/access'
 
 export interface TGSession {
   spaceDID: SpaceDID
+  accountDID: AccountDID
   telegramAuth: TelegramAuth
 }
 

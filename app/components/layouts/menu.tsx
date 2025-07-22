@@ -20,6 +20,7 @@ export function Menu() {
     setPhoneNumber,
     setSpace,
     setTgSessionString,
+    setUser,
   } = useGlobal()
   const initials = user?.firstName
     ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase()
@@ -34,6 +35,7 @@ export function Menu() {
     setPhoneNumber('')
     setSpace(null)
     setTgSessionString('')
+    setUser(null)
     await logout()
     setIsStorachaAuthorized(false)
   }
