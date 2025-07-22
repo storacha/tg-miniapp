@@ -59,7 +59,7 @@ interface GlobalState {
   setIsFirstLogin: (isFirstLogin: boolean) => void
   setIsOnboarded: (isOnboarded: boolean) => void
   setIsStorachaAuthorized: (isStorachaAuthorized: boolean) => void
-  setUser: (user: User) => void
+  setUser: (user: User | null) => void
   setPhoneNumber: (phone: string) => void
   setSpace: (space: SpaceDID | null) => void
   setTgSessionString: (session?: Session | string) => void

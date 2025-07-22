@@ -6,8 +6,6 @@ import { useBackups } from '@/providers/backup'
 import { useGlobal } from '@/zustand/global'
 import { formatBytes } from '@/lib/utils'
 import { useState, useEffect } from 'react'
-import { useError } from '@/providers/error'
-import { getErrorMessage } from '@/lib/errorhandling'
 import { getStorachaUsage } from '@/lib/storacha'
 
 export interface SummaryProps {
@@ -32,7 +30,6 @@ export const Summary = ({
   const [{ jobsReady }, {}] = useBackups()
   const [{ client }] = useStoracha()
   const { space } = useGlobal()
-  const { setError } = useError()
   const chatsLength = Object.keys(chats).length
 
   useEffect(() => {
@@ -43,9 +40,7 @@ export const Summary = ({
         const usage = await getStorachaUsage(client, space)
         setStorageUsed(usage)
       } catch (err) {
-        const title = 'Failed to fetch storage usage'
-        console.error(title, err)
-        setError(getErrorMessage(err), { title })
+        console.error('Failed to fetch storage usage', err)
       }
     }
 

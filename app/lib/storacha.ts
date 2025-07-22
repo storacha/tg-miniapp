@@ -26,17 +26,18 @@ export const getStorachaUsage = async (
   space: `did:key:${string}`
 ): Promise<number> => {
   const now = new Date()
+  const previousMonth = new Date(
+    now.getUTCFullYear(),
+    now.getUTCMonth() - 1,
+    now.getUTCDate(),
+    0,
+    0,
+    0,
+    0
+  )
   try {
     const usage = await client.capability.usage.report(space, {
-      from: new Date(
-        now.getUTCFullYear(),
-        now.getUTCMonth() - 1,
-        now.getUTCDate(),
-        0,
-        0,
-        0,
-        0
-      ),
+      from: previousMonth,
       to: now,
     })
 
