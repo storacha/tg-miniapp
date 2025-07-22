@@ -11,7 +11,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { Period } from '@/api'
 
 export interface DatesProps {
   period: Period
@@ -19,25 +21,7 @@ export interface DatesProps {
   onSubmit: () => unknown
 }
 
-const day = 60 * 60 * 24
-const month = 30 * day
-
-const durationNames: Record<string, number> = {
-  twoWeeks: 2 * 7 * day,
-  month,
-  sixMonths: 6 * month,
-}
-
-const durationValues = Object.fromEntries(
-  Object.entries(durationNames).map(([k, v]) => [v, k])
-)
-
-const toDurationName = ([from, to]: Period) => {
-  const now = Math.floor(Date.now() / 1000)
-  const duration = (to ?? now) - from
-  const match = durationValues[duration]
-  return match ?? (from > 0 ? 'custom' : 'allTime')
-}
+const MILLISECONDS_IN_A_WEEK = 7 * 24 * 60 * 60 * 1000
 
 export default function Dates({
   period,
@@ -47,11 +31,20 @@ export default function Dates({
   const [{ accounts, client }] = useStoracha()
   const accountDid = accounts[0].did()
 
-  const [customDate, setCustomDate] = useState<Date | null>(null)
   const [paying, setPaying] = useState<boolean | null>(null)
+  const [dates, setDates] = useState<[Date | null, Date | null]>([
+    // converting from seconds to milliseconds hence
+    // multiplying by 1000 since Date() expects ms
+    period[0] ? new Date(period[0] * 1000) : null, // from
+    period[1] ? new Date(period[1] * 1000) : null, // to
+  ])
+  const [error, setError] = useState<string | null>(null)
 
-  const now = Math.floor(Date.now() / 1000)
-  const durationKey = toDurationName(period)
+  const [fromDate, toDate] = dates
+  const now = new Date()
+  const maxWeeks = paying ? 52 : 2
+  // Get a date `maxWeeks` ago from today
+  const minDate = new Date(now.getTime() - maxWeeks * MILLISECONDS_IN_A_WEEK)
 
   useEffect(() => {
     let mounted = true
@@ -71,27 +64,28 @@ export default function Dates({
     }
   }, [client, accountDid])
 
-  const isPaying = paying === true
-  const maxWeeks = isPaying ? 52 : 2
-  const minDate = new Date(Date.now() - maxWeeks * 7 * 24 * 60 * 60 * 1000)
-  const maxDate = new Date()
-
-  const handleValueChange = (value: string) => {
-    if (value === 'custom') {
-      // we should use the maximum allowed date range as the default
-      // when 'custom' is selected
-      const maxStart = Math.floor(minDate.getTime() / 1000)
-      onPeriodChange([maxStart, now])
-      setCustomDate(minDate)
-      return
+  useEffect(() => {
+    // default to now(), if people do not select the toDate
+    if (fromDate && !toDate) {
+      setDates([fromDate, now])
     }
-
-    const d = durationNames[value]
-    onPeriodChange(d ? [now - d, now] : [0])
-  }
+    // we should prevent inaccurate period selections
+    // this would mostl-likely apply to paid accounts
+    if (fromDate && toDate) {
+      if (fromDate > toDate) {
+        setError('Start date cannot be after end date.')
+      } else {
+        setError(null)
+        const from = Math.floor(fromDate.getTime() / 1000)
+        const to = Math.floor(toDate.getTime() / 1000)
+        onPeriodChange([from, to])
+      }
+    }
+  }, [dates, fromDate, toDate, onPeriodChange])
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
+    if (!fromDate || !toDate || fromDate > toDate) return
     onSubmit()
   }
 
@@ -112,100 +106,69 @@ export default function Dates({
         <p className="text-sm">Choose a time range to back up your chats.</p>
       </div>
 
-      <div className="rounded-t-xl w-full flex-grow py-2">
-        <RadioGroup
-          value={durationKey}
-          onValueChange={handleValueChange}
-          className="px-5"
-        >
-          <div className="flex items-center gap-2 border-b border-primary/10 py-3">
-            <RadioGroupItem value="twoWeeks" id="twoWeeks" />
-            <Label htmlFor="twoWeeks" className="flex-auto">
-              Last 2 weeks
-            </Label>
-          </div>
+      <div className="w-full px-5 space-y-6 pt-6">
+        {['From', 'To'].map((label, i) => {
+          const date = dates[i]
+          const updateDate = (d: Date) => {
+            const updated: [Date | null, Date | null] = [...dates]
+            updated[i] = d
+            setDates(updated)
+          }
 
-          {isPaying && (
-            <>
-              <div className="flex items-center gap-2 border-b border-primary/10 py-3">
-                <RadioGroupItem value="month" id="month" />
-                <Label htmlFor="month" className="flex-auto">
-                  Last month
-                </Label>
-              </div>
-              <div className="flex items-center gap-2 border-b border-primary/10 py-3">
-                <RadioGroupItem value="sixMonths" id="sixMonths" />
-                <Label htmlFor="sixMonths" className="flex-auto">
-                  Last 6 months
-                </Label>
-              </div>
-            </>
-          )}
-
-          <div className="flex items-center gap-2 border-b border-primary/10 py-3">
-            <RadioGroupItem value="allTime" id="allTime" />
-            <Label htmlFor="allTime" className="flex-auto">
-              All time
-            </Label>
-          </div>
-
-          {isPaying && (
-            <div className="flex items-center gap-2 border-b border-primary/10 py-3">
-              <RadioGroupItem value="custom" id="custom" />
-              <Label htmlFor="custom" className="flex-auto">
-                Custom range
+          return (
+            <div key={label}>
+              <Label className="mb-1 block text-sm font-medium">
+                {label} date
               </Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full justify-start text-left font-normal',
+                      !date && 'text-muted-foreground'
+                    )}
+                    disabled={i === 1 && !fromDate}
+                  >
+                    {date
+                      ? date.toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      : `Pick ${label.toLowerCase()} date`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date ?? undefined}
+                    onSelect={(d) => d && updateDate(d)}
+                    disabled={(d) => d < minDate || d > now}
+                    autoFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
-        </RadioGroup>
+          )
+        })}
 
-        {durationKey === 'custom' && (
-          <div className="pt-4 px-5">
-            <Label className="mb-1 block text-sm font-medium">
-              Select date
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !customDate && 'text-muted-foreground'
-                  )}
-                >
-                  {customDate
-                    ? customDate.toLocaleDateString(undefined, {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })
-                    : 'Pick a date'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={customDate ?? undefined}
-                  onSelect={(date) => {
-                    if (!date) return
-                    setCustomDate(date)
-                    const start = Math.floor(date.getTime() / 1000)
-                    onPeriodChange([start, now])
-                  }}
-                  disabled={(date) => date < minDate || date > maxDate}
-                  autoFocus
-                />
-              </PopoverContent>
-            </Popover>
-            <p className="text-xs mt-1 text-muted-foreground">
-              You can select up to {maxWeeks} weeks back.
-            </p>
-          </div>
+        {/* should we show this to paying accounts? */}
+        {!paying && (
+          <p className="text-xs text-muted-foreground">
+            You can back up chats up to {maxWeeks} weeks prior
+          </p>
         )}
+
+        {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
       </div>
 
       <div className="sticky bottom-0 w-full p-5">
-        <Button type="submit" className="w-full">
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={!fromDate || !toDate || !!error}
+        >
           Continue
         </Button>
       </div>
