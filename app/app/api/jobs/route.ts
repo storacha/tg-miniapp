@@ -34,8 +34,8 @@ export async function POST(request: Request) {
 
   const message = await request.json()
 
-  await handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
-  return Response.json({})
+  handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
+  return Response.json({}, { status: 202 })
 }
 
 export async function GET() {
@@ -46,6 +46,7 @@ export async function GET() {
     const telegramId = getTelegramId(session.telegramAuth)
     const dbUser = await db.findOrCreateUser({
       storachaSpace: session.spaceDID,
+      storachaAccount: session.accountDID,
       telegramId: telegramId.toString(),
     })
     console.log('subscribing updates for user', dbUser.id)

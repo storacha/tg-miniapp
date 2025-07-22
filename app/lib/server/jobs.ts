@@ -35,6 +35,7 @@ export const login = async (request: LoginRequest) => {
   const session = await getSession()
   session.spaceDID = request.spaceDID
   session.telegramAuth = request.telegramAuth
+  session.accountDID = request.accountDID
   await session.save()
 }
 
@@ -48,6 +49,7 @@ export const createJob = async (
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   const job = await db.createJob({
@@ -62,6 +64,7 @@ export const createJob = async (
     ...request,
     spaceDID: session.spaceDID,
     telegramAuth: session.telegramAuth,
+    accountDID: session.accountDID,
     jobID: job.id,
   })
   logger.info('Job created and queued', {
@@ -91,6 +94,7 @@ export const listJobs = async () => {
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   return await db.getJobsByUserID(dbUser.id)
@@ -102,6 +106,7 @@ export const removeJob = async (request: RemoveJobRequest) => {
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   const job = await db.getJobByID(request.jobID, dbUser.id)
@@ -133,6 +138,7 @@ export const cancelJob = async (request: CancelJobRequest) => {
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   const job = await db.getJobByID(request.jobID, dbUser.id)
@@ -194,6 +200,7 @@ const initializeHandler = async (request: ExecuteJobRequest) => {
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: request.spaceDID,
+    storachaAccount: request.accountDID,
     telegramId: telegramId.toString(),
   })
   return createHandler({
