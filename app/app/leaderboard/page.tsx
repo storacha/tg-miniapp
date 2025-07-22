@@ -10,6 +10,7 @@ import { Banner } from '@/components/leaderboard/banner'
 import { Podium } from '@/components/leaderboard/podium'
 import { getLeaderboard, getRanking } from '@/components/server'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
+import pRetry from 'p-retry'
 
 export default function Page() {
   const { tgSessionString, space } = useGlobal()
@@ -20,8 +21,22 @@ export default function Page() {
   useEffect(() => {
     ;(async () => {
       try {
-        const leaderboard = fromResult(await getLeaderboard(tgSessionString))
-        setLeaderboard(leaderboard)
+        await pRetry(
+          async () => {
+            const leaderboard = fromResult(
+              await getLeaderboard(tgSessionString)
+            )
+            setLeaderboard(leaderboard)
+          },
+          {
+            retries: 5,
+            onFailedAttempt: (error) => {
+              console.warn(
+                `Failed to load leaderboard: ${error.message}. I've made ${error.attemptNumber} attempt(s), ${error.retriesLeft} retries left`
+              )
+            },
+          }
+        )
       } catch (error) {
         const title = 'Error fetching leaderboard!'
         console.error(title, error)
