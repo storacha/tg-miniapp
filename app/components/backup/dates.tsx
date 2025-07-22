@@ -1,5 +1,4 @@
 import { useEffect, useState, FormEventHandler } from 'react'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Label } from '@/components/ui/label'
 import { Button } from '../ui/button'
 import { Period } from '@/api'
@@ -11,9 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { Period } from '@/api'
 
 export interface DatesProps {
   period: Period
