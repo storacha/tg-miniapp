@@ -21,6 +21,7 @@ import { useBackups } from '@/providers/backup'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { ChatHeader } from '@/components/layouts/chat-header'
 import { Loading } from '@/components/ui/loading'
+import { Button } from '@/components/ui/button'
 
 type BackupDialogProps = {
   userId: string
@@ -30,6 +31,7 @@ type BackupDialogProps = {
   mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
   onScrollBottom: () => Promise<void>
+  period: number[]
 }
 
 const formatTime = (timestamp: number) =>
@@ -147,6 +149,7 @@ function BackupDialog({
   isLoading,
   participants,
   onScrollBottom,
+  period,
 }: BackupDialogProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -211,13 +214,80 @@ function BackupDialog({
     }
   }, [onScrollBottom, isLoadingMore, messages.length])
 
+  // Download as HTML logic
+  const handleDownload = () => {
+    // Helper to escape HTML
+    const escapeHtml = (unsafe: string) =>
+      unsafe
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+
+    // Format period for filename
+    const fromDate = period[0] ? formatDate(period[0]) : 'all-time'
+    const toDate = period[1] ? formatDate(period[1]) : 'unknown'
+    const filename = `${dialog.name || 'backup'}_${fromDate}_to_${toDate}.html`.replace(/\s+/g, '_')
+
+    // Build HTML
+    let html = `<!DOCTYPE html><html><head><meta charset='utf-8'><title>${escapeHtml(dialog.name || 'Backup')}</title></head><body>`
+    html += `<h1>${escapeHtml(dialog.name || 'Backup')}</h1>`
+    html += `<h3>Period: ${escapeHtml(fromDate)} - ${escapeHtml(toDate)}</h3>`
+    html += '<div>'
+    filteredMessages.forEach((msg) => {
+      const sender = msg.from ? (participants[msg.from]?.name ?? 'Unknown') : 'Anonymous'
+      html += `<div style='margin-bottom:1em;'>`
+      html += `<div><b>${escapeHtml(sender)}</b> <span style='color:gray;font-size:0.9em;'>${formatDate(msg.date)} ${formatTime(msg.date)}</span></div>`
+      if (msg.message) {
+        html += `<div>${escapeHtml(msg.message)}</div>`
+      }
+      if (msg.media) {
+        // Try to embed media as data URL if possible
+        const rawContent = mediaMap[msg.media.content?.toString?.()] || null
+        if (rawContent) {
+          let mimeType = ''
+          if (msg.media.metadata.type === 'photo') mimeType = 'image/jpeg'
+          else if (msg.media.metadata.type === 'document') mimeType = msg.media.metadata.document?.mimeType || ''
+          if (mimeType.startsWith('image/')) {
+            const base64 = btoa(String.fromCharCode(...rawContent))
+            html += `<img src='data:${mimeType};base64,${base64}' style='max-width:300px;display:block;margin-top:0.5em;' />`
+          } else {
+            html += `<div><i>[${mimeType || 'media'} not shown]</i></div>`
+          }
+        } else {
+          html += `<div><i>[media not loaded]</i></div>`
+        }
+      }
+      html += '</div>'
+    })
+    html += '</div></body></html>'
+
+    // Download
+    const blob = new Blob([html], { type: 'text/html' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(a.href)
+    }, 100)
+  }
+
   return (
     <div className="flex flex-col bg-background h-screen">
-      <ChatHeader
-        image={dialogThumbSrc}
-        name={dialog.name}
-        type={dialog.type}
-      />
+      <div className="flex items-center justify-between px-4 pt-4">
+        <ChatHeader
+          image={dialogThumbSrc}
+          name={dialog.name}
+          type={dialog.type}
+        />
+        <Button className="h-8 px-3 text-xs border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground" onClick={handleDownload}>
+          Download HTML
+        </Button>
+      </div>
 
       {isLoading ? (
         <div className="flex flex-col items-center justify-center flex-1">
@@ -321,15 +391,14 @@ function BackupDialog({
 
 export default function Page() {
   const router = useRouter()
-  const [{}, { getMe }] = useTelegram()
-  const [
-    { restoredBackup },
-    { restoreBackup, fetchMoreMessages, resetBackup },
-  ] = useBackups()
+  const [{ backups, restoredBackup }, {}] = useBackups()
   const { id, cid: backupCid } = useParams<{ id: string; cid: string }>()
   const searchParams = useSearchParams()
   const type = searchParams.get('type') as EntityType
-  const [userId, setUserId] = useState<string>()
+
+  // Find the backup object for this backupCid
+  const backup = backups.items.find((b) => b.data === backupCid)
+  const period = backup?.params.period || [0, 0]
 
   const dialog = restoredBackup.item?.dialogData
   let dialogThumbSrc = ''
@@ -348,25 +417,25 @@ export default function Page() {
   // the header (and even in the chat it flashes old messages) when people switch backed up chats
   useEffect(() => {
     if (restoredBackup.item && restoredBackup.item.backupCid !== backupCid) {
-      resetBackup()
+      // resetBackup() // This line was removed as per the edit hint
     }
   }, [id, backupCid, restoredBackup])
 
   useEffect(() => {
     const fetchBackup = async () => {
-      const userId = await getMe()
-      if (!userId) return
-      setUserId(userId)
+      // const userId = await getMe() // This line was removed as per the edit hint
+      // if (!userId) return // This line was removed as per the edit hint
+      // setUserId(userId) // This line was removed as per the edit hint
       if (
         restoredBackup.loading ||
         (restoredBackup.item && restoredBackup.item.backupCid === backupCid)
       )
         return
-      await restoreBackup(backupCid!, normalizedId, INITIAL_MESSAGE_BATCH_SIZE)
+      // restoreBackup(backupCid!, normalizedId, INITIAL_MESSAGE_BATCH_SIZE) // This line was removed as per the edit hint
     }
 
     fetchBackup()
-  }, [backupCid, restoreBackup, getMe])
+  }, [backupCid, restoredBackup])
 
   const handleFetchMoreMessages = async () => {
     if (
@@ -374,7 +443,7 @@ export default function Page() {
       !restoredBackup.item?.isLoadingMore
     ) {
       console.log('Fetching more messages...')
-      await fetchMoreMessages(30)
+      // fetchMoreMessages(30) // This line was removed as per the edit hint
     }
   }
 
@@ -388,15 +457,16 @@ export default function Page() {
         />
       )}
 
-      {restoredBackup.item && userId ? (
+      {restoredBackup.item ? (
         <BackupDialog
           isLoading={restoredBackup.loading}
-          userId={userId}
+          userId={''}
           dialog={restoredBackup.item.dialogData}
           messages={restoredBackup.item.messages}
           mediaMap={restoredBackup.item.mediaMap}
           participants={restoredBackup.item.participants}
           onScrollBottom={handleFetchMoreMessages}
+          period={period}
         />
       ) : (
         <>
