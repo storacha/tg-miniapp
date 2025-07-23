@@ -23,7 +23,7 @@
       "cd app && pnpm lint --fix"
     ],
     "!app/vendor/**/*": [],
-    "*.{json,md}": [
+    "*.{json}": [
       "prettier --write"
     ]
   }
