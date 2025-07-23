@@ -1,5 +1,23 @@
 # Changelog
 
+## [2.10.0](https://github.com/storacha/tg-miniapp/compare/v2.9.0...v2.10.0) (2025-07-23)
+
+
+### Features
+
+* add bot webhook handling ([a3e7617](https://github.com/storacha/tg-miniapp/commit/a3e76176a0b19d46d829f51f5b4574e16aedbe60))
+* add bot webhook handling ([ee59daa](https://github.com/storacha/tg-miniapp/commit/ee59daada4801872f98c030fa93fd310971a580a))
+
+
+### Bug Fixes
+
+* add requested changes ([8c68dc6](https://github.com/storacha/tg-miniapp/commit/8c68dc638004b0945d2c829fa1c5aa991f0bc0f3))
+* build issues ([63ca4ad](https://github.com/storacha/tg-miniapp/commit/63ca4ad13f5116618f5805957ec814c36ec47ab9))
+* check for user plan before blocking upload ([2820620](https://github.com/storacha/tg-miniapp/commit/2820620e93c47c4c59f7bdf9b093dd375cbb56a1))
+* clean up inconsistent phone number UX ([4e5228f](https://github.com/storacha/tg-miniapp/commit/4e5228fb04df064cd1692e8349b31389989b8af3))
+* revert CHANGELOG ([4d00df6](https://github.com/storacha/tg-miniapp/commit/4d00df68e8637bcd5e8ff970dcb5666a1d2addf1))
+* use the user ID in the telegram session name ([17af0a1](https://github.com/storacha/tg-miniapp/commit/17af0a131d79f552d0ec192a59f40f5f0e7d2484))
+
 ## [2.9.0](https://github.com/storacha/tg-miniapp/compare/v2.8.0...v2.9.0) (2025-07-16)
 
 
