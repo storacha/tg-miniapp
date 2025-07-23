@@ -10,7 +10,7 @@ import {
   Ranking,
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
-import { TelegramClient } from 'telegram'
+import { TelegramClient, Api } from 'telegram'
 import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
 import bigInt from 'big-integer'
@@ -23,12 +23,12 @@ import {
   listJobs as jobsListJob,
   removeJob as jobsRemoveJob,
   cancelJob as jobsCancelJob,
+  deleteDialogFromJob as jobsDeleteDialogFromJob,
 } from '@/lib/server/jobs'
 import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
 import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
-import { Api } from '@/vendor/telegram'
 import { clearSession } from '@/lib/server/session'
 
 const names = supervillains
@@ -73,6 +73,7 @@ export const findJob = toResultFn(jobsFindJob)
 export const listJobs = toResultFn(jobsListJob)
 export const removeJob = toResultFn(jobsRemoveJob)
 export const cancelJob = toResultFn(jobsCancelJob)
+export const deleteDialogFromJob = toResultFn(jobsDeleteDialogFromJob)
 
 const withClient = <T extends [...unknown[]], U>(
   fn: (client: TelegramClient, ...args: T) => Promise<U>
@@ -218,7 +219,6 @@ export const getLeaderboard = toResultFn(
         nameIndex++
       }
 
-      console.log('ME?!?!?', id, me, me.id.toString())
       leaderboard.push({
         id,
         name,
@@ -242,29 +242,4 @@ export const getRanking = toResultFn(
       return await getDB().rank({ telegramId: id, storachaSpace: space })
     }
   )
-)
-
-export const getEntity = toResultFn(
-  withClient(async (client: TelegramClient, peerId: string) => {
-    const entity = await client.getEntity(bigInt(peerId))
-    const basic: Pick<DialogInfo, 'id' | 'name' | 'photo'> = {
-      id: entity.id.toString(),
-      name:
-        'firstName' in entity
-          ? [entity.firstName, entity.lastName].filter(Boolean).join(' ')
-          : 'title' in entity
-            ? entity.title
-            : '',
-      photo:
-        'photo' in entity &&
-        entity.photo?.className === 'UserProfilePhoto' &&
-        entity.photo.strippedThumb
-          ? {
-              id: entity.photo.photoId.toString(),
-              strippedThumb: new Uint8Array(entity.photo.strippedThumb),
-            }
-          : undefined,
-    }
-    return basic
-  })
 )

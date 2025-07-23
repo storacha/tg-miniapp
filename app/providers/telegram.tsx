@@ -18,7 +18,6 @@ import {
   listDialogs as listDialogsRequest,
   getMe as getMeRequest,
   logout as logoutTelegram,
-  getEntity as getEntityRequest,
 } from '../components/server'
 import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
@@ -39,9 +38,6 @@ export interface ContextActions {
   loadMoreDialogs: () => Promise<void>
   logout: () => Promise<void>
   setIsTgAuthorized: (isTgAuthorized: boolean) => void
-  getEntity: (
-    peerId: string
-  ) => Promise<{ id: string; name: string; photo?: Uint8Array } | undefined>
 }
 
 export type ContextValue = [state: ContextState, actions: ContextActions]
@@ -62,7 +58,6 @@ export const ContextDefaultValue: ContextValue = [
     setIsTgAuthorized: () => {
       throw new Error('provider not setup')
     },
-    getEntity: () => Promise.reject(new Error('provider not setup')),
   },
 ]
 
@@ -185,30 +180,6 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     }
   }, [])
 
-  const getEntity = useCallback(
-    async (peerId: string) => {
-      if (!tgSessionString) return undefined
-      try {
-        const res = await getEntityRequest(tgSessionString, peerId)
-        if (res.ok) {
-          const e = res.ok
-          return {
-            id: e.id,
-            name: e.name,
-            photo: e.photo?.strippedThumb,
-          }
-        }
-      } catch (err) {
-        setError(getErrorMessage(err), {
-          title: 'Error fetching missing users',
-        })
-        return undefined
-      }
-      return undefined
-    },
-    [tgSessionString]
-  )
-
   return (
     <Context.Provider
       value={[
@@ -220,7 +191,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
           isTgAuthorized,
           isValidating,
         },
-        { getMe, loadMoreDialogs, logout, setIsTgAuthorized, getEntity },
+        { getMe, loadMoreDialogs, logout, setIsTgAuthorized },
       ]}
     >
       {children}

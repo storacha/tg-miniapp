@@ -16,14 +16,14 @@
   "engines": {
     "node": ">=18"
   },
-  "version": "2.4.0",
+  "version": "2.10.0",
   "lint-staged": {
     "app/**/*.{ts,tsx}": [
       "prettier --write",
       "cd app && pnpm lint --fix"
     ],
     "!app/vendor/**/*": [],
-    "*.{json,md}": [
+    "*.{json}": [
       "prettier --write"
     ]
   }

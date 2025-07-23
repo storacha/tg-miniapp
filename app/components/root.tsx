@@ -29,6 +29,7 @@ import {
   login,
   removeJob,
   cancelJob,
+  deleteDialogFromJob,
 } from './server'
 import { ErrorPage } from './error'
 import TelegramAuth from './telegram-auth'
@@ -60,19 +61,19 @@ if (typeof window !== 'undefined') {
 export function Root(props: PropsWithChildren) {
   const didMount = useDidMount()
   const [{ isTgAuthorized }] = useTelegram()
-  const { isOnboarded, tgSessionString, setTgSessionString } = useGlobal()
+  const { isOnboarded, tgSessionString, setTgSessionString, user } = useGlobal()
 
   useEffect(() => {
-    if (isTgAuthorized && !tgSessionString) {
+    if (isTgAuthorized && !tgSessionString && user) {
       console.log('setting session')
-      const defaultSessionName = 'tg-session'
+      const defaultSessionName = `tg-session-${user.id}`
       const session =
         typeof localStorage !== 'undefined'
           ? new StoreSession(defaultSessionName)
           : new StringSession()
       setTgSessionString(session)
     }
-  }, [tgSessionString])
+  }, [isTgAuthorized, tgSessionString, user, setTgSessionString])
 
   if (!didMount) {
     return (
@@ -126,8 +127,13 @@ const AppContent = (props: PropsWithChildren) => {
 const BackupProviderContainer = ({ children }: PropsWithChildren) => {
   const [{ client: storacha }] = useStoracha()
   const [{ launchParams }] = useTelegram()
-  const { isStorachaAuthorized, space, tgSessionString, setIsFirstLogin } =
-    useGlobal()
+  const {
+    isStorachaAuthorized,
+    space,
+    tgSessionString,
+    setIsFirstLogin,
+    user,
+  } = useGlobal()
   const [jobs, setJobs] = useState<JobStorage>()
   const { setError } = useError()
 
@@ -137,7 +143,13 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
       let encryptionPassword = await cloudStorage.getItem('encryption-password')
       setIsFirstLogin(!encryptionPassword)
 
-      if (!storacha || !tgSessionString || !isStorachaAuthorized || !space) {
+      if (
+        !storacha ||
+        !tgSessionString ||
+        !isStorachaAuthorized ||
+        !space ||
+        !user
+      ) {
         return
       }
 
@@ -159,6 +171,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
               initData: launchParams.initDataRaw || '',
             },
             spaceDID: space,
+            accountDID: user.accountDID,
           })
         )
       } catch (err) {
@@ -168,6 +181,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
 
       const jobs = await createJobStorage({
         serverDID: serverDID,
+        accountDID: user.accountDID,
         storacha,
         encryptionPassword,
         jobClient: {
@@ -176,6 +190,8 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
           listJobs: async (jr) => fromResult(await listJobs(jr)),
           removeJob: async (jr) => fromResult(await removeJob(jr)),
           cancelJob: async (jr) => fromResult(await cancelJob(jr)),
+          deleteDialogFromJob: async (jr) =>
+            fromResult(await deleteDialogFromJob(jr)),
         },
       })
       // setup a remove listener for async updates

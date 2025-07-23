@@ -16,16 +16,18 @@ import { StringSession } from '@/vendor/telegram/sessions'
 import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
 import { getErrorMessage } from '@/lib/errorhandling'
 import { useAnalytics } from '@/lib/analytics'
+import { defaultClientParams } from '@/lib/server/constants'
+
+class PhoneNumberMismatchError extends Error {
+  constructor() {
+    super(
+      'Phone number mismatch: The phone number you entered does not match the Telegram account that opened this Mini App. Please use the correct phone number or open the Mini App from the matching Telegram account.'
+    )
+  }
+}
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
-const appVersion = process.env.version ?? '1.0.0'
-const defaultClientParams: TelegramClientParams = {
-  connectionRetries: 5,
-  deviceModel: 'Storacha',
-  systemVersion: 'Linux',
-  appVersion,
-}
 
 function CountDown({ onResend }: { onResend: () => unknown }) {
   const [count, setCount] = useState(59)
@@ -88,6 +90,7 @@ function OTPForm({
   }
 
   const disabled = code === null || code.length < 5 || loading
+  const isPhoneNumberMismatch = error instanceof PhoneNumberMismatchError
 
   return (
     <form
@@ -122,7 +125,7 @@ function OTPForm({
         </p>
       </div>
       <div className="flex flex-col justify-center items-center gap-3">
-        {disabled ? (
+        {disabled || isPhoneNumberMismatch ? (
           <Button
             type="submit"
             className="w-full"
@@ -216,7 +219,7 @@ export default function TelegramAuth() {
       new StringSession(tgSessionString),
       apiId,
       apiHash,
-      defaultClientParams
+      defaultClientParams as unknown as TelegramClientParams
     )
     setClient(newClient)
   }, [tgSessionString])
@@ -277,10 +280,9 @@ export default function TelegramAuth() {
       if (result instanceof Api.auth.AuthorizationSignUpRequired) {
         throw new Error('user needs to sign up')
       }
-      if (process.env.NODE_ENV === 'production') {
-        if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
-          throw new Error('login user and user using the app must match')
-        }
+      // Verify the authenticated user matches the Mini App user
+      if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
+        throw new PhoneNumberMismatchError()
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
@@ -331,10 +333,9 @@ export default function TelegramAuth() {
       if (result instanceof Api.auth.AuthorizationSignUpRequired) {
         throw new Error('user needs to sign up')
       }
-      if (process.env.NODE_ENV === 'production') {
-        if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
-          throw new Error('login user and user using the app must match')
-        }
+      // Verify the authenticated user matches the Mini App user
+      if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
+        throw new PhoneNumberMismatchError()
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)

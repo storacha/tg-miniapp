@@ -1,8 +1,12 @@
-import { SpaceDID } from '@storacha/ui-react'
+import { SpaceDID, useW3 as useStoracha } from '@storacha/ui-react'
 import { DialogsById, Period } from '@/api'
 import { Button } from '../ui/button'
 import { FormEventHandler } from 'react'
 import { useBackups } from '@/providers/backup'
+import { useGlobal } from '@/zustand/global'
+import { formatBytes } from '@/lib/utils'
+import { useState, useEffect } from 'react'
+import { getStorachaUsage } from '@/lib/storacha'
 
 export interface SummaryProps {
   chats: DialogsById
@@ -18,12 +22,30 @@ export const Summary = ({
   starting,
   onSubmit,
 }: SummaryProps) => {
+  const [storageUsed, setStorageUsed] = useState<number>()
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
     onSubmit()
   }
   const [{ jobsReady }, {}] = useBackups()
+  const [{ client }] = useStoracha()
+  const { space } = useGlobal()
   const chatsLength = Object.keys(chats).length
+
+  useEffect(() => {
+    const fetchStorageUsage = async () => {
+      if (!space || !client) return
+
+      try {
+        const usage = await getStorachaUsage(client, space)
+        setStorageUsed(usage)
+      } catch (err) {
+        console.error('Failed to fetch storage usage', err)
+      }
+    }
+
+    fetchStorageUsage()
+  }, [space, client])
 
   return (
     <form onSubmit={handleSubmit}>
@@ -32,6 +54,11 @@ export const Summary = ({
           Ready?
         </h1>
         <p className="text-sm">Check the details before we start.</p>
+        {typeof storageUsed === 'number' && (
+          <p className="text-center text-sm text-muted-foreground">
+            Total storage usage: {formatBytes(storageUsed)}
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-5 rounded-t-xl bg-background w-full flex-grow py-2">
         <div className="flex space-x-2 items-center gap-2 border-b border-primary/10 p-5">

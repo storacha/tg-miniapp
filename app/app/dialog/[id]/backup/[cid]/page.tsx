@@ -21,6 +21,7 @@ import { useBackups } from '@/providers/backup'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { ChatHeader } from '@/components/layouts/chat-header'
 import { Loading } from '@/components/ui/loading'
+import { useProfilePhoto } from '@/components/backup/useProfilePhoto'
 
 type BackupDialogProps = {
   userId: string
@@ -30,6 +31,7 @@ type BackupDialogProps = {
   mediaMap: Record<string, Uint8Array>
   participants: Record<string, EntityData>
   onScrollBottom: () => Promise<void>
+  dialogThumbSrc: string
 }
 
 const formatTime = (timestamp: number) =>
@@ -143,10 +145,8 @@ const formatServiceMessage = (
     case 'chat-delete-photo':
       return `${getUserName(from)} removed the group photo`
     case 'chat-add-user':
-      const addedUsers = action.users
-        .map((userId) => getUserName(userId))
-        .join(', ')
-      return `${addedUsers} joined the group`
+      const addedUsers = action.users.length
+      return `${addedUsers} users joined the group`
     case 'chat-delete-user':
       return `${getUserName(action.user)} was removed from the group`
     case 'chat-joined-by-link':
@@ -385,6 +385,8 @@ const formatServiceMessage = (
       return `Web‑view data sent: ${action.text}.`
     case 'web-view-data-sent-me':
       return `You sent web‑view data: ${action.text}.`
+    default:
+      return `some unknown action occurred`
   }
 }
 
@@ -410,86 +412,13 @@ function BackupDialog({
   mediaMap,
   isLoading,
   participants,
-  setParticipants,
-  getEntity,
   onScrollBottom,
-}: BackupDialogProps & {
-  setParticipants: React.Dispatch<
-    React.SetStateAction<Record<string, EntityData>>
-  >
-  getEntity: (
-    peerId: string
-  ) => Promise<{ id: string; name: string; photo?: Uint8Array } | undefined>
-}) {
+  dialogThumbSrc,
+}: BackupDialogProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   let lastRenderedDate: string | null = null
   let lastSenderId: string | null = null
-
-  // const filteredMessages: MessageData[] = useMemo(
-  //   () =>
-  //     messages.filter((msg): msg is MessageData => {
-  //       // Skip all service messages for now, this should be handled later
-  //       if (msg.type === 'service') {
-  //         return false
-  //       }
-
-  //       /**
-  //        * Skip unsupported media types, there's no point in showing them.
-  //        */
-  //       if (msg.media?.metadata?.type === 'unsupported') {
-  //         return false
-  //       }
-
-  //       return true
-  //     }),
-  //   [messages]
-  // )
-
-  let dialogThumbSrc = ''
-  if (dialog.photo?.strippedThumb) {
-    dialogThumbSrc = toJPGDataURL(
-      decodeStrippedThumb(dialog.photo?.strippedThumb)
-    )
-  }
-
-  useEffect(() => {
-    const missing = new Set<string>()
-    for (const msg of messages) {
-      if (msg.type === 'service' && msg.action.type === 'chat-add-user') {
-        for (const uid of msg.action.users) {
-          if (!participants[uid]) missing.add(uid)
-        }
-      }
-    }
-    if (missing.size === 0) return
-
-    Promise.all(
-      Array.from(missing).map((uid) =>
-        getEntity(uid).then((data) => ({ uid, data }))
-      )
-    ).then((results) => {
-      const updates: Record<string, EntityData> = {}
-      for (const { uid, data } of results) {
-        if (data) {
-          updates[uid] = {
-            id: data.id,
-            name: data.name,
-            type: 'user',
-            photo: data.photo
-              ? {
-                  id: data.id,
-                  strippedThumb: data.photo,
-                }
-              : undefined,
-          }
-        }
-      }
-      if (Object.keys(updates).length) {
-        setParticipants((prev) => ({ ...prev, ...updates }))
-      }
-    })
-  }, [messages, participants, setParticipants, getEntity])
 
   useEffect(() => {
     const handleScroll = async () => {
@@ -538,7 +467,7 @@ function BackupDialog({
         <div
           ref={chatContainerRef}
           className="flex-1 overflow-y-auto px-4 py-6 space-y-4"
-          style={{ height: 'calc(100vh - 64px)' }} // Ensure proper height
+          style={{ height: 'calc(100vh - 64px)' }} // Header height compensation
         >
           {messages.map((msg) => {
             if (
@@ -585,7 +514,6 @@ function BackupDialog({
             return (
               <Fragment key={msg.id}>
                 {showDate && <ServiceMessage text={date} />}
-                {/* { msg.type === 'service' && <ServiceMessage text={msg.action.description} /> } // TODO: would be nice to have a description for each action */}
                 {msg.type === 'service' ? (
                   <div className="flex flex-col items-center space-y-1">
                     <ServiceMessage
@@ -636,9 +564,9 @@ function BackupDialog({
 
 export default function Page() {
   const router = useRouter()
-  const [{}, { getMe, getEntity }] = useTelegram()
+  const [{}, { getMe }] = useTelegram()
   const [
-    { restoredBackup },
+    { backups, restoredBackup },
     { restoreBackup, fetchMoreMessages, resetBackup },
   ] = useBackups()
   const { id, cid: backupCid } = useParams<{ id: string; cid: string }>()
@@ -647,12 +575,34 @@ export default function Page() {
   const [userId, setUserId] = useState<string>()
 
   const dialog = restoredBackup.item?.dialogData
-  let dialogThumbSrc = ''
+
+  // Find the DialogInfo from backup params to get dialogId and accessHash for high quality images
+  const dialogInfo = useMemo(() => {
+    if (!dialog || !backups.items.length) return null
+
+    const normalizedDialogId = getNormalizedEntityId(dialog.id, dialog.type)
+
+    // Find the backup job that created this backup
+    const relevantBackup = backups.items.find(
+      (backup) =>
+        backup.data === backupCid && backup.params.dialogs[normalizedDialogId]
+    )
+
+    return relevantBackup?.params.dialogs[normalizedDialogId] || null
+  }, [dialog, backups.items, backupCid])
+
+  let lqThumbSrc = ''
   if (restoredBackup.item?.dialogData.photo?.strippedThumb) {
-    dialogThumbSrc = toJPGDataURL(
+    lqThumbSrc = toJPGDataURL(
       decodeStrippedThumb(restoredBackup.item.dialogData.photo?.strippedThumb)
     )
   }
+
+  const hqThumbSrc = useProfilePhoto(
+    dialogInfo?.dialogId,
+    dialogInfo?.accessHash
+  )
+  const dialogThumbSrc = hqThumbSrc || lqThumbSrc
 
   const normalizedId = useMemo(
     () => getNormalizedEntityId(id, type),
@@ -682,15 +632,6 @@ export default function Page() {
 
     fetchBackup()
   }, [backupCid, restoreBackup, getMe])
-  const [localParticipants, setLocalParticipants] = useState(
-    restoredBackup.item?.participants ?? {}
-  )
-
-  useEffect(() => {
-    if (restoredBackup.item) {
-      setLocalParticipants(restoredBackup.item.participants)
-    }
-  }, [restoredBackup.item])
   const handleFetchMoreMessages = async () => {
     if (
       restoredBackup.item?.hasMoreMessages &&
@@ -718,10 +659,9 @@ export default function Page() {
           dialog={restoredBackup.item.dialogData}
           messages={restoredBackup.item.messages}
           mediaMap={restoredBackup.item.mediaMap}
-          participants={localParticipants}
-          setParticipants={setLocalParticipants}
-          getEntity={getEntity}
+          participants={restoredBackup.item.participants}
           onScrollBottom={handleFetchMoreMessages}
+          dialogThumbSrc={dialogThumbSrc}
         />
       ) : (
         <>
