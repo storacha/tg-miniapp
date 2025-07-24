@@ -1,17 +1,20 @@
-import { useEffect, useState, FormEventHandler } from 'react'
-import { Label } from '@/components/ui/label'
-import { Button } from '../ui/button'
-import { Period } from '@/api'
+import { useEffect, useState, FormEventHandler, useMemo } from 'react'
 import { useW3 as useStoracha } from '@storacha/ui-react'
-import { isPayingAccount } from '@/lib/storacha'
 import { Calendar } from '@/components/ui/calendar'
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  MAX_BACKUP_WEEKS_FREE_TIER,
+  MAX_BACKUP_WEEKS_PAID_TIER,
+} from '@/lib/server/constants'
+import { isPayingAccount } from '@/lib/storacha'
 import { cn } from '@/lib/utils'
-
+import { Period } from '@/api'
 export interface DatesProps {
   period: Period
   onPeriodChange: (period: Period) => unknown
@@ -25,65 +28,118 @@ export default function Dates({
   onPeriodChange,
   onSubmit,
 }: DatesProps) {
+  const now = new Date()
   const [{ accounts, client }] = useStoracha()
-  const accountDid = accounts[0].did()
-
+  const [error, setError] = useState<string | null>(null)
   const [paying, setPaying] = useState<boolean | null>(null)
+
   const [dates, setDates] = useState<[Date | null, Date | null]>([
     // converting from seconds to milliseconds hence
     // multiplying by 1000 since Date() expects ms
     period[0] ? new Date(period[0] * 1000) : null, // from
-    period[1] ? new Date(period[1] * 1000) : null, // to
+    period[1] ? new Date(period[1] * 1000) : now, // to
   ])
-  const [error, setError] = useState<string | null>(null)
 
+  const accountDid = accounts[0].did()
   const [fromDate, toDate] = dates
-  const now = new Date()
-  const maxWeeks = paying ? 52 : 2
-  // Get a date `maxWeeks` ago from today
-  const minDate = new Date(now.getTime() - maxWeeks * MILLISECONDS_IN_A_WEEK)
+  const maxWeeks = paying
+    ? MAX_BACKUP_WEEKS_PAID_TIER
+    : MAX_BACKUP_WEEKS_FREE_TIER
 
   useEffect(() => {
     let mounted = true
-    const check = async () => {
+
+    const checkPaymentStatus = async () => {
       try {
         if (!client) return
         const result = await isPayingAccount(client, accountDid)
         if (mounted) setPaying(result)
       } catch (err) {
         console.error('Failed to check payment status', err)
-        setPaying(false)
+        if (mounted) setPaying(false)
       }
     }
-    check()
+
+    checkPaymentStatus()
     return () => {
       mounted = false
     }
   }, [client, accountDid])
 
+  // Normalize dates to proper time boundaries
+  const normalizeDates = useMemo(
+    () => (from: Date | null, to: Date | null) => {
+      if (!from) return [from, to]
+
+      const normalizedFrom = new Date(from)
+      normalizedFrom.setHours(0, 0, 0, 0)
+
+      const actualTo = to || now
+      const isToday = actualTo.toDateString() === now.toDateString()
+
+      const normalizedTo = isToday
+        ? now
+        : new Date(
+            actualTo.getFullYear(),
+            actualTo.getMonth(),
+            actualTo.getDate(),
+            23,
+            59,
+            59,
+            999
+          )
+
+      return [normalizedFrom, normalizedTo]
+    },
+    [now]
+  )
+
+  const validateDateRange = useMemo(
+    () =>
+      (from: Date | null, to: Date | null): string | null => {
+        if (!from || !to) return null
+
+        if (from > to) return 'Start date cannot be after end date.'
+        if (to > now) return 'End date cannot be in the future.'
+
+        const durationMs = to.getTime() - from.getTime()
+        const maxDurationMs = maxWeeks * MILLISECONDS_IN_A_WEEK
+
+        if (durationMs > maxDurationMs) {
+          return `Date range cannot exceed ${maxWeeks} weeks.`
+        }
+
+        return null
+      },
+    [now, maxWeeks]
+  )
+
   useEffect(() => {
-    // default to now(), if people do not select the toDate
-    if (fromDate && !toDate) {
-      setDates([fromDate, now])
+    const [normalizedFrom, normalizedTo] = normalizeDates(fromDate, toDate)
+    const validationError = validateDateRange(normalizedFrom, normalizedTo)
+
+    if (validationError) {
+      setError(validationError)
+    } else if (normalizedFrom && normalizedTo) {
+      setError(null)
+      const from = Math.floor(normalizedFrom.getTime() / 1000)
+      const to = Math.floor(normalizedTo.getTime() / 1000)
+      onPeriodChange([from, to])
+    } else {
+      setError(null)
     }
-    // we should prevent inaccurate period selections
-    // this would mostl-likely apply to paid accounts
-    if (fromDate && toDate) {
-      if (fromDate > toDate) {
-        setError('Start date cannot be after end date.')
-      } else {
-        setError(null)
-        const from = Math.floor(fromDate.getTime() / 1000)
-        const to = Math.floor(toDate.getTime() / 1000)
-        onPeriodChange([from, to])
-      }
-    }
-  }, [dates, fromDate, toDate, onPeriodChange])
+  }, [fromDate, toDate, onPeriodChange])
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
     if (!fromDate || !toDate || fromDate > toDate) return
     onSubmit()
+  }
+
+  const updateDate = (index: number) => (selectedDate: Date) => {
+    const updated: [Date | null, Date | null] = [...dates]
+    updated[index] = selectedDate
+    setDates(updated)
   }
 
   if (paying === null) {
@@ -93,6 +149,8 @@ export default function Dates({
       </div>
     )
   }
+
+  const isSubmitDisabled = !fromDate || !toDate || !!error
 
   return (
     <form onSubmit={handleSubmit}>
@@ -106,11 +164,6 @@ export default function Dates({
       <div className="w-full px-5 space-y-6 pt-6">
         {['From', 'To'].map((label, i) => {
           const date = dates[i]
-          const updateDate = (d: Date) => {
-            const updated: [Date | null, Date | null] = [...dates]
-            updated[i] = d
-            setDates(updated)
-          }
 
           return (
             <div key={label}>
@@ -140,8 +193,8 @@ export default function Dates({
                   <Calendar
                     mode="single"
                     selected={date ?? undefined}
-                    onSelect={(d) => d && updateDate(d)}
-                    disabled={(d) => d < minDate || d > now}
+                    onSelect={(d) => d && updateDate(i)(d)}
+                    disabled={(d) => d > now}
                     autoFocus
                   />
                 </PopoverContent>
@@ -150,22 +203,15 @@ export default function Dates({
           )
         })}
 
-        {/* should we show this to paying accounts? */}
-        {!paying && (
-          <p className="text-xs text-muted-foreground">
-            You can back up chats up to {maxWeeks} weeks prior
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          You can back up chats up to {maxWeeks} weeks
+        </p>
 
         {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
       </div>
 
       <div className="sticky bottom-0 w-full p-5">
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={!fromDate || !toDate || !!error}
-        >
+        <Button type="submit" className="w-full" disabled={isSubmitDisabled}>
           Continue
         </Button>
       </div>
