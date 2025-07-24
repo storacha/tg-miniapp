@@ -46,6 +46,8 @@ export const getServerConstants = () => {
 }
 
 export const MAX_FREE_BYTES = 5 * 1024 * 1024 * 1024 // 5 GiB
+export const MAX_BACKUP_WEEKS_PAID_TIER = 8
+export const MAX_BACKUP_WEEKS_FREE_TIER = 2
 
 let cachedServerIdentity: ed25519.Signer.Signer
 
