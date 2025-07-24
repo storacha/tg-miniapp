@@ -120,10 +120,12 @@ export const createServerDelegations = async (
     issuer: client.agent.issuer,
     audience: audienceDID,
     capabilities: [
+      { can: SpaceBlob.get.can, with: space.did() },
       { can: SpaceBlob.add.can, with: space.did() },
       { can: SpaceBlob.remove.can, with: space.did() },
       { can: SpaceIndex.add.can, with: space.did() },
       { can: Upload.add.can, with: space.did() },
+      { can: Upload.get.can, with: space.did() },
       { can: Upload.remove.can, with: space.did() },
       { can: SSstore.remove.can, with: space.did() },
       { can: Filecoin.offer.can, with: space.did() },
