@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.10.1](https://github.com/storacha/tg-miniapp/compare/v2.10.0...v2.10.1) (2025-07-24)
+
+
+### Bug Fixes
+
+* add custom period selection for users with a paid Storacha Plan ([85e1082](https://github.com/storacha/tg-miniapp/commit/85e1082dead72ada24651c0c4b6c6e3a0cf4c04f))
+* add custom period selection for users with a paid Storacha Plan ([9f2ccce](https://github.com/storacha/tg-miniapp/commit/9f2cccea6f50dbc6c08a6778445f8b32c1f537d8))
+* improve date selection with proper time boundaries ([f274e3e](https://github.com/storacha/tg-miniapp/commit/f274e3ea9abbe92f57b3cd260123df3a9ecd4316))
+* **storacha:** give upload/get + space/blob/get caps ([98ee14c](https://github.com/storacha/tg-miniapp/commit/98ee14c28ba6a1336b5008e73b7aac6f270b203f))
+* **storacha:** give upload/get + space/blob/get caps ([c87b586](https://github.com/storacha/tg-miniapp/commit/c87b586d2c70081bcaf20ef0989e5d377d25acf4))
+* wrong use of db bigint ([c78ae53](https://github.com/storacha/tg-miniapp/commit/c78ae537623574b99aa257d449e8bcf253cb2605))
+* wrong use of DB BIGINT ([e704dbc](https://github.com/storacha/tg-miniapp/commit/e704dbc4f88cb3ac2ed6d62fad68604cbe6077d8))
+
 ## [2.10.0](https://github.com/storacha/tg-miniapp/compare/v2.9.0...v2.10.0) (2025-07-23)
 
 
