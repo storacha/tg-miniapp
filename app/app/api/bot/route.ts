@@ -6,11 +6,10 @@ import TelegramBot, {
 } from 'node-telegram-bot-api'
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
+const BOT_NAME = process.env.TELEGRAM_BOT_NAME || 'storacha_bot'
 const SUPPORT_URL = process.env.SUPPORT_URL || 'https://t.me/storachanetwork'
-const WEB_APP_URL =
-  process.env.NODE_ENV === 'production'
-    ? 'https://telegram.storacha.network'
-    : process.env.LOCAL_URL || 'http://localhost:3000'
+const WEB_APP_URL = process.env.LOCAL_URL || 'https://telegram.storacha.network'
+const INLINE_URL = `t.me/${BOT_NAME}?startapp`
 const THUMB_URL = `${WEB_APP_URL}/storacha-round-logo.png`
 
 const WELCOME_MESSAGE = `🚨 *Don't Lose Your Telegram Chats*
@@ -32,7 +31,9 @@ const getInlineKeyboard = (inline = false): InlineKeyboardMarkup => ({
     [
       {
         text: '🛡️ BACKUP MY TELEGRAM CHATS',
-        ...(inline ? { url: WEB_APP_URL } : { web_app: { url: WEB_APP_URL } }),
+        ...(inline
+          ? { url: `${INLINE_URL}` }
+          : { web_app: { url: WEB_APP_URL } }),
       },
     ],
     [
