@@ -320,9 +320,6 @@ class Handler {
                 { cause: err }
               )
             }
-
-            // TODO: this does not halt the upload process, it still uploads the shards
-            throw onShardStoredError
           }
         },
       })
