@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.11.0](https://github.com/storacha/tg-miniapp/compare/v2.10.1...v2.11.0) (2025-07-28)
+
+
+### Features
+
+* after one failed login attempt, give the user a way to reset lo… ([801f9ee](https://github.com/storacha/tg-miniapp/commit/801f9ee4be565022d32e96e9165a2a77132a7323))
+* after one failed login attempt, give the user a way to reset login state ([5d56ac9](https://github.com/storacha/tg-miniapp/commit/5d56ac93f18e9bd67e52a3de8facef1121290b6f))
+
+
+### Bug Fixes
+
+* issue with inline url ([15ea823](https://github.com/storacha/tg-miniapp/commit/15ea823385b7b09ad08d65c794926f620b603b16))
+* issue with inline url ([0376bb4](https://github.com/storacha/tg-miniapp/commit/0376bb49da100db054560dc1344e63a4bb033c2d))
+
 ## [2.10.1](https://github.com/storacha/tg-miniapp/compare/v2.10.0...v2.10.1) (2025-07-24)
 
 
