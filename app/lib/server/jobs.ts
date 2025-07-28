@@ -7,6 +7,7 @@ import {
   RemoveJobRequest,
   LoginRequest,
   CancelJobRequest,
+  DeleteDialogFromJobRequest,
 } from '@/api'
 import { Delegation, DID, Signer } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
@@ -27,12 +28,14 @@ import { extract } from '@ucanto/core/delegation'
 import { getTelegramClient } from './telegram-manager'
 import { getDB } from './db'
 import { getSession } from './session'
+import { createLogger } from './logger'
 
 export const login = async (request: LoginRequest) => {
   validateInitData(request.telegramAuth.initData, getBotToken())
   const session = await getSession()
   session.spaceDID = request.spaceDID
   session.telegramAuth = request.telegramAuth
+  session.accountDID = request.accountDID
   await session.save()
 }
 
@@ -40,12 +43,13 @@ export const createJob = async (
   request: CreateJobRequest,
   queueFn: (jr: ExecuteJobRequest) => Promise<void>
 ) => {
-  console.debug('adding job...')
+  const logger = createLogger()
   const session = await getSession()
   const telegramId = getTelegramId(session.telegramAuth)
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   const job = await db.createJob({
@@ -60,9 +64,16 @@ export const createJob = async (
     ...request,
     spaceDID: session.spaceDID,
     telegramAuth: session.telegramAuth,
+    accountDID: session.accountDID,
     jobID: job.id,
   })
-  console.debug(`job store added job: ${job.id} status: ${job.status}`)
+  logger.info('Job created and queued', {
+    jobId: job.id,
+    userId: dbUser.id,
+    step: 'createJob',
+    phase: 'init',
+    status: job.status,
+  })
   return job
 }
 
@@ -83,46 +94,69 @@ export const listJobs = async () => {
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   return await db.getJobsByUserID(dbUser.id)
 }
 
 export const removeJob = async (request: RemoveJobRequest) => {
-  console.debug('job store removing job...')
   const session = await getSession()
   const telegramId = getTelegramId(session.telegramAuth)
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   const job = await db.getJobByID(request.jobID, dbUser.id)
+  const logger = createLogger({ jobId: job.id, userId: dbUser.id })
+
   if (job.status == 'running') {
+    logger.warn('Attempted to remove running job', {
+      step: 'removeJob',
+      phase: 'processing',
+      status: job.status,
+    })
     throw new Error('job is already running')
   }
+
   await db.removeJob(request.jobID, dbUser.id)
-  console.debug(`job store removed job: ${job.id}`)
+
+  logger.info('Job removed', {
+    step: 'removeJob',
+    phase: 'processing',
+    status: job.status,
+  })
+
   return job
 }
 
 export const cancelJob = async (request: CancelJobRequest) => {
-  console.debug('job store canceling job...')
   const session = await getSession()
   const telegramId = getTelegramId(session.telegramAuth)
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: session.spaceDID,
+    storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
   const job = await db.getJobByID(request.jobID, dbUser.id)
+  const logger = createLogger({ jobId: job.id, userId: dbUser.id })
+
   await db.updateJob(request.jobID, {
     ...job,
     status: 'canceled',
     updated: Date.now(),
     finished: Date.now(),
   })
-  console.debug(`job store canceled job: ${job.id}`)
+
+  logger.info('Job canceled', {
+    step: 'cancelJob',
+    phase: 'completed',
+    status: job.status,
+  })
+
   return job
 }
 
@@ -130,6 +164,19 @@ export const handleJob = async (request: ExecuteJobRequest) => {
   const handler = await initializeHandler(request)
   try {
     return await handler.handleJob(request)
+  } finally {
+    handler.telegram.disconnect()
+  }
+}
+
+export const deleteDialogFromJob = async (
+  request: DeleteDialogFromJobRequest
+) => {
+  const session = await getSession()
+  const req = { ...request, ...session }
+  const handler = await initializeHandler(req)
+  try {
+    return await handler.deleteDialogFromJob(req)
   } finally {
     handler.telegram.disconnect()
   }
@@ -153,6 +200,7 @@ const initializeHandler = async (request: ExecuteJobRequest) => {
   const db = getDB()
   const dbUser = await db.findOrCreateUser({
     storachaSpace: request.spaceDID,
+    storachaAccount: request.accountDID,
     telegramId: telegramId.toString(),
   })
   return createHandler({
@@ -165,6 +213,9 @@ const initializeHandler = async (request: ExecuteJobRequest) => {
 }
 
 export const getTelegramId = (telegramAuth: TelegramAuth) => {
+  if (!telegramAuth) {
+    throw new Error('Session not found or expired.')
+  }
   const initData = parseInitData(telegramAuth.initData)
   return BigInt(initData.user?.id.toString() || '0')
 }
@@ -188,10 +239,9 @@ const initializeTelegram = async (telegramAuth: TelegramAuth) => {
 const initializeStoracha = (space: SpaceDID, delegation: Delegation) => {
   // Create AgentData manually because we don't want to use a store.
   const agentData = new AgentData({
-    // FIXME: The Storacha client thinks a principal has to be a `did:key`,
-    // which is a bit silly. All DIDs have keys, and any `Signer` by
-    // definition has its private key loaded and can sign.
-    principal: getServerIdentity() as unknown as Signer<DID<'key'>>,
+    // Fixed: Removed restrictive did:key type constraint to support all DID types
+    // All DIDs have keys, and any Signer by definition has its private key loaded and can sign
+    principal: getServerIdentity(),
     delegations: new Map(),
     meta: {
       name: 'bluesky-backups',
