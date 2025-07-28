@@ -17,6 +17,7 @@ import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClien
 import { getErrorMessage } from '@/lib/errorhandling'
 import { useAnalytics } from '@/lib/analytics'
 import { defaultClientParams } from '@/lib/server/constants'
+import { logAndCaptureError } from '@/lib/sentry'
 
 class PhoneNumberMismatchError extends Error {
   constructor() {
@@ -208,7 +209,9 @@ export default function TelegramAuth() {
   const [code, setCode] = useState('')
   const { phoneNumber, setPhoneNumber, tgSessionString, setTgSessionString } =
     useGlobal()
-  const [{ user }, { setIsTgAuthorized }] = useTelegram()
+  const [{ user }, { setIsTgAuthorized, logout }] = useTelegram()
+  const [loginAttemptCount, setLoginAttemptCount] = useState(0)
+  const incrementLoginAttemptCount = () => setLoginAttemptCount((c) => c + 1)
   const [is2FARequired, set2FARequired] = useState(false)
   const [password, setPassword] = useState('')
   const [srp, setSRP] = useState<Api.account.Password>()
@@ -231,6 +234,7 @@ export default function TelegramAuth() {
     try {
       setLoading(true)
       setError(undefined)
+      incrementLoginAttemptCount()
       logTelegramLoginStarted()
 
       if (!client.connected) {
@@ -347,6 +351,7 @@ export default function TelegramAuth() {
       if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
         setError(new Error('Your password was incorrect. Please try again.'))
       } else {
+        logAndCaptureError(err)
         setError(err)
       }
     } finally {
@@ -389,6 +394,11 @@ export default function TelegramAuth() {
         error={error}
       />
     )
+  }
+
+  async function resetLoginState() {
+    await logout()
+    setError(undefined)
   }
 
   return (
@@ -454,6 +464,15 @@ export default function TelegramAuth() {
           {loading ? 'Sending...' : 'Send Pin'}
         </Button>
       </div>
+      {error && loginAttemptCount > 1 && (
+        <p className="text-xs text-center mt-10">
+          If you are consistently experiencing login issues, please try
+          resetting your login state and try again:
+          <Button onClick={resetLoginState} size="sm" className="my-2">
+            Reset Login State
+          </Button>
+        </p>
+      )}
     </form>
   )
 }
