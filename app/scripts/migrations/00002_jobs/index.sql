@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   user_id UUID NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('waiting','queued','running' ,'failed', 'completed')),
   space TEXT NOT NULL CHECK (space LIKE 'did:key:%'),
-  dialogs BIGINT[] NOT NULL,
+  dialogs JSONB NOT NULL,
   period_from DOUBLE PRECISION NOT NULL,
   period_to DOUBLE PRECISION NOT NULL,
   progress DOUBLE PRECISION,
