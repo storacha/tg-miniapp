@@ -146,12 +146,15 @@ class PacketCodec {
         this._conn = connection;
     }
     encodePacket(data) {
-        throw new Error("Not Implemented");
-        // Override
+        // Default: return data as-is. Subclasses can override for obfuscation.
+        return data;
     }
     async readPacket(reader) {
-        // override
-        throw new Error("Not Implemented");
+        // Default: read and return data as-is. Subclasses can override for obfuscation.
+        if (typeof reader.read === 'function') {
+            return await reader.read();
+        }
+        throw new Error('readPacket: reader does not support read()');
     }
 }
 exports.PacketCodec = PacketCodec;
