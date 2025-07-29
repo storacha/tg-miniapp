@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.1](https://github.com/storacha/tg-miniapp/compare/v2.11.0...v2.11.1) (2025-07-29)
+
+
+### Bug Fixes
+
+* log and capture auth errors _after_ setting state ([47d0d1f](https://github.com/storacha/tg-miniapp/commit/47d0d1fb729508cbcf50f702c4f9e50b14258d1b))
+* log and capture auth errors _after_ setting state ([9868b25](https://github.com/storacha/tg-miniapp/commit/9868b25cbcf4c281198cf9b14fffbee57a1dd372))
+
 ## [2.11.0](https://github.com/storacha/tg-miniapp/compare/v2.10.1...v2.11.0) (2025-07-28)
 
 
