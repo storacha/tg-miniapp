@@ -351,8 +351,8 @@ export default function TelegramAuth() {
       if (errorMsg.includes('PASSWORD_HASH_INVALID')) {
         setError(new Error('Your password was incorrect. Please try again.'))
       } else {
-        logAndCaptureError(err)
         setError(err)
+        logAndCaptureError(err)
       }
     } finally {
       setLoading(false)
