@@ -16,35 +16,29 @@ import { isPayingAccount } from '@/lib/storacha'
 import { cn } from '@/lib/utils'
 import { Period } from '@/api'
 export interface DatesProps {
-  period: Period
   onPeriodChange: (period: Period) => unknown
   onSubmit: () => unknown
 }
 
 const MILLISECONDS_IN_A_WEEK = 7 * 24 * 60 * 60 * 1000
 
-export default function Dates({
-  period,
-  onPeriodChange,
-  onSubmit,
-}: DatesProps) {
-  const now = new Date()
+export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
   const [{ accounts, client }] = useStoracha()
   const [error, setError] = useState<string | null>(null)
   const [paying, setPaying] = useState<boolean | null>(null)
 
-  const [dates, setDates] = useState<[Date | null, Date | null]>([
-    // converting from seconds to milliseconds hence
-    // multiplying by 1000 since Date() expects ms
-    period[0] ? new Date(period[0] * 1000) : null, // from
-    period[1] ? new Date(period[1] * 1000) : now, // to
-  ])
-
-  const accountDid = accounts[0]?.did()
-  const [fromDate, toDate] = dates
   const maxWeeks = paying
     ? MAX_BACKUP_WEEKS_PAID_TIER
     : MAX_BACKUP_WEEKS_FREE_TIER
+
+  const maxDurationMs = maxWeeks * MILLISECONDS_IN_A_WEEK
+
+  const now = new Date()
+  const earliestAllowedFrom = new Date(now.getTime() - maxDurationMs)
+
+  const [dates, setDates] = useState<[Date, Date]>([earliestAllowedFrom, now])
+  const [fromDate, toDate] = dates
+  const accountDid = accounts[0].did()
 
   useEffect(() => {
     let mounted = true
@@ -66,13 +60,16 @@ export default function Dates({
     }
   }, [client, accountDid])
 
+  useEffect(() => {
+    if (paying) {
+      setDates([earliestAllowedFrom, now])
+    }
+  }, [paying])
+
   // Normalize dates to proper time boundaries
   const normalizeDates = useMemo(
-    () => (from: Date | null, to: Date | null) => {
+    () => (from: Date, to: Date) => {
       if (!from) return [from, to]
-
-      const normalizedFrom = new Date(from)
-      normalizedFrom.setHours(0, 0, 0, 0)
 
       const actualTo = to || now
       const isToday = actualTo.toDateString() === now.toDateString()
@@ -89,9 +86,19 @@ export default function Dates({
             999
           )
 
+      const earliestAllowedFrom = new Date(
+        normalizedTo.getTime() - maxDurationMs
+      )
+      if (from.toDateString() === earliestAllowedFrom.toDateString()) {
+        return [earliestAllowedFrom, normalizedTo]
+      }
+
+      const normalizedFrom = from
+      normalizedFrom.setHours(0, 0, 0, 0)
+
       return [normalizedFrom, normalizedTo]
     },
-    [now]
+    [now, maxDurationMs]
   )
 
   const validateDateRange = useMemo(
@@ -130,16 +137,36 @@ export default function Dates({
     }
   }, [fromDate, toDate, onPeriodChange])
 
+  const updateDate = (index: number) => (selectedDate: Date) => {
+    const updated: [Date, Date] = [...dates]
+    updated[index] = selectedDate
+    setDates(updated)
+  }
+
+  const getDisabledDates = (index: number) => {
+    const isFrom = index === 0
+
+    return {
+      invalid: (date: Date) => {
+        if (isFrom) {
+          // Grey out dates before earliest allowed
+          return date < new Date(toDate.getTime() - maxDurationMs)
+        } else {
+          // Grey out dates that would make range too long
+          if (fromDate) {
+            const maxAllowedTo = new Date(fromDate.getTime() + maxDurationMs)
+            return date > maxAllowedTo
+          }
+        }
+        return false
+      },
+    }
+  }
+
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
     if (!fromDate || !toDate || fromDate > toDate) return
     onSubmit()
-  }
-
-  const updateDate = (index: number) => (selectedDate: Date) => {
-    const updated: [Date | null, Date | null] = [...dates]
-    updated[index] = selectedDate
-    setDates(updated)
   }
 
   if (paying === null) {
@@ -195,6 +222,12 @@ export default function Dates({
                     selected={date ?? undefined}
                     onSelect={(d) => d && updateDate(i)(d)}
                     disabled={(d) => d > now}
+                    defaultMonth={date ?? now}
+                    modifiers={getDisabledDates(i)}
+                    modifiersClassNames={{
+                      invalid:
+                        'text-muted-foreground opacity-40 cursor-not-allowed',
+                    }}
                     autoFocus
                   />
                 </PopoverContent>
