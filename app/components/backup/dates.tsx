@@ -40,7 +40,7 @@ export default function Dates({
     period[1] ? new Date(period[1] * 1000) : now, // to
   ])
 
-  const accountDid = accounts[0].did()
+  const accountDid = accounts[0]?.did()
   const [fromDate, toDate] = dates
   const maxWeeks = paying
     ? MAX_BACKUP_WEEKS_PAID_TIER
@@ -51,7 +51,7 @@ export default function Dates({
 
     const checkPaymentStatus = async () => {
       try {
-        if (!client) return
+        if (!client || !accountDid) return
         const result = await isPayingAccount(client, accountDid)
         if (mounted) setPaying(result)
       } catch (err) {
