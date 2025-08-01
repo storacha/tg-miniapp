@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   File,
   MapPin,
@@ -8,6 +8,7 @@ import {
   ExternalLink,
   X,
   Loader2,
+  Sparkles,
 } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from '@/lib/utils'
@@ -21,7 +22,15 @@ import {
   WebPageMediaData,
   DefaultWebPageData,
   DocumentData,
+  GameMediaData,
+  StrippedPhotoSizeData,
+  InvoiceMediaData,
+  DiceMediaData,
+  StoryMediaData,
+  DefaultPhotoData,
+  GiveawayMediaData,
 } from '@/api'
+import { useTelegram } from '@/providers/telegram'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -86,6 +95,26 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
     }
     case 'webpage': {
       mediaContent = <WebPageMedia metadata={metadata} />
+      break
+    }
+    case 'game': {
+      mediaContent = <GameMedia metadata={metadata} />
+      break
+    }
+    case 'invoice': {
+      mediaContent = <InvoiceMedia metadata={metadata} />
+      break
+    }
+    case 'dice': {
+      mediaContent = <DiceMedia metadata={metadata} />
+      break
+    }
+    case 'story': {
+      mediaContent = <StoryMedia metadata={metadata} />
+      break
+    }
+    case 'giveaway': {
+      mediaContent = <GiveawayMedia metadata={metadata} />
       break
     }
     case 'document': {
@@ -209,6 +238,298 @@ const AudioMedia: React.FC<{
       </audio>
     </div>
   )
+}
+
+interface GameMediaProps {
+  metadata: GameMediaData
+}
+
+const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
+  const [thumbUrl, setThumbUrl] = useState<string | undefined>()
+
+  useEffect(() => {
+    const photo = metadata.game.photo
+    if (!photo) return
+    // @ts-expect-error the PhotoDataSize union be messing things up here
+    const sizes = photo.sizes
+
+    const stripped = sizes?.find(
+      (s: StrippedPhotoSizeData) => s.type === 'stripped'
+    )
+
+    if (stripped) {
+      try {
+        const decoded = toJPGDataURL(decodeStrippedThumb(stripped.bytes))
+        setThumbUrl(decoded)
+      } catch (err) {
+        console.error('Failed to decode stripped thumbnail:', err)
+      }
+      return
+    }
+  }, [metadata.game.photo])
+
+  return (
+    <Bubble>
+      <div className="flex flex-col w-60">
+        {thumbUrl ? (
+          <img
+            src={thumbUrl}
+            alt={metadata.game.title}
+            className="w-full h-36 object-cover rounded mb-2"
+          />
+        ) : (
+          <div className="w-full h-36 bg-gray-300 animate-pulse rounded mb-2" />
+        )}
+
+        <div className="text-sm font-medium mb-1 text-black">
+          {metadata.game.title}
+        </div>
+
+        <button
+          className="px-3 py-1 bg-blue-500 hover:bg-blue-700 text-white text-sm rounded"
+          onClick={() =>
+            window.open(
+              `https://t.me/${metadata.game.shortName}?game=${metadata.game.shortName}`,
+              '_blank'
+            )
+          }
+        >
+          Play {metadata.game.title}
+        </button>
+      </div>
+    </Bubble>
+  )
+}
+
+const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
+  const [thumbUrl, setThumbUrl] = useState<string>('')
+  const [{ user }] = useTelegram()
+
+  useEffect(() => {
+    const photo = metadata.photo
+    if (!photo) return
+
+    if (photo.type === 'default' || photo.type === 'proxy') {
+      setThumbUrl(photo.url)
+    }
+  }, [metadata.photo])
+
+  const formatPrice = (price: string) => {
+    // elegram sends totalAmount as an integer multiplied by 100
+    // (i.e. amount in minor units, like cents for USD)
+    const minorUnit = parseInt(price, 10) / 100
+    return new Intl.NumberFormat(user?.languageCode || 'en-US', {
+      style: 'currency',
+      currency: metadata.currency,
+    }).format(minorUnit)
+  }
+
+  return (
+    <Bubble>
+      <div className="flex flex-col gap-2 w-64">
+        {thumbUrl && (
+          <img
+            src={thumbUrl}
+            alt={metadata.title}
+            className="rounded-lg w-full object-cover aspect-video"
+          />
+        )}
+        <p className="text-md font-semibold">{metadata.title}</p>
+        <p className="text-sm text-gray-600">
+          {formatPrice(metadata.totalAmount)}{' '}
+          {metadata.test ? '(TEST INVOICE)' : ''}
+        </p>
+        <p className="text-sm text-gray-600">{metadata.description}</p>
+        <button
+          className="mt-2 w-full px-3 py-1 text-sm rounded bg-blue-500 text-white"
+          onClick={() =>
+            window.open(`https://t.me/${metadata.startParam}`, '_blank')
+          }
+        >
+          Pay {formatPrice(metadata.totalAmount)}
+        </button>
+      </div>
+    </Bubble>
+  )
+}
+
+const DiceMedia = ({ metadata }: { metadata: DiceMediaData }) => {
+  const [animate, setAnimate] = useState(true)
+
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(false), 1000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const getAnimation = () => {
+    if (!animate) return ''
+
+    switch (metadata.emoticon) {
+      case '🎯':
+      case '🏀':
+        return 'animate-bounce'
+      case '🎲':
+        return 'animate-spin'
+      case '🎳':
+        return 'animate-ping'
+      case '⚽':
+        return 'animate-bounce'
+      case '🎰':
+        return 'animate-spin'
+      default:
+        return ''
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center">
+      <span className={cn('text-4xl', getAnimation())}>
+        {metadata.emoticon}
+      </span>
+    </div>
+  )
+}
+
+interface GiveawayMediaProps {
+  metadata: GiveawayMediaData
+}
+
+export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
+  const {
+    prizeDescription,
+    quantity,
+    months,
+    countriesIso2,
+    untilDate,
+    onlyNewSubscribers,
+    winnersAreVisible,
+    channels,
+    stars,
+  } = metadata
+
+  const until = new Date(untilDate * 1000).toLocaleString()
+
+  return (
+    <Bubble>
+      <div className="flex flex-col w-64 gap-2">
+        <div className="flex items-center gap-2">
+          <div className="bg-yellow-400 p-2 rounded-full text-white">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <h2 className="font-semibold text-md">Giveaway</h2>
+        </div>
+
+        {prizeDescription && (
+          <p className="text-sm text-gray-800">{prizeDescription}</p>
+        )}
+
+        <div className="text-xs text-gray-600 space-y-1">
+          <p>
+            🎁 {quantity} winner{quantity > 1 ? 's' : ''}
+          </p>
+          {months && (
+            <p>
+              Duration: {months} month{months > 1 ? 's' : ''}
+            </p>
+          )}
+          {countriesIso2 && countriesIso2?.length > 0 && (
+            <p>🌍 Eligible: {countriesIso2.join(', ')}</p>
+          )}
+          {stars && <p>⭐ Stars: {stars}</p>}
+          <p>Ends: {until}</p>
+          {onlyNewSubscribers && <p>Only new subscribers</p>}
+          {winnersAreVisible && <p>Winners will be visible</p>}
+        </div>
+
+        {channels.length > 0 && (
+          <div className="text-xs text-gray-500 mt-2">
+            Required channels:{' '}
+            {channels.map((ch) => (
+              <span key={ch} className="text-blue-600">
+                {ch}{' '}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <button className="mt-2 px-3 py-1 text-sm rounded bg-blue-500 text-white hover:bg-blue-700 transition-colors">
+          participate
+        </button>
+      </div>
+    </Bubble>
+  )
+}
+
+const StoryMedia = ({ metadata }: { metadata: StoryMediaData }) => {
+  const [thumbUrl, setThumbUrl] = useState<string | undefined>()
+
+  const story = metadata.story
+
+  useEffect(() => {
+    if (story?.type !== 'default') return
+
+    const photoData = story.media as { type: 'photo'; photo: DefaultPhotoData }
+    const photo = photoData?.photo
+    if (!photo || photo.type !== 'default') return
+
+    const stripped = photo.sizes?.find(
+      (s) => s.type === 'stripped' && 'bytes' in s
+    )
+    const bytes = stripped?.bytes as Uint8Array | undefined
+
+    if (bytes) {
+      try {
+        const url = toJPGDataURL(decodeStrippedThumb(bytes))
+        setThumbUrl(url)
+      } catch (err) {
+        console.error('Failed to decode stripped thumb', err)
+      }
+    }
+  }, [story])
+
+  if (!story || story.type === 'unknown') {
+    return <Bubble>Unsupported story format</Bubble>
+  }
+
+  if (story.type === 'deleted' || story.type === 'skipped') {
+    return (
+      <Bubble>
+        <div className="w-64 aspect-video rounded bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
+          Story is no longer available
+        </div>
+      </Bubble>
+    )
+  }
+
+  if (story.type === 'default') {
+    const caption = story.caption
+
+    return (
+      <Bubble>
+        <div className="w-64 flex flex-col gap-2">
+          {thumbUrl ? (
+            <img
+              src={thumbUrl}
+              alt="Story"
+              className="w-full aspect-video object-cover rounded"
+            />
+          ) : (
+            <div className="w-full aspect-video bg-gray-300 rounded blur-sm flex items-center justify-center text-gray-400 text-sm">
+              Preview unavailable
+            </div>
+          )}
+
+          {caption && (
+            <p className="text-sm text-gray-700 whitespace-pre-line">
+              {caption}
+            </p>
+          )}
+        </div>
+      </Bubble>
+    )
+  }
+
+  return null
 }
 
 const VideoMedia: React.FC<{
