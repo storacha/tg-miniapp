@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.2](https://github.com/storacha/tg-miniapp/compare/v2.11.1...v2.11.2) (2025-07-31)
+
+
+### Bug Fixes
+
+* add StorachaConnect on date page for first login users ([110b261](https://github.com/storacha/tg-miniapp/commit/110b261c5c83ca5b509bef6b0c82b13f44af6292))
+* add StorachaConnect on date page for first login users ([a5c51be](https://github.com/storacha/tg-miniapp/commit/a5c51be878281b4f41b9dad8edbb9ab1978dba53))
+
 ## [2.11.1](https://github.com/storacha/tg-miniapp/compare/v2.11.0...v2.11.1) (2025-07-29)
 
 
