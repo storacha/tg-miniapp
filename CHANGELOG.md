@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.11.3](https://github.com/storacha/tg-miniapp/compare/v2.11.2...v2.11.3) (2025-08-01)
+
+
+### Bug Fixes
+
+* let avatar fallback show a gray bg when it is loading instead of "L" ([f6a19c2](https://github.com/storacha/tg-miniapp/commit/f6a19c2e4b6aec14da465b40d07012293d4730f0))
+* let avatar fallback show a gray bg when it is loading instead of "L" ([f074d98](https://github.com/storacha/tg-miniapp/commit/f074d985afb24b899c745eb16c059e0a9852c30f))
+
 ## [2.11.2](https://github.com/storacha/tg-miniapp/compare/v2.11.1...v2.11.2) (2025-07-31)
 
 
