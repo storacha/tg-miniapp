@@ -58,7 +58,6 @@ export default function Page() {
       {step === 1 && (
         <>
           <Dates
-            period={period}
             onPeriodChange={setPeriod}
             onSubmit={() => setStep(2)}
           />
