@@ -13,6 +13,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/components/ui/drawer'
+import { openLink } from '@telegram-apps/sdk-react'
 
 export function PlanGate({
   open,
@@ -52,52 +53,46 @@ export function HumanodeAuthLink({
   className?: string
   onClick?: () => void
 }) {
-  const [state, setState] = useState<string>()
   const [{ accounts, client }] = useStoracha()
   const account = accounts[0]
-  const link = `${process.env.NEXT_PUBLIC_HUMANODE_AUTH_URL}?response_type=code&client_id=${process.env.NEXT_PUBLIC_HUMANODE_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL}&scope=openid&state=${state}`
 
-  useEffect(() => {
-    ;(async () => {
-      if (client) {
-        // Create an access/authorize request that can be used as the state of the OAuth request.
-        const request = await authorize.delegate({
-          audience: client.agent.connection.id,
-          issuer: client.agent.issuer,
-          // agent that should be granted access
-          with: client.agent.did(),
-          // capabilities requested (account access)
-          nb: {
-            iss: account.did(),
-            att: [
-              {
-                can: '*',
-              },
-            ],
+  async function onClickNotABot() {
+    if (!client)
+      throw new Error(
+        'Storacha client not defined, cannot create authorization link.'
+      )
+    // Create an access/authorize request that can be used as the state of the OAuth request.
+    const request = await authorize.delegate({
+      audience: client.agent.connection.id,
+      issuer: client.agent.issuer,
+      // agent that should be granted access
+      with: client.agent.did(),
+      // capabilities requested (account access)
+      nb: {
+        iss: account.did(),
+        att: [
+          {
+            can: '*',
           },
-          // expire this after 15 minutes
-          expiration: Math.floor(Date.now() / 1000) + 60 * 15,
-        })
-        const archive = await request.archive()
-        if (archive?.ok) {
-          setState(base64url.encode(archive.ok))
-        } else {
-          console.warn('Could not create auth delegation.', archive.error)
-        }
-      }
-    })()
-  }, [client, account])
+        ],
+      },
+      // expire this after 15 minutes
+      expiration: Math.floor(Date.now() / 1000) + 60 * 15,
+    })
+    const archive = await request.archive()
+    if (archive?.ok) {
+      const state = base64url.encode(archive.ok)
+      const link = `${process.env.NEXT_PUBLIC_HUMANODE_AUTH_URL}?response_type=code&client_id=${process.env.NEXT_PUBLIC_HUMANODE_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL}&scope=openid&state=${state}`
+      openLink(link)
+      onClick && onClick()
+    } else {
+      console.error('Could not create auth delegation.', archive.error)
+    }
+  }
 
   return (
-    <Button asChild type="button" className={className}>
-      <a
-        href={link}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={onClick}
-      >
-        Show I&apos;m Not a Bot
-      </a>
+    <Button type="button" className={className} onClick={onClickNotABot}>
+      Show I&apos;m Not a Bot
     </Button>
   )
 }
