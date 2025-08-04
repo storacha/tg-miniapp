@@ -8,6 +8,7 @@ import {
   ExternalLink,
   X,
   Loader2,
+  Text,
 } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from '@/lib/utils'
@@ -382,7 +383,7 @@ const WebPageMedia: React.FC<{ metadata: WebPageMediaData }> = ({
       href={url || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative min-w-[260px] w-full max-w-sm rounded-lg bg-muted p-4 no-underline hover:bg-muted/90 overflow-hidden block"
+      className="relative min-w-[260px] w-full max-w-sm rounded-lg bg-muted p-2 no-underline hover:bg-muted/90 overflow-hidden block"
     >
       <div className="absolute top-3 right-3 text-blue-600">
         <ExternalLink className="h-4 w-4" />
@@ -408,7 +409,9 @@ const WebPageMedia: React.FC<{ metadata: WebPageMediaData }> = ({
             )}
           </>
         ) : (
-          <span className="text-sm text-gray-500">Preview not available</span>
+          <div className="flex justify-center items-center w-full">
+            <Text className="h-8 w-8 text-gray-400" />
+          </div>
         )}
       </div>
     </a>

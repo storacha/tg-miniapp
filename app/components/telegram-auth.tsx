@@ -96,7 +96,7 @@ function OTPForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-screen bg-background"
+      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-dvh bg-background"
     >
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-primary font-semibold text-2xl text-center">
@@ -137,7 +137,7 @@ function OTPForm({
           </Button>
         ) : (
           <Button type="submit" className="w-full" disabled={disabled}>
-            {loading ? 'Loading...' : 'Submit OTP'}
+            {loading ? 'Loading...' : 'Submit Code'}
           </Button>
         )}
       </div>
@@ -168,7 +168,7 @@ function TwoFAForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-screen bg-background"
+      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-dvh bg-background"
     >
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-primary font-semibold text-2xl text-center">
@@ -402,77 +402,92 @@ export default function TelegramAuth() {
   }
 
   return (
-    <form
-      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-screen bg-primary/10"
-      onSubmit={handlePhoneSubmit}
-    >
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="text-primary font-semibold text-2xl text-center">
-          Storacha
-        </h1>
-        <div className="py-10 flex flex-col items-center gap-5">
-          <h1 className="text-xl font-semibold">Authorization</h1>
-          <p className="text-center text-blue-600/80">
-            Authorize access to your Telegram chats to securely proceed with
-            your backups.
-          </p>
-          <div className="w-full">
-            <p className="text-blue-600/80 text-center my-2">
-              Your phone number:
+    <div className="min-h-dvh bg-primary/10 flex flex-col">
+      <form
+        className="flex-1 pt-20 pb-10 px-5 flex flex-col justify-between"
+        onSubmit={handlePhoneSubmit}
+      >
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-primary font-semibold text-2xl text-center">
+            Storacha
+          </h1>
+          <div className="py-10 flex flex-col items-center gap-5">
+            <h1 className="text-xl font-semibold">Authorization</h1>
+            <p className="text-center text-blue-600/80">
+              Authorize access to your Telegram chats to securely proceed with
+              your backups.
             </p>
-            <Input
-              className="bg-white"
-              type="tel"
-              placeholder="e.g. +12223334455"
-              value={phoneNumber}
-              onChange={(e) => {
-                setError(undefined)
-                setPhoneNumber(e.target.value)
-              }}
-              required
-            />
-            {error ? (
-              <p className="text-red-600 text-center text-xs my-2">
-                {error.message}
+            <div className="w-full">
+              <p className="text-blue-600/80 text-center my-2">
+                Your phone number:
               </p>
-            ) : (
-              <p className="text-blue-600/80 text-center text-xs my-2">
-                Please enter your number in{' '}
-                <a
-                  href="https://telegram.org/faq#login-and-sms"
-                  target="_blank"
-                  className="underline"
-                >
-                  international format
-                </a>
-                .
-              </p>
-            )}
+              <Input
+                className="bg-white"
+                type="tel"
+                placeholder="+12223334455"
+                value={`${phoneNumber}`}
+                onChange={(e) => {
+                  setError(undefined)
+                  setPhoneNumber(e.target.value)
+                }}
+                onFocus={(e) => {
+                  if (!phoneNumber || phoneNumber === '') {
+                    setPhoneNumber('+')
+                    setTimeout(() => {
+                      e.target.setSelectionRange(1, 1)
+                    }, 0)
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace' && phoneNumber === '+') {
+                    e.preventDefault()
+                  }
+                }}
+                required
+              />
+              {error ? (
+                <p className="text-red-600 text-center text-xs my-2">
+                  {error.message}
+                </p>
+              ) : (
+                <p className="text-blue-600/80 text-center text-xs my-2">
+                  Please enter your number in{' '}
+                  <a
+                    href="https://telegram.org/faq#login-and-sms"
+                    target="_blank"
+                    className="underline"
+                  >
+                    international format
+                  </a>
+                  .
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex flex-col justify-center items-center">
-        <p className="text-center text-blue-600/80 mb-3">
-          You will receive a code in Telegram. Please enter it in the next step
-          to continue.
-        </p>
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading || !phoneNumber}
-        >
-          {loading ? 'Sending...' : 'Send Pin'}
-        </Button>
-      </div>
-      {error && loginAttemptCount > 1 && (
-        <p className="text-xs text-center mt-10">
-          If you are consistently experiencing login issues, please try
-          resetting your login state and try again:
-          <Button onClick={resetLoginState} size="sm" className="my-2">
-            Reset Login State
+        <div className="flex flex-col justify-center items-center">
+          <Button
+            type="submit"
+            className="w-full mb-3"
+            disabled={loading || !phoneNumber}
+          >
+            {loading ? 'Sending...' : 'Send Pin'}
           </Button>
-        </p>
-      )}
-    </form>
+          <p className="text-center text-blue-600/80 mb-3">
+            You will receive a code in Telegram. Please enter it in the next
+            step to continue.
+          </p>
+        </div>
+        {error && loginAttemptCount > 1 && (
+          <p className="text-xs text-center mt-10">
+            If you are consistently experiencing login issues, please try
+            resetting your login state and try again:
+            <Button onClick={resetLoginState} size="sm" className="my-2">
+              Reset Login State
+            </Button>
+          </p>
+        )}
+      </form>
+    </div>
   )
 }
