@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useW3 as useStoracha } from '@storacha/ui-react'
 import { base64url } from 'multiformats/bases/base64'
 import { authorize } from '@storacha/capabilities/access'
@@ -84,7 +83,7 @@ export function HumanodeAuthLink({
       const state = base64url.encode(archive.ok)
       const link = `${process.env.NEXT_PUBLIC_HUMANODE_AUTH_URL}?response_type=code&client_id=${process.env.NEXT_PUBLIC_HUMANODE_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL}&scope=openid&state=${state}`
       openLink(link)
-      onClick && onClick()
+      if (onClick) onClick()
     } else {
       console.error('Could not create auth delegation.', archive.error)
     }
