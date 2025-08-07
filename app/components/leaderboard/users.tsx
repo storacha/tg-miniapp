@@ -1,7 +1,9 @@
 import { LeaderboardUser } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useUserLocale } from '@/hooks/useUserLocale'
 
 function User({ user, rank }: { user: LeaderboardUser; rank: number }) {
+  const { formatNumber } = useUserLocale()
   return (
     <div
       className={`flex justify-between active:bg-accent px-5 py-3  ${user.isMe ? 'bg-blue-100' : ''}`}
@@ -15,7 +17,7 @@ function User({ user, rank }: { user: LeaderboardUser; rank: number }) {
         <div>
           <h1 className="font-semibold text-foreground/80">{user.name}</h1>
           <p className="text-sm text-foreground/60">
-            {user.points.toLocaleString()} Points
+            {formatNumber(user.points)} Points
           </p>
         </div>
       </div>
