@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.11.3](https://github.com/storacha/tg-miniapp/compare/v2.11.2...v2.11.3) (2025-08-08)
+
+
+### Bug Fixes
+
+* improve calendar picker ([506433a](https://github.com/storacha/tg-miniapp/commit/506433a1475698e6566c4f3d75f368fa92f5c1e1))
+* improve calendar picker ([5f9e624](https://github.com/storacha/tg-miniapp/commit/5f9e624c3b5aa0048e40bfe76af7b8ef3d89274f))
+* let avatar fallback show a gray bg when it is loading instead of "L" ([f6a19c2](https://github.com/storacha/tg-miniapp/commit/f6a19c2e4b6aec14da465b40d07012293d4730f0))
+* let avatar fallback show a gray bg when it is loading instead of "L" ([f074d98](https://github.com/storacha/tg-miniapp/commit/f074d985afb24b899c745eb16c059e0a9852c30f))
+* lint ([9c92202](https://github.com/storacha/tg-miniapp/commit/9c92202390b19a6c1a75623261151d37fbdfddd3))
+* points display and usage report request ([1ae5ad2](https://github.com/storacha/tg-miniapp/commit/1ae5ad2bc0aac74b9e84fd9c1e8ae2e74a890758))
+* points display and usage report request ([a62521e](https://github.com/storacha/tg-miniapp/commit/a62521ef5920de7973843b1ad76329b0a58d5895))
+* ui issues ([d727ee3](https://github.com/storacha/tg-miniapp/commit/d727ee3ea5e672dd22000f2a1dbef8f3a519d5f7))
+* ui issues ([1442bef](https://github.com/storacha/tg-miniapp/commit/1442befdb1f005471ef75c01695f756e195d2309))
+* update dependencies ([b1e9f75](https://github.com/storacha/tg-miniapp/commit/b1e9f753c058b664e6df8a219a741a8722c46e44))
+* update dependencies ([2a7a8d2](https://github.com/storacha/tg-miniapp/commit/2a7a8d2de849c654dfa047b56b7bbe3d92f55ce5))
+* use `openLink` to open the humanode link ([a056005](https://github.com/storacha/tg-miniapp/commit/a05600558d4f13b33eb2663d7766ef4675645174))
+* use `openLink` to open the humanode link ([ecf6764](https://github.com/storacha/tg-miniapp/commit/ecf6764c48055a335a35c0753018daa9c19706c0))
+
 ## [2.11.2](https://github.com/storacha/tg-miniapp/compare/v2.11.1...v2.11.2) (2025-07-31)
 
 
