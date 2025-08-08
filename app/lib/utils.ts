@@ -169,3 +169,19 @@ export function parseWithUIntArrays(str: string): unknown {
     return value
   })
 }
+
+export const startOfMonth = (now: string | number | Date) => {
+  const d = new Date(now)
+  d.setUTCDate(1)
+  d.setUTCHours(0)
+  d.setUTCMinutes(0)
+  d.setUTCSeconds(0)
+  d.setUTCMilliseconds(0)
+  return d
+}
+
+export const startOfLastMonth = (now: string | number | Date) => {
+  const d = startOfMonth(now)
+  d.setUTCMonth(d.getUTCMonth() - 1)
+  return d
+}

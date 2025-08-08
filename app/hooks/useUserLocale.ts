@@ -42,9 +42,16 @@ export const useUserLocale = () => {
     }
   }
 
+  const formatNumber = (num: number) => {
+    return num.toLocaleString(userLocale, {
+      maximumFractionDigits: 1,
+    })
+  }
+
   return {
     formatDate,
     formatTime,
     formatDateTime,
+    formatNumber,
   }
 }

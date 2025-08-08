@@ -10,6 +10,7 @@ import * as SpaceIndex from '@storacha/capabilities/space/index'
 import { Client as StorachaClient } from '@storacha/client'
 import { MAX_FREE_BYTES } from './server/constants'
 import { AccountDID } from '@storacha/access'
+import { startOfLastMonth } from './utils'
 
 // default to 1 hour
 const defaultDuration = 1000 * 60 * 60
@@ -26,20 +27,14 @@ export const getStorachaUsage = async (
   space: `did:key:${string}`
 ): Promise<number> => {
   const now = new Date()
-  const previousMonth = new Date(
-    now.getUTCFullYear(),
-    now.getUTCMonth() - 1,
-    now.getUTCDate(),
-    0,
-    0,
-    0,
-    0
-  )
+  const period = {
+    // we may not have done a snapshot for this month _yet_, so get report
+    // from last month -> now
+    from: startOfLastMonth(now),
+    to: now,
+  }
   try {
-    const usage = await client.capability.usage.report(space, {
-      from: previousMonth,
-      to: now,
-    })
+    const usage = await client.capability.usage.report(space, period)
 
     // i don't think we allow people to create or own multiple
     // spaces for now in the TG mini app

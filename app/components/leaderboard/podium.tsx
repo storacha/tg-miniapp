@@ -1,8 +1,10 @@
 import { Podium as PodiumData } from '@/api'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useUserLocale } from '@/hooks/useUserLocale'
 import Image from 'next/image'
 
 export function Podium({ firstPlace, secondPlace, thirdPlace }: PodiumData) {
+  const { formatNumber } = useUserLocale()
   return (
     <div className="flex justify-center items-end">
       <div className="flex flex-col">
@@ -15,7 +17,7 @@ export function Podium({ firstPlace, secondPlace, thirdPlace }: PodiumData) {
             <div className="flex flex-col items-center gap-1">
               <p className="text-sm">{secondPlace.name}</p>
               <p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">
-                {secondPlace.points.toLocaleString()} RP
+                {formatNumber(secondPlace.points)} RP
               </p>
             </div>
           </div>
@@ -34,7 +36,7 @@ export function Podium({ firstPlace, secondPlace, thirdPlace }: PodiumData) {
             <div className="flex flex-col items-center gap-1">
               <p className="text-sm">{firstPlace.name}</p>
               <p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">
-                {firstPlace.points.toLocaleString()} RP
+                {formatNumber(firstPlace.points)} RP
               </p>
             </div>
           </div>
@@ -53,7 +55,7 @@ export function Podium({ firstPlace, secondPlace, thirdPlace }: PodiumData) {
             <div className="flex flex-col items-center gap-1">
               <p className="text-sm">{thirdPlace.name}</p>
               <p className="bg-blue-100 px-2 py-1.5 rounded-sm text-xs font-medium">
-                {thirdPlace.points.toLocaleString()} RP
+                {formatNumber(thirdPlace.points)} RP
               </p>
             </div>
           </div>

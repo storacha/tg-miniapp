@@ -11,6 +11,7 @@ import { useGlobal } from '@/zustand/global'
 import { getRanking } from '../server'
 import { useError } from '@/providers/error'
 import { useBackups } from '@/providers/backup'
+import { useUserLocale } from '@/hooks/useUserLocale'
 
 export default function Head() {
   const router = useRouter()
@@ -19,6 +20,7 @@ export default function Head() {
   const [ranking, setRanking] = useState<Ranking | undefined>()
   const { setError } = useError()
   const [{ backups }] = useBackups()
+  const { formatNumber } = useUserLocale()
 
   const fetchRanking = async () => {
     if (!space) return
@@ -42,6 +44,11 @@ export default function Head() {
     fetchRanking()
   }, [backups.items]) // Refetch when backups change
 
+  const formatPoints = (points?: number) => {
+    if (!points) return '00'
+    return formatNumber(points)
+  }
+
   return (
     <div className="bg-background rounded-sm">
       <div className="flex justify-between items-center px-5 py-3">
@@ -52,7 +59,7 @@ export default function Head() {
               <p>#{ranking.rank}</p>
               <div className="flex justify-center items-center gap-1">
                 <Coin size={25} />
-                <p>{ranking ? ranking.points.toLocaleString() : '00'}</p>
+                <p>{formatPoints(ranking?.points)}</p>
               </div>
             </>
           ) : (
