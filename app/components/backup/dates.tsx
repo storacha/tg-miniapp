@@ -1,4 +1,4 @@
-import { useEffect, useState, FormEventHandler, useMemo } from 'react'
+import { useEffect, useState, FormEventHandler, useMemo, useCallback } from 'react'
 import { useW3 as useStoracha } from '@storacha/ui-react'
 import { Calendar } from '@/components/ui/calendar'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,7 @@ import {
 import { isPayingAccount } from '@/lib/storacha'
 import { cn } from '@/lib/utils'
 import { Period } from '@/api'
+
 export interface DatesProps {
   onPeriodChange: (period: Period) => unknown
   onSubmit: () => unknown
@@ -34,12 +35,17 @@ export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
   const maxDurationMs = maxWeeks * MILLISECONDS_IN_A_WEEK
 
   const now = new Date()
-  const earliestAllowedFrom = new Date(now.getTime() - maxDurationMs)
+  
+  // Calculate earliest allowed date based on current subscription status
+  const earliestAllowedFrom = useMemo(() => {
+    return new Date(now.getTime() - maxDurationMs)
+  }, [maxDurationMs])
 
   const [dates, setDates] = useState<[Date, Date]>([earliestAllowedFrom, now])
   const [fromDate, toDate] = dates
-  const accountDid = accounts[0].did()
+  const accountDid = accounts[0]?.did()
 
+  // Check payment status
   useEffect(() => {
     let mounted = true
 
@@ -60,112 +66,169 @@ export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
     }
   }, [client, accountDid])
 
+  // Update dates when subscription status changes
   useEffect(() => {
-    if (paying) {
-      setDates([earliestAllowedFrom, now])
+    const newEarliestAllowed = new Date(now.getTime() - maxDurationMs)
+    
+    if (paying !== null) {
+      // Adjust dates to respect new limits
+      let newFromDate = fromDate
+      let newToDate = toDate
+      
+      // If current from date is before new earliest allowed, adjust it
+      if (fromDate < newEarliestAllowed) {
+        newFromDate = newEarliestAllowed
+      }
+      
+      // If current range exceeds new limits, adjust toDate
+      const currentDuration = newToDate.getTime() - newFromDate.getTime()
+      if (currentDuration > maxDurationMs) {
+        newToDate = new Date(newFromDate.getTime() + maxDurationMs)
+      }
+      
+      setDates([newFromDate, newToDate])
     }
-  }, [paying])
+  }, [paying, maxDurationMs, fromDate, toDate])
 
   // Normalize dates to proper time boundaries
-  const normalizeDates = useMemo(
-    () => (from: Date, to: Date) => {
-      if (!from) return [from, to]
+  const normalizeDates = useCallback((from: Date, to: Date) => {
+    if (!from || !to) return [from, to]
 
-      const actualTo = to || now
-      const isToday = actualTo.toDateString() === now.toDateString()
+    const actualTo = to
+    const isToday = actualTo.toDateString() === now.toDateString()
 
-      const normalizedTo = isToday
-        ? now
-        : new Date(
-            actualTo.getFullYear(),
-            actualTo.getMonth(),
-            actualTo.getDate(),
-            23,
-            59,
-            59,
-            999
-          )
+    const normalizedTo = isToday
+      ? now
+      : new Date(
+          actualTo.getFullYear(),
+          actualTo.getMonth(),
+          actualTo.getDate(),
+          23,
+          59,
+          59,
+          999
+        )
 
-      const earliestAllowedFrom = new Date(
-        normalizedTo.getTime() - maxDurationMs
-      )
-      if (from.toDateString() === earliestAllowedFrom.toDateString()) {
-        return [earliestAllowedFrom, normalizedTo]
-      }
-
-      const normalizedFrom = from
-      normalizedFrom.setHours(0, 0, 0, 0)
-
-      return [normalizedFrom, normalizedTo]
-    },
-    [now, maxDurationMs]
-  )
-
-  const validateDateRange = useMemo(
-    () =>
-      (from: Date | null, to: Date | null): string | null => {
-        if (!from || !to) return null
-
-        if (from > to) return 'Start date cannot be after end date.'
-        if (to > now) return 'End date cannot be in the future.'
-
-        const durationMs = to.getTime() - from.getTime()
-        const maxDurationMs = maxWeeks * MILLISECONDS_IN_A_WEEK
-
-        if (durationMs > maxDurationMs) {
-          return `Date range cannot exceed ${maxWeeks} weeks.`
-        }
-
-        return null
-      },
-    [now, maxWeeks]
-  )
-
-  useEffect(() => {
-    const [normalizedFrom, normalizedTo] = normalizeDates(fromDate, toDate)
-    const validationError = validateDateRange(normalizedFrom, normalizedTo)
-
-    if (validationError) {
-      setError(validationError)
-    } else if (normalizedFrom && normalizedTo) {
-      setError(null)
-      const from = Math.floor(normalizedFrom.getTime() / 1000)
-      const to = Math.floor(normalizedTo.getTime() / 1000)
-      onPeriodChange([from, to])
-    } else {
-      setError(null)
+    const earliestAllowed = new Date(
+      normalizedTo.getTime() - maxDurationMs
+    )
+    
+    let normalizedFrom = from
+    
+    // Ensure from date isn't before earliest allowed
+    if (normalizedFrom < earliestAllowed) {
+      normalizedFrom = new Date(earliestAllowed)
     }
-  }, [fromDate, toDate, onPeriodChange])
+    
+    // Set to start of day
+    normalizedFrom.setHours(0, 0, 0, 0)
 
-  const updateDate = (index: number) => (selectedDate: Date) => {
+    return [normalizedFrom, normalizedTo]
+  }, [now, maxDurationMs])
+
+  // Validate date range
+  const validateDateRange = useCallback((from: Date, to: Date): string | null => {
+    if (!from || !to) return null
+
+    if (from > to) return 'Start date cannot be after end date.'
+    if (to > now) return 'End date cannot be in the future.'
+
+    const durationMs = to.getTime() - from.getTime()
+    
+    if (durationMs > maxDurationMs) {
+      return `Date range cannot exceed ${maxWeeks} week${maxWeeks > 1 ? 's' : ''}.`
+    }
+
+    // Check if from date is before earliest allowed
+    if (from < earliestAllowedFrom) {
+      return `Start date cannot be earlier than ${earliestAllowedFrom.toLocaleDateString()}.`
+    }
+
+    return null
+  }, [now, maxDurationMs, maxWeeks, earliestAllowedFrom])
+
+  // Update period when dates change
+  useEffect(() => {
+    if (fromDate && toDate) {
+      const [normalizedFrom, normalizedTo] = normalizeDates(fromDate, toDate)
+      const validationError = validateDateRange(normalizedFrom, normalizedTo)
+
+      if (validationError) {
+        setError(validationError)
+      } else {
+        setError(null)
+        const from = Math.floor(normalizedFrom.getTime() / 1000)
+        const to = Math.floor(normalizedTo.getTime() / 1000)
+        onPeriodChange([from, to])
+      }
+    }
+  }, [fromDate, toDate, onPeriodChange, normalizeDates, validateDateRange])
+
+  // Update date handler
+  const updateDate = useCallback((index: number) => (selectedDate: Date) => {
+    if (!selectedDate) return
+    
     const updated: [Date, Date] = [...dates]
     updated[index] = selectedDate
+    
+    // Ensure the other date respects the new selection
+    if (index === 0) {
+      // Updating from date
+      const maxAllowedTo = new Date(selectedDate.getTime() + maxDurationMs)
+      if (updated[1] > maxAllowedTo) {
+        updated[1] = maxAllowedTo
+      }
+    } else {
+      // Updating to date
+      const minAllowedFrom = new Date(selectedDate.getTime() - maxDurationMs)
+      if (updated[0] < minAllowedFrom) {
+        updated[0] = minAllowedFrom
+      }
+    }
+    
     setDates(updated)
-  }
+  }, [dates, maxDurationMs])
 
-  const getDisabledDates = (index: number) => {
+  // Get disabled dates for calendar
+  const getDisabledDates = useCallback((index: number) => {
     const isFrom = index === 0
 
     return {
       invalid: (date: Date) => {
         if (isFrom) {
-          // Grey out dates before earliest allowed
-          return date < new Date(toDate.getTime() - maxDurationMs)
+          // For from date: disable dates that would make range too long
+          const maxAllowedTo = new Date(date.getTime() + maxDurationMs)
+          return date < earliestAllowedFrom || maxAllowedTo > now
         } else {
-          // Grey out dates that would make range too long
+          // For to date: disable dates that would make range too long
           if (fromDate) {
-            const maxAllowedTo = new Date(fromDate.getTime() + maxDurationMs)
-            return date > maxAllowedTo
+            const minAllowedFrom = new Date(date.getTime() - maxDurationMs)
+            return date > now || minAllowedFrom > fromDate
           }
+          return date > now
         }
-        return false
       },
     }
-  }
+  }, [maxDurationMs, earliestAllowedFrom, fromDate, now])
+
+  // Get calendar month to show
+  const getCalendarMonth = useCallback((index: number) => {
+    const date = dates[index]
+    if (date) return date
+    
+    // Show appropriate month based on which date is being selected
+    if (index === 0) {
+      // For from date, show month around earliest allowed date
+      return earliestAllowedFrom
+    } else {
+      // For to date, show current month
+      return now
+    }
+  }, [dates, earliestAllowedFrom, now])
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
-    if (!fromDate || !toDate || fromDate > toDate) return
+    if (!fromDate || !toDate || fromDate > toDate || error) return
     onSubmit()
   }
 
@@ -186,6 +249,9 @@ export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
           Backup Chats
         </h1>
         <p className="text-sm">Choose a time range to back up your chats.</p>
+        <p className="text-xs text-muted-foreground">
+          {paying ? 'Premium Plan' : 'Free Plan'}: Up to {maxWeeks} week{maxWeeks > 1 ? 's' : ''} of chat history
+        </p>
       </div>
 
       <div className="w-full px-5 space-y-6 pt-6">
@@ -216,18 +282,20 @@ export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
                       : `Pick ${label.toLowerCase()} date`}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
+                <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
                     selected={date ?? undefined}
                     onSelect={(d) => d && updateDate(i)(d)}
-                    disabled={(d) => d > now}
-                    defaultMonth={date ?? now}
+                    disabled={(d) => getDisabledDates(i).invalid(d)}
+                    defaultMonth={getCalendarMonth(i)}
                     modifiers={getDisabledDates(i)}
                     modifiersClassNames={{
-                      invalid:
-                        'text-muted-foreground opacity-40 cursor-not-allowed',
+                      invalid: 'text-muted-foreground opacity-40 cursor-not-allowed bg-gray-100',
                     }}
+                    fromMonth={i === 0 ? earliestAllowedFrom : undefined}
+                    toMonth={now}
+                    captionLayout="dropdown-buttons"
                     autoFocus
                   />
                 </PopoverContent>
@@ -236,14 +304,20 @@ export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
           )
         })}
 
-        <p className="text-xs text-muted-foreground">
-          You can back up chats up to {maxWeeks} weeks
-        </p>
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-sm text-red-600 font-medium">{error}</p>
+          </div>
+        )}
 
-        {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p>• Free users can back up up to {MAX_BACKUP_WEEKS_FREE_TIER} weeks of chat history</p>
+          <p>• Premium users can back up up to {MAX_BACKUP_WEEKS_PAID_TIER} weeks of chat history</p>
+          <p>• Selected range: {fromDate && toDate ? `${Math.ceil((toDate.getTime() - fromDate.getTime()) / MILLISECONDS_IN_A_WEEK)} week${Math.ceil((toDate.getTime() - fromDate.getTime()) / MILLISECONDS_IN_A_WEEK) > 1 ? 's' : ''}` : '0 weeks'}</p>
+        </div>
       </div>
 
-      <div className="sticky bottom-0 w-full p-5">
+      <div className="sticky bottom-0 w-full p-5 bg-background border-t border-border">
         <Button type="submit" className="w-full" disabled={isSubmitDisabled}>
           Continue
         </Button>
