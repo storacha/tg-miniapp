@@ -14,6 +14,7 @@ export const getTelegramClient = async (
   // DC ip servers need to be set to IP addresses on node
   // see https://github.com/gram-js/gramjs/issues/344#issuecomment-1405518285
   // and further discussion in @gramjschat on Telegram
+  
   const dcServers: Record<number, string> = {
     1: '149.154.175.54',
     2: '149.154.167.50',
@@ -27,6 +28,7 @@ export const getTelegramClient = async (
     dcServers[sessionString.dcId],
     sessionString.port
   )
+
   const telegramClient = new TelegramClient(
     sessionString,
     telegramAPIID,
@@ -34,24 +36,16 @@ export const getTelegramClient = async (
     defaultClientParams
   )
 
-  /**
-   * Override console.error globally to handle TIMEOUT errors from Telegram client
-   * This is a workaround for the issue where Telegram client logs TIMEOUT errors
-   * directly via console.error bypassing the library's logger system
-   */
-  const originalError = console.error
-  // eslint-disable-next-line
-  console.error = (...args: any[]) => {
-    const err = args[0]
-    const isTelegramTimeout =
-      err instanceof Error &&
-      err.message === 'TIMEOUT' &&
-      err.stack?.includes('telegram')
-    if (isTelegramTimeout) {
-      telegramClient.logger.debug(String(err)) // Now only logs it if setLogLevel is set to debug
+  // Set up client-specific error handling using the proper onError setter
+  telegramClient.onError = async (error: Error) => {
+    // Handle TIMEOUT errors specifically for Telegram client
+    if (error.message === 'TIMEOUT' && error.stack?.includes('telegram')) {
+      // Log to debug level if available, otherwise suppress
+      telegramClient.logger.debug(`Telegram timeout handled: ${error.message}`)
       return
     }
-    originalError.apply(console, args)
+    // For other errors, log normally using the client's logger
+    telegramClient.logger.error('Telegram client error:', error)
   }
 
   if (!(await telegramClient.connect())) {
