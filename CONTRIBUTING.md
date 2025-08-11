@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Storacha is open-source and welcomes c
 
 This is a full-stack app built with [Next.js](https://nextjs.org/) using Node.js v18 and [pnpm](https://pnpm.io/). Since it’s a Telegram Mini App, it doesn't run like a traditional web app — it must be launched inside Telegram and linked to a bot.
 
-If you're submitting a pull request, be sure to follow our [commit message guidelines](#how-should-i-write-my-commits).
+If you're submitting a pull request, be sure to follow our  [PR Guidelines](#pr-guidelines).
 
 ## 🛠️ Local Development Setup
 
@@ -177,12 +177,61 @@ While the Bot API lets you interact with your own bot, it **does not** provide a
 These credentials allow your app to authenticate as a user (not just a bot) and access messages and chat history through TDLib.
 
 
-## 📝 How should I write my commits?
+## PR Guidelines
+
+We welcome and value contributions from the community! To help us review and merge your pull request (PR) efficiently, please follow these guidelines:
+
+### 📝 How should I write my commits?
 
 We use [Conventional Commits](https://www.conventionalcommits.org/) to power automatic changelogs and releases via [Release Please](https://github.com/googleapis/release-please).
 
-### Use these prefixes:
+#### Use these prefixes:
 
 - `fix:` – Bug fixes → _SemVer patch_
 - `feat:` – New features → _SemVer minor_
+- `chore:`- tasks that don't directly impact the functionality of your application but are important for maintaining a clean, functional codebase
 - `feat!:`, `fix!:`, etc. – Breaking changes → _SemVer major_
+
+### Before You Open a PR
+
+- **Describe your change clearly:** Summarize what your PR does and why. If it addresses an issue, link to it in the description.
+
+- **Keep PRs focused:** Submit small, focused PRs that address a single topic or problem. Large or unrelated changes are harder to review and may be delayed.
+
+- **Follow the code style:** Match the existing code style and patterns. Run linting and formatting using the commands defined in `app/package.json`.
+
+- **Test your changes:** Run the app and verify your changes work as expected.
+
+
+### Review & Merge Process
+
+To keep maintenance sustainable, we follow a predictable timeline:
+
+1. **Review:**
+  - A reviewer will provide specific, actionable feedback and mark the PR as “Changes requested”.
+  - The PR will be labeled `awaiting-author`.
+
+2. **Response Window:**
+  - If there is no response (commits or comments) within 10 days, the PR will be marked as `stale`.
+  - If there is still no activity after an additional 4 days, the PR may be closed.
+
+3. **Reopening & Exceptions:**
+  - If your PR is closed, you can:
+    - Push new commits to the same branch and ask a maintainer to reopen, or
+    - Open a new PR referencing the closed one.
+  - Maintainers may exempt PRs from closure if they are:
+    - Labeled `blocked` or `maintainer-will-finish`,
+    - Clearly in-progress with active discussion, or
+    - Time-sensitive and acknowledged by maintainers.
+
+4. **Reviewer Responsibilities:**
+  - Provide a concise summary and a checklist of requested changes.
+  - Clearly distinguish between blocking and optional feedback.
+
+### Tips for a Smooth Contribution
+
+- **AI-assisted changes:** If you used AI to help with your contribution:
+  - Run and verify the code locally.
+  - Be ready to adjust based on review feedback.
+
+- **Celebrate your contribution:** We appreciate every PR, thank you for helping improve Storacha!

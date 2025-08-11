@@ -1,0 +1,72 @@
+name: PR triage labels
+
+on:
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  pull_request:
+    types: [synchronize, reopened, ready_for_review, converted_to_draft]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  label-awaiting-author:
+    name: Manage awaiting-author/awaiting-review labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply/remove labels based on review state or new commits
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request || context.payload.review?.pull_request;
+            if (!pr) return;
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = pr.number;
+
+            async function add(label) {
+              try {
+                await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [label] });
+              } catch (e) {
+                if (e.status !== 422) throw e; // already has label
+              }
+            }
+            async function remove(label) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label });
+              } catch (e) {
+                if (e.status !== 404) throw e; // label not present
+              }
+            }
+
+            if (context.eventName === 'pull_request_review') {
+              // Ignore formal review state on draft PRs
+              if (pr.draft) return;
+
+              const state = (context.payload.review.state || '').toLowerCase();
+              if (state === 'changes_requested') {
+                await add('awaiting-author');
+                await remove('awaiting-review').catch(() => {});
+              } else if (state === 'approved') {
+                await remove('awaiting-author').catch(() => {});
+              }
+            }
+
+            if (context.eventName === 'pull_request') {
+              const action = context.payload.action;
+
+              // If converted to draft or currently draft, clear awaiting-* labels
+              if (action === 'converted_to_draft' || pr.draft) {
+                await remove('awaiting-author').catch(() => {});
+                await remove('awaiting-review').catch(() => {});
+                return;
+              }
+
+              // New commits, reopened, or made ready for review -> waiting on reviewers
+              if (['synchronize', 'reopened', 'ready_for_review'].includes(action)) {
+                await remove('awaiting-author').catch(() => {});
+                await add('awaiting-review').catch(() => {});
+              }
+            }
