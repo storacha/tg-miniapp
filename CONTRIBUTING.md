@@ -4,7 +4,7 @@ Thanks for your interest in contributing! Storacha is open-source and welcomes c
 
 This is a full-stack app built with [Next.js](https://nextjs.org/) using Node.js v18 and [pnpm](https://pnpm.io/). Since it’s a Telegram Mini App, it doesn't run like a traditional web app — it must be launched inside Telegram and linked to a bot.
 
-If you're submitting a pull request, be sure to follow our  [PR Guidelines](#pr-guidelines).
+If you're submitting a pull request, be sure to follow our [PR Guidelines](#pr-guidelines).
 
 ## 🛠️ Local Development Setup
 
@@ -231,6 +231,7 @@ To keep maintenance sustainable, we follow a predictable timeline:
 ### Tips for a Smooth Contribution
 
 - **AI-assisted changes:** If you used AI to help with your contribution:
+  - Thoroughly review all AI generated code - you **MUST** understand and be able to answer questions about all code you submit in a PR.
   - Run and verify the code locally.
   - Be ready to adjust based on review feedback.
 
