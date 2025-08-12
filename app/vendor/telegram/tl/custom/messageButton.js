@@ -126,26 +126,40 @@ class MessageButton {
             if (!sharePhone) {
                 throw new Error("cannot click on phone buttons unless sharePhone=true");
             }
+            let phoneMedia = sharePhone;
             if (sharePhone == true || typeof sharePhone == "string") {
                 const me = await this._client.getMe();
-                sharePhone = new api_1.Api.InputMediaContact({
+                phoneMedia = new api_1.Api.InputMediaContact({
                     phoneNumber: (sharePhone == true ? me.phone : sharePhone) || "",
                     firstName: me.firstName || "",
                     lastName: me.lastName || "",
                     vcard: "",
                 });
             }
-            throw new Error("Not supported for now");
-            // TODO
-            //return this._client.sendFile(this._chat, phoneMedia);
+            // Send the contact as a file (contact message)
+            return this._client.sendFile(this._chat, {
+                file: phoneMedia,
+                caption: this.button.text || undefined,
+            });
         }
-        else if (this.button instanceof api_1.Api.InputWebFileGeoPointLocation) {
+        else if (this.button instanceof api_1.Api.InputWebFileGeoPointLocation || this.button instanceof api_1.Api.KeyboardButtonRequestGeoLocation) {
             if (!shareGeo) {
                 throw new Error("cannot click on geo buttons unless shareGeo=[longitude, latitude]");
             }
-            throw new Error("Not supported for now");
-            // TODO
-            //return this._client.sendFile(this._chat, geoMedia);
+            let geoMedia = shareGeo;
+            if (Array.isArray(shareGeo)) {
+                geoMedia = new api_1.Api.InputMediaGeoPoint({
+                    geoPoint: new api_1.Api.InputGeoPoint({
+                        lat: shareGeo[0],
+                        long: shareGeo[1],
+                    }),
+                });
+            }
+            // Send the location as a file (geo message)
+            return this._client.sendFile(this._chat, {
+                file: geoMedia,
+                caption: this.button.text || undefined,
+            });
         }
     }
 }
