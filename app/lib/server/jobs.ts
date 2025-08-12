@@ -203,7 +203,7 @@ const initializeHandler = async (request: ExecuteJobRequest) => {
     storachaAccount: request.accountDID,
     telegramId: telegramId.toString(),
   })
-  return createHandler({
+  return await createHandler({
     storacha,
     telegram,
     cipher,
@@ -253,20 +253,38 @@ const initializeStoracha = (space: SpaceDID, delegation: Delegation) => {
     currentSpace: space,
   })
 
+  // Import gateway connection dependencies
+  const { connect } = require('@ucanto/client')
+  const { CAR, HTTP } = require('@ucanto/transport')
+  const { DID } = require('@ipld/dag-ucan/did')
+
+  // Get gateway URL and principal from environment
+  const gatewayURL = process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'
+  const gatewayPrincipal = process.env.NEXT_PUBLIC_STORACHA_GATEWAY_DID
+    ? DID.parse(process.env.NEXT_PUBLIC_STORACHA_GATEWAY_DID)
+    : undefined
+
+  // Only create gateway connection if principal is available
+  const gatewayConnection = gatewayPrincipal
+    ? connect({
+        id: gatewayPrincipal,
+        codec: CAR.outbound,
+        channel: HTTP.open({
+          url: new URL(gatewayURL),
+          method: 'POST',
+          headers: {
+            'X-Client': `Storacha/1 (js; browser) TelegramMiniapp/${(process.env.NEXT_PUBLIC_VERSION ?? '1.0.0').split('.')[0]}`,
+          },
+        }),
+      })
+    : undefined
+
   const storachaClient = new StorachaClient(agentData, {
     serviceConf: {
       access: serviceConnection,
       upload: serviceConnection,
       filecoin: serviceConnection,
-
-      // TODO: This should point to the gateway, but we don't actually use it
-      // (yet), so we'll leave a dummy implementation here for now.
-      gateway: {
-        ...serviceConnection,
-        execute() {
-          throw new Error('Gateway connection not implemented')
-        },
-      },
+      gateway: gatewayConnection || serviceConnection, // fallback if not set
     },
     receiptsEndpoint,
   })
