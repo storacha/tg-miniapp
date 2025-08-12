@@ -146,7 +146,7 @@ const formatServiceMessage = (
       return `${getUserName(from)} removed the group photo`
     case 'chat-add-user':
       const addedUsers = action.users.length
-      return `${addedUsers} users joined the group`
+      return `${addedUsers > 1 ? `${addedUsers} users` : 'A user'} joined the group`
     case 'chat-delete-user':
       return `${getUserName(action.user)} was removed from the group`
     case 'chat-joined-by-link':
