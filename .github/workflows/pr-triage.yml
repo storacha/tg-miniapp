@@ -3,7 +3,7 @@ name: PR triage labels
 on:
   pull_request_review:
     types: [submitted, edited, dismissed]
-  pull_request:
+  pull_request_target: # Enables labeling on PRs from forks by running with write permissions. Safe here because we only checkout the trusted base branch, not PR code.
     types: [synchronize, reopened, ready_for_review, converted_to_draft, review_requested]
 
 permissions:
@@ -16,8 +16,10 @@ jobs:
     name: Manage awaiting-author/awaiting-review labels
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Checkout trusted base branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }} # Always checkout the base branch (not PR code) for security when using pull_request_target
 
       - name: Apply/remove labels based on review state or new commits
         uses: actions/github-script@v7

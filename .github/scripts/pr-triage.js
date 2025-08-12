@@ -17,6 +17,9 @@ module.exports = async ({github, context, core})=> {
     const pr = context.payload.pull_request || context.payload.review?.pull_request
     if (!pr) return
 
+    const isFork = pr.head.repo.full_name !== pr.base.repo.full_name;
+    if (isFork) core.info('Fork PR detected');
+
     const { owner, repo } = context.repo
     const issue_number = pr.number
 
@@ -28,7 +31,13 @@ module.exports = async ({github, context, core})=> {
             await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [label] })
             core.info(`Added label: ${label}`)
         } catch (e) {
-            if (e.status !== 422) throw e // already has label
+            if (e.status !== 422) {
+                core.info(`Label ${label} already present, skipping addition`)
+            } else if (e.status === 403) {
+                core.warning(`Permission denied adding label ${label} ${isFork ? '(fork PR)' : ''}: ${e.message}`)
+            } else {
+                throw e
+            }
         }
     }
 
@@ -37,7 +46,13 @@ module.exports = async ({github, context, core})=> {
             await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label })
             core.info(`Removed label: ${label}`)
         } catch (e) {
-            if (e.status !== 404) throw e // label not present
+            if (e.status === 404) {
+                core.info(`Label ${label} not present, skipping removal`)
+            } else if (e.status === 403) {
+                core.warning(`Permission denied removing label ${label} ${isFork ? '(fork PR)' : ''}: ${e.message}`)
+            } else {
+                throw e
+            }
         }
     }
 
@@ -55,6 +70,7 @@ module.exports = async ({github, context, core})=> {
             await remove('awaiting-review')
         } else if (state === 'approved') {
             await remove('awaiting-author')
+            await remove('awaiting-review')
         }
     }
 
