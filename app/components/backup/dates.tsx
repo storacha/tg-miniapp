@@ -38,7 +38,7 @@ export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
 
   const [dates, setDates] = useState<[Date, Date]>([earliestAllowedFrom, now])
   const [fromDate, toDate] = dates
-  const accountDid = accounts[0].did()
+  const accountDid = accounts[0]?.did()
 
   useEffect(() => {
     let mounted = true
