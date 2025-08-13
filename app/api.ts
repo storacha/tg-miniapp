@@ -2153,7 +2153,6 @@ export interface UnknownMediaData {
 export interface LeaderboardUser {
   id: string
   initials: string
-  thumbSrc: string
   name: string
   points: number
   isMe: boolean
