@@ -13,7 +13,6 @@ import { getTelegramClient } from '@/lib/server/telegram-manager'
 import { TelegramClient, Api } from 'telegram'
 import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
-import bigInt from 'big-integer'
 import { toResultFn } from '@/lib/errorhandling'
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
 import {
