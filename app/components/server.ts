@@ -26,7 +26,6 @@ import {
 } from '@/lib/server/jobs'
 import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
-import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
 import { clearSession } from '@/lib/server/session'
 
@@ -187,20 +186,12 @@ export const getLeaderboard = toResultFn(
     for (let i = 0; i < dbUsers.length; i++) {
       const id = dbUsers[i].telegramId
       let name
-      let thumbSrc = ''
       if (id === me.id.toString()) {
         const tgUser = me
         name =
           [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
           tgUser.username ||
           ''
-        // TODO: we should figure out how to get the high quality photo here
-        thumbSrc = getThumbSrc(
-          tgUser.photo?.className === 'UserProfilePhoto' &&
-            tgUser.photo.strippedThumb
-            ? new Uint8Array(tgUser.photo.strippedThumb)
-            : undefined
-        )
       }
       if (!name) {
         name = names[nameIndex]
@@ -211,7 +202,6 @@ export const getLeaderboard = toResultFn(
         id,
         name,
         initials: getInitials(name),
-        thumbSrc,
         points: dbUsers[i].points,
         isMe: id === me.id.toString(),
       })
