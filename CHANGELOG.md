@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.12.0](https://github.com/storacha/tg-miniapp/compare/v2.11.3...v2.12.0) (2025-08-13)
+
+
+### Features
+
+* **deploy:** upgrade memory ([549696f](https://github.com/storacha/tg-miniapp/commit/549696fcb6dcb356a2b74af436719bd573248487))
+
+
+### Bug Fixes
+
+* **deploy:** only use extra memory for prod ([327c193](https://github.com/storacha/tg-miniapp/commit/327c193951b87b8d95955bb59bcd862a93ab5b4a))
+* **server:** use rust piece hasher ([c8a9692](https://github.com/storacha/tg-miniapp/commit/c8a9692171c1796527bf243384cb4f815ee9b3d0))
+
 ## [2.11.3](https://github.com/storacha/tg-miniapp/compare/v2.11.2...v2.11.3) (2025-08-08)
 
 
