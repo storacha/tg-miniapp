@@ -217,19 +217,21 @@ export default function Dates({ onPeriodChange, onSubmit }: DatesProps) {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={date ?? undefined}
-                    onSelect={(d) => d && updateDate(i)(d)}
-                    disabled={(d) => d > now}
-                    defaultMonth={date ?? now}
-                    modifiers={getDisabledDates(i)}
-                    modifiersClassNames={{
-                      invalid:
-                        'text-muted-foreground opacity-40 cursor-not-allowed',
-                    }}
-                    autoFocus
-                  />
+                  <div className="max-h-[300px] overflow-y-auto">
+                    <Calendar
+                      mode="single"
+                      selected={date ?? undefined}
+                      onSelect={(d) => d && updateDate(i)(d)}
+                      disabled={(d) => d > now}
+                      defaultMonth={date ?? now}
+                      modifiers={getDisabledDates(i)}
+                      modifiersClassNames={{
+                        invalid:
+                          'text-muted-foreground opacity-40 cursor-not-allowed',
+                      }}
+                      autoFocus
+                    />
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
