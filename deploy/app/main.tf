@@ -97,6 +97,14 @@ module "app" {
     aws = aws
     aws.acm = aws.acm
   }
+  deployment_config = {
+    cpu = 1024
+    memory = 4096
+    service_min = 1
+    service_max = 2
+    httpport = 3000
+    readonly = false
+  }
   env_files = var.env_files
   domain_base = var.domain_base
 }
