@@ -196,7 +196,7 @@ export function getDB(): TGDatabase {
 
       return {
         rank: results[0].rank,
-        percentile: (results[0].rank * 100) / totals[0].total,
+        percentile: (1 - results[0].rank / totals[0].total) * 100,
         points: points[0].points,
       }
     },

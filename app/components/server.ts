@@ -189,30 +189,19 @@ export const getLeaderboard = toResultFn(
       const id = dbUsers[i].telegramId
       let name
       let thumbSrc = ''
-      if (i < 3) {
-        try {
-          const tgUser =
-            id === me.id.toString() ? me : await client.getEntity(bigInt(id))
-          if (tgUser.className !== 'User') {
-            throw new Error(`${tgUser.className} is not a User`)
-          }
-          name =
-            [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
-            tgUser.username ||
-            ''
-          thumbSrc = getThumbSrc(
-            tgUser.photo?.className === 'UserProfilePhoto' &&
-              tgUser.photo.strippedThumb
-              ? new Uint8Array(tgUser.photo.strippedThumb)
-              : undefined
-          )
-        } catch (err) {
-          if (err instanceof Error) {
-            console.warn(`failed to get leaderboard user: ${err.message}`)
-          } else {
-            console.log(`failed to get leaderboard user: `, err)
-          }
-        }
+      if (id === me.id.toString()) {
+        const tgUser = me
+        name =
+          [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
+          tgUser.username ||
+          ''
+        // TODO: we should figure out how to get the high quality photo here
+        thumbSrc = getThumbSrc(
+          tgUser.photo?.className === 'UserProfilePhoto' &&
+            tgUser.photo.strippedThumb
+            ? new Uint8Array(tgUser.photo.strippedThumb)
+            : undefined
+        )
       }
       if (!name) {
         name = names[nameIndex]
