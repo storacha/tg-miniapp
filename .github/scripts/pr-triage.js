@@ -18,7 +18,7 @@ module.exports = async ({github, context, core})=> {
     if (!pr) return
 
     const isFork = pr.head.repo.full_name !== pr.base.repo.full_name;
-    if (isFork) core.info('Fork PR detected');
+    if (isFork) core.info('Fork PR detected!');
 
     const { owner, repo } = context.repo
     const issue_number = pr.number
