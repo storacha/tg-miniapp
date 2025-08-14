@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.12.2](https://github.com/storacha/tg-miniapp/compare/v2.12.1...v2.12.2) (2025-08-14)
+
+
+### Bug Fixes
+
+* **telegram:** correct callback memoization ([292f8da](https://github.com/storacha/tg-miniapp/commit/292f8dafd6b40a2e4c3e8afd955c1809a71fe744))
+
 ## [2.12.1](https://github.com/storacha/tg-miniapp/compare/v2.12.0...v2.12.1) (2025-08-14)
 
 
