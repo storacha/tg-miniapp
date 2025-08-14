@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.12.1](https://github.com/storacha/tg-miniapp/compare/v2.12.0...v2.12.1) (2025-08-14)
+
+
+### Bug Fixes
+
+* 'no image' when media is loading ([be1f580](https://github.com/storacha/tg-miniapp/commit/be1f580fcc513ef73d02f1caf716e05b744b3ccf))
+* correct percentile calc and load my name no matter where I am ([03e8dd5](https://github.com/storacha/tg-miniapp/commit/03e8dd5020841d59253e52b429960ca86d8acecf))
+* correct percentile calc and load my name no matter where I am ([965fd52](https://github.com/storacha/tg-miniapp/commit/965fd52039a0eae4604182891de620acdf04f90d))
+* dialogs list shows chats with ?? thumbnail and no name ([3735b18](https://github.com/storacha/tg-miniapp/commit/3735b187923467c40855927824aa6cd5256b1fd0))
+* missing pull_request_target event handler in the pr-triage workflow ([75178ae](https://github.com/storacha/tg-miniapp/commit/75178ae972468a1890b313e69010ce8655983f6e))
+* multiple UI bugs ([e5c6cea](https://github.com/storacha/tg-miniapp/commit/e5c6cea1dbfd5b89628366b435389b3b488c2414))
+* podium too ([18f7eed](https://github.com/storacha/tg-miniapp/commit/18f7eed0d82217c4fca41cd71feb4398a88294ce))
+* prevent calendar popover from overflowing screen ([1bde880](https://github.com/storacha/tg-miniapp/commit/1bde8802efe682a97ca0261d0c972d2a07ed5a44))
+* prevent calendar popover from overflowing screen ([6b9af46](https://github.com/storacha/tg-miniapp/commit/6b9af46aab2cb377af00b2050035d7c2a39432f4))
+* ranking percentile calculation ([635e5e1](https://github.com/storacha/tg-miniapp/commit/635e5e14c4fc0764deacee6bd87fb5b8d6456016))
+* use my high quality profile image on leaderboard ([b50681e](https://github.com/storacha/tg-miniapp/commit/b50681efcd02c9aa7f66a662ff996fa21f1a3ecc))
+* use my high quality profile image on leaderboard ([3007d83](https://github.com/storacha/tg-miniapp/commit/3007d8373b28db5e22b097faf64597a888a29ab5))
+* we may not yet be logged in in the datepicker ([36e8a9d](https://github.com/storacha/tg-miniapp/commit/36e8a9d93a20ba3b9ba7b060cba5b3648fcce72e))
+* we may not yet be logged in in the datepicker ([5bad32f](https://github.com/storacha/tg-miniapp/commit/5bad32fcc399f9ef2e40d58cde8601d937758436))
+
 ## [2.12.0](https://github.com/storacha/tg-miniapp/compare/v2.11.3...v2.12.0) (2025-08-13)
 
 
