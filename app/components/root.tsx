@@ -164,7 +164,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
       await storacha.setCurrentSpace(space)
 
       try {
-        fromResult(
+        await fromResult(
           await login({
             telegramAuth: {
               session: tgSessionString,

@@ -23,6 +23,7 @@ import { useGlobal } from '@/zustand/global'
 import { DialogInfo } from '@/api'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { useError } from './error'
+import { useRouter } from 'next/navigation'
 
 export interface ContextState {
   launchParams: LaunchParams
@@ -72,6 +73,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const [isTgAuthorized, setIsTgAuthorized] = useState(false)
   const [isValidating, setIsValidating] = useState(true)
   const { setError } = useError()
+  const router = useRouter()
 
   const user = useSignal(initData.user)
   const launchParams = useLaunchParams()
@@ -127,6 +129,10 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       setIsTgAuthorized(false)
       if (!tgSessionString) return
       await logoutTelegram(tgSessionString)
+      // we clear the TG session string once we are successfully logged out
+      setTgSessionString('')
+      // redirect to home page after logout
+      router.push('/')
     } catch (err) {
       const title = 'Failed to log out from Telegram!'
       console.error(title, err)
@@ -178,7 +184,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       setError(getErrorMessage(err), { title: 'Error fetching user info' })
       return undefined
     }
-  }, [])
+  }, [tgSessionString])
 
   return (
     <Context.Provider
