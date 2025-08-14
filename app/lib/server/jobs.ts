@@ -239,10 +239,9 @@ const initializeTelegram = async (telegramAuth: TelegramAuth) => {
 const initializeStoracha = (space: SpaceDID, delegation: Delegation) => {
   // Create AgentData manually because we don't want to use a store.
   const agentData = new AgentData({
-    // FIXME: The Storacha client thinks a principal has to be a `did:key`,
-    // which is a bit silly. All DIDs have keys, and any `Signer` by
-    // definition has its private key loaded and can sign.
-    principal: getServerIdentity() as unknown as Signer<DID<'key'>>,
+    // Fixed: Removed restrictive did:key type constraint to support all DID types
+    // All DIDs have keys, and any Signer by definition has its private key loaded and can sign
+    principal: getServerIdentity(),
     delegations: new Map(),
     meta: {
       name: 'bluesky-backups',
