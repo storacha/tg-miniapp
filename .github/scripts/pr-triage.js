@@ -14,6 +14,8 @@
  * @param {import('@actions/core')} params.core
  */
 module.exports = async ({github, context, core})=> {
+    core.info(`Event: ${context.eventName} action: ${context.payload.action || 'n/a'}`)
+
     const pr = context.payload.pull_request || context.payload.review?.pull_request
     if (!pr) return
 
@@ -26,18 +28,31 @@ module.exports = async ({github, context, core})=> {
     const currentLabels = (pr.labels || []).map(l => (typeof l === 'string' ? l : l.name))
     const hasAwaitingAuthor = currentLabels.includes('awaiting-author')
 
+    const handleError = (e, label, op) => { 
+        if (e.status === 422) { 
+            if (op === 'add') { 
+                core.warning(`Cannot add "${label}", it likely does not exist or the payload is invalid.`) 
+            } else { 
+                core.info(`Validation failed while removing "${label}". Skipping.`) 
+            } 
+        } else if (e.status === 403) {
+            core.warning(`Permission denied editing label ${label} ${isFork ? '(fork PR)' : ''}: ${e.message}`)
+        } else if (e.status === 404) {
+            if (op === 'add') {
+                core.info(`Resource not found while adding "${label}".`)
+            }
+            // if it's remove then we can ignore because the label already doesn't exist
+        } else {
+            throw e
+        }
+    }
+
     async function add(label) {
         try {
             await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [label] })
             core.info(`Added label: ${label}`)
         } catch (e) {
-            if (e.status !== 422) {
-                core.info(`Label ${label} already present, skipping addition`)
-            } else if (e.status === 403) {
-                core.warning(`Permission denied adding label ${label} ${isFork ? '(fork PR)' : ''}: ${e.message}`)
-            } else {
-                throw e
-            }
+           handleError(e, label, 'add')
         }
     }
 
@@ -46,13 +61,7 @@ module.exports = async ({github, context, core})=> {
             await github.rest.issues.removeLabel({ owner, repo, issue_number, name: label })
             core.info(`Removed label: ${label}`)
         } catch (e) {
-            if (e.status === 404) {
-                core.info(`Label ${label} not present, skipping removal`)
-            } else if (e.status === 403) {
-                core.warning(`Permission denied removing label ${label} ${isFork ? '(fork PR)' : ''}: ${e.message}`)
-            } else {
-                throw e
-            }
+            handleError(e, label, 'remove')
         }
     }
 
@@ -74,12 +83,12 @@ module.exports = async ({github, context, core})=> {
         }
     }
 
-    if (context.eventName === 'pull_request') {
+    if (context.eventName === 'pull_request' || context.eventName === 'pull_request_target') {
         const action = context.payload.action
         core.info(`PR action: ${action}`)
 
-        if (action === 'converted_to_draft' || pr.draft) {
-            core.info('Clearing labels because PR is draft or was converted to draft.')
+        if (action === 'converted_to_draft') {
+            core.info('Clearing labels because PR was converted to draft.')
             await remove('awaiting-author')
             await remove('awaiting-review')
             return

@@ -194,9 +194,14 @@ export function getDB(): TGDatabase {
         throw new Error('error getting points')
       }
 
+      const percentile =
+        totals[0].total === 1
+          ? 100
+          : ((totals[0].total - results[0].rank) / (totals[0].total - 1)) * 100
+
       return {
         rank: results[0].rank,
-        percentile: (1 - results[0].rank / totals[0].total) * 100,
+        percentile,
         points: points[0].points,
       }
     },

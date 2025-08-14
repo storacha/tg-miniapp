@@ -80,7 +80,8 @@ const MessageWithMedia: React.FC<{
   message?: string
   mediaUrl?: string
   metadata: MediaData
-}> = ({ isOutgoing, date, message, mediaUrl, metadata }) => {
+  loadingMedia: boolean
+}> = ({ isOutgoing, date, message, mediaUrl, metadata, loadingMedia }) => {
   return (
     <>
       <div
@@ -92,6 +93,7 @@ const MessageWithMedia: React.FC<{
           mediaUrl={mediaUrl}
           metadata={metadata}
           time={message ? undefined : formatTime(date)}
+          loading={loadingMedia}
         />
       </div>
       {message && (
@@ -255,8 +257,10 @@ function BackupDialog({
               }
 
               let mediaUrl: string | undefined
+              let isMediaLoading = false
               if (msg.media?.content) {
                 const rawContent = mediaMap[msg.media.content.toString()]
+                isMediaLoading = !rawContent
                 const type =
                   msg.media.metadata.type === 'document'
                     ? msg.media.metadata.document?.mimeType
@@ -288,6 +292,7 @@ function BackupDialog({
                             message={msg.message}
                             metadata={msg.media.metadata}
                             mediaUrl={mediaUrl}
+                            loadingMedia={isMediaLoading}
                           />
                         ) : (
                           <Message
