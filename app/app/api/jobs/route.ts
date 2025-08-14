@@ -1,8 +1,12 @@
-import { ExecuteJobRequest } from '@/api'
+import { ExecuteJobRequest, Job } from '@/api'
 import { getDB } from '@/lib/server/db'
 import { getTelegramId, handleJob } from '@/lib/server/jobs'
 import { getSession } from '@/lib/server/session'
 import { parseWithUIntArrays, stringifyWithUIntArrays } from '@/lib/utils'
+import { after } from 'next/server'
+import { logAndCaptureError } from '@/lib/sentry'
+import { get } from 'http'
+import { getErrorMessage } from '@/lib/errorhandling'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,8 +38,47 @@ export async function POST(request: Request) {
 
   const message = await request.json()
 
-  handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
+  after(async () => {
+    await handleJobWithErrorCapture(
+      parseWithUIntArrays(message.body) as ExecuteJobRequest
+    )
+  })
   return Response.json({}, { status: 202 })
+}
+
+async function handleJobWithErrorCapture(request: ExecuteJobRequest) {
+  try {
+    await handleJob(request)
+  } catch (error) {
+    console.error('Job execution failed:', error)
+
+    // Capture error in Sentry
+    try {
+      logAndCaptureError(error)
+    } catch (sentryError) {
+      console.error('Failed to log to Sentry:', sentryError)
+    }
+
+    try {
+      console.log(`Updating job status to failed for jobID: ${request.jobID}`)
+
+      const db = getDB()
+      await db.updateJob(request.jobID, {
+        status: 'failed',
+        cause: getErrorMessage(error),
+        finished: Date.now(),
+        updated: Date.now(),
+      } as Job)
+    } catch (dbError) {
+      console.error('Failed to update job status:', dbError)
+
+      try {
+        logAndCaptureError(dbError)
+      } catch (sentryError) {
+        console.error('Failed to log DB error to Sentry:', sentryError)
+      }
+    }
+  }
 }
 
 export async function GET() {
