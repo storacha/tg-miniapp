@@ -32,6 +32,7 @@ interface MediaProps {
   mediaUrl?: string
   metadata: MediaData
   time?: string
+  loading: boolean
 }
 
 const getThumbURL = (document: DocumentData) => {
@@ -68,12 +69,17 @@ const getDocumentType = (media: DocumentMediaData) => {
   return 'other'
 }
 
-export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
+export const Media: React.FC<MediaProps> = ({
+  mediaUrl,
+  metadata,
+  time,
+  loading,
+}) => {
   let mediaContent
 
   switch (metadata.type) {
     case 'photo': {
-      mediaContent = <ImageMedia mediaUrl={mediaUrl} />
+      mediaContent = <ImageMedia mediaUrl={mediaUrl} loading={loading} />
       break
     }
     case 'geo-live':
@@ -94,21 +100,37 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
 
       switch (docType) {
         case 'gif': {
-          mediaContent = <GifMedia mediaUrl={mediaUrl} metadata={metadata} />
+          mediaContent = (
+            <GifMedia
+              mediaUrl={mediaUrl}
+              metadata={metadata}
+              loading={loading}
+            />
+          )
           break
         }
         case 'image': {
-          mediaContent = <ImageMedia mediaUrl={mediaUrl} />
+          mediaContent = <ImageMedia mediaUrl={mediaUrl} loading={loading} />
           break
         }
         case 'video': {
-          mediaContent = <VideoMedia mediaUrl={mediaUrl} metadata={metadata} />
+          mediaContent = (
+            <VideoMedia
+              mediaUrl={mediaUrl}
+              metadata={metadata}
+              loading={loading}
+            />
+          )
           break
         }
         case 'audio': {
           mediaContent = (
             <Bubble>
-              <AudioMedia metadata={metadata} mediaUrl={mediaUrl} />
+              <AudioMedia
+                metadata={metadata}
+                mediaUrl={mediaUrl}
+                loading={loading}
+              />
             </Bubble>
           )
           break
@@ -162,8 +184,12 @@ const PlaceholderBubble: React.FC<{ label?: string }> = ({ label }) => (
   </div>
 )
 
-const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="no image" />
+const ImageMedia: React.FC<{ mediaUrl?: string; loading: boolean }> = ({
+  mediaUrl,
+  loading,
+}) => {
+  if (loading) return <PlaceholderBubble label="loading image..." />
+  if (!mediaUrl) return <PlaceholderBubble label="image unavailable" />
   return (
     <div className="flex justify-center">
       <img
@@ -179,7 +205,8 @@ const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
 const AudioMedia: React.FC<{
   metadata: DocumentMediaData
   mediaUrl?: string
-}> = ({ metadata, mediaUrl }) => {
+  loading: boolean
+}> = ({ metadata, mediaUrl, loading }) => {
   const waveform = (
     metadata.document?.attributes?.find(
       (attr) => 'waveform' in attr
@@ -187,8 +214,10 @@ const AudioMedia: React.FC<{
   )?.waveform
   const mime = metadata.document?.mimeType || 'audio/mpeg'
 
-  if (!mediaUrl)
+  if (loading)
     return <div className="p-2 text-sm text-gray-500">loading audio...</div>
+  if (!mediaUrl)
+    return <div className="p-2 text-sm text-gray-500">audio unavailable</div>
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-2">
@@ -215,8 +244,10 @@ const AudioMedia: React.FC<{
 const VideoMedia: React.FC<{
   mediaUrl?: string
   metadata: DocumentMediaData
-}> = ({ mediaUrl, metadata }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="no video" />
+  loading: boolean
+}> = ({ mediaUrl, metadata, loading }) => {
+  if (loading) return <PlaceholderBubble label="loading video..." />
+  if (!mediaUrl) return <PlaceholderBubble label="video unavailable" />
 
   const mime = metadata.document?.mimeType?.toLowerCase() || 'video/mp4'
   const thumbUrl = metadata.document
@@ -238,8 +269,10 @@ const VideoMedia: React.FC<{
 const GifMedia: React.FC<{
   mediaUrl?: string
   metadata?: DocumentMediaData
-}> = ({ mediaUrl, metadata }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="no gif" />
+  loading: boolean
+}> = ({ mediaUrl, metadata, loading }) => {
+  if (loading) return <PlaceholderBubble label="loading gif..." />
+  if (!mediaUrl) return <PlaceholderBubble label="gif unavailable" />
 
   const mime = metadata?.document?.mimeType?.toLowerCase() || 'video/mp4'
 
