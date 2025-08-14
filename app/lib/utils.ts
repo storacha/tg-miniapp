@@ -130,7 +130,7 @@ export const getInitials = (name: string) => {
     .filter((part) => part.length > 0) // Remove empty parts
 
   if (parts.length === 0) {
-    return '??'
+    return ''
   }
 
   return parts.length === 1
