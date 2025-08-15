@@ -16,6 +16,7 @@ import { getDB } from '@/lib/server/db'
 import { toResultFn } from '@/lib/errorhandling'
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
 import {
+  storeInitData as jobsStoreInitData,
   login as jobsLoginJob,
   createJob as jobsCreateJob,
   findJob as jobsFindJob,
@@ -27,7 +28,7 @@ import {
 import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
 import supervillains from '@/lib/supervillains.json'
-import { clearSession } from '@/lib/server/session'
+import { clearAuthSession } from '@/lib/server/session'
 
 const names = supervillains
   .map((value) => ({ value, sort: Math.random() }))
@@ -64,6 +65,7 @@ const sqsQueueFn = () => {
 const queueFn = queueURL ? sqsQueueFn() : localQueueFn()
 
 export const login = toResultFn(jobsLoginJob)
+export const storeInitData = toResultFn(jobsStoreInitData)
 export const createJob = toResultFn(
   async (jr: CreateJobRequest): Promise<Job> => jobsCreateJob(jr, queueFn)
 )
@@ -85,14 +87,14 @@ const withClient = <T extends [...unknown[]], U>(
     try {
       return await fn(client, ...args)
     } finally {
-      client.disconnect()
+      await client.disconnect()
     }
   }
 }
 
 export const logout = toResultFn(
   withClient(async (client: TelegramClient) => {
-    clearSession()
+    clearAuthSession()
     console.log('logging out from telegram client..')
     await client.invoke(new Api.auth.LogOut())
     console.log('logged out from telegram client')

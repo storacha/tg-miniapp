@@ -156,6 +156,12 @@ export interface TelegramAuth {
 export interface LoginRequest {
   accountDID: AccountDID
   spaceDID: SpaceDID
+  session: string
+}
+
+export interface RequestAuth {
+  accountDID: AccountDID
+  spaceDID: SpaceDID
   telegramAuth: TelegramAuth
 }
 
@@ -163,11 +169,12 @@ export interface ExecuteAuth {
   spaceDelegation: Uint8Array
   encryptionPassword: string
 }
-export interface ExecuteJobRequest extends ExecuteAuth, LoginRequest {
+
+export interface ExecuteJobRequest extends ExecuteAuth, RequestAuth {
   jobID: JobID
 }
 
-export interface DeleteDialogFromJob extends ExecuteAuth, LoginRequest {
+export interface DeleteDialogFromJob extends ExecuteAuth, RequestAuth {
   jobID: JobID
   dialogID: ToString<EntityID>
 }

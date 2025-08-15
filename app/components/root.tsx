@@ -30,6 +30,7 @@ import {
   removeJob,
   cancelJob,
   deleteDialogFromJob,
+  storeInitData,
 } from './server'
 import { ErrorPage } from './error'
 import TelegramAuth from './telegram-auth'
@@ -164,12 +165,10 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
       await storacha.setCurrentSpace(space)
 
       try {
-        await fromResult(
+        fromResult(await storeInitData(launchParams.initDataRaw || ''))
+        fromResult(
           await login({
-            telegramAuth: {
-              session: tgSessionString,
-              initData: launchParams.initDataRaw || '',
-            },
+            session: tgSessionString,
             spaceDID: space,
             accountDID: user.accountDID,
           })

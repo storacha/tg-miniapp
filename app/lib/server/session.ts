@@ -5,26 +5,60 @@ import { getServerConstants } from '@/lib/server/constants'
 import { SpaceDID, TelegramAuth } from '@/api'
 import { AccountDID } from '@storacha/access'
 
-export interface TGSession {
-  spaceDID: SpaceDID
-  accountDID: AccountDID
-  telegramAuth: TelegramAuth
+export interface TGInitData {
+  initData: string
 }
 
-export async function getSession(): Promise<IronSession<TGSession>> {
+export interface AuthData {
+  spaceDID: SpaceDID
+  accountDID: AccountDID
+  session: string
+}
+
+export interface SessionData {
+  telegramAuth: TelegramAuth
+  spaceDID: SpaceDID
+  accountDID: AccountDID
+}
+
+async function getIronSessionByName<T extends object>(
+  postfix: string
+): Promise<IronSession<T>> {
   const { SESSION_PASSWORD, SESSION_COOKIE_NAME } = getServerConstants()
-  const session = await getIronSession<TGSession>(await cookies(), {
+  return await getIronSession<T>(await cookies(), {
     password: SESSION_PASSWORD,
-    cookieName: SESSION_COOKIE_NAME,
+    cookieName: SESSION_COOKIE_NAME + postfix,
     cookieOptions: {
       secure: true,
       sameSite: 'none',
     },
   })
-  return session
 }
 
-export async function clearSession() {
-  const session = await getSession()
-  await session.destroy()
+export const getInitSession = async () =>
+  getIronSessionByName<TGInitData>('.init')
+export const getAuthSession = async () =>
+  getIronSessionByName<AuthData>('.auth')
+export const getSession = async (): Promise<SessionData> => {
+  const initSession = await getInitSession()
+  const authSession = await getAuthSession()
+
+  return {
+    telegramAuth: {
+      initData: initSession.initData,
+      session: authSession.session,
+    },
+    spaceDID: authSession.spaceDID,
+    accountDID: authSession.accountDID,
+  }
+}
+
+export async function clearAuthSession() {
+  const session = await getAuthSession()
+  session.destroy()
+}
+
+export async function clearInitSession() {
+  const session = await getInitSession()
+  session.destroy()
 }

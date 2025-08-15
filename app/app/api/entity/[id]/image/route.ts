@@ -27,14 +27,19 @@ async function getHiResPhotoBlob(
   id: string,
   accessHash?: string
 ): Promise<Result<string | Buffer | undefined>> {
+  let client: TelegramClient | undefined = undefined
   try {
-    const client = await getTelegramClient(sessionString)
+    client = await getTelegramClient(sessionString)
     const entity = await tryHardToFetchEntity(client, id, accessHash)
     return { ok: await client.downloadProfilePhoto(entity) }
   } catch (e) {
     // @ts-expect-error e has no type, ignore
     const message = e.message
     return { error: { message } }
+  } finally {
+    if (client) {
+      await client.disconnect()
+    }
   }
 }
 

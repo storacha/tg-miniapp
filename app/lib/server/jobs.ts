@@ -5,9 +5,9 @@ import {
   CreateJobRequest,
   FindJobRequest,
   RemoveJobRequest,
-  LoginRequest,
   CancelJobRequest,
   DeleteDialogFromJobRequest,
+  LoginRequest,
 } from '@/api'
 import { Delegation, DID, Signer } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
@@ -27,15 +27,23 @@ import {
 import { extract } from '@ucanto/core/delegation'
 import { getTelegramClient } from './telegram-manager'
 import { getDB } from './db'
-import { getSession } from './session'
+import { getSession, getAuthSession, getInitSession } from './session'
 import { createLogger } from './logger'
 
+export const storeInitData = async (initData: string) => {
+  const session = await getInitSession()
+  if (initData !== session.initData) {
+    validateInitData(initData, getBotToken())
+  }
+  session.initData = initData
+  await session.save()
+}
+
 export const login = async (request: LoginRequest) => {
-  validateInitData(request.telegramAuth.initData, getBotToken())
-  const session = await getSession()
+  const session = await getAuthSession()
   session.spaceDID = request.spaceDID
-  session.telegramAuth = request.telegramAuth
   session.accountDID = request.accountDID
+  session.session = request.session
   await session.save()
 }
 
