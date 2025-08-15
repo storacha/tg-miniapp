@@ -36,6 +36,7 @@ import TelegramAuth from './telegram-auth'
 import LogoSplash from './svgs/logo-splash'
 import { ErrorBoundary } from './error-boundary'
 import { useDidMount } from '../hooks/useDidMount'
+import { useLogout } from '@/hooks/useLogout'
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -136,6 +137,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
   } = useGlobal()
   const [jobs, setJobs] = useState<JobStorage>()
   const { setError } = useError()
+  const logout = useLogout()
 
   useEffect(() => {
     let eventSource: EventSource
@@ -176,6 +178,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
         )
       } catch (err) {
         setError(getErrorMessage(err), { title: 'Error logging in!' })
+        await logout()
         return
       }
 
