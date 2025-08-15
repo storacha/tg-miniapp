@@ -105,8 +105,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
         const errorMsg = getErrorMessage(err)
         if (errorMsg.includes('client authorization failed')) {
           console.log('Session validation failed, clearing session')
-          setTgSessionString('')
-          setIsTgAuthorized(false)
+          await logout()
         }
       } finally {
         setIsValidating(false)
@@ -131,6 +130,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       await logoutTelegram(tgSessionString)
       // we clear the TG session string once we are successfully logged out
       setTgSessionString('')
+      setIsTgAuthorized(false)
       // redirect to home page after logout
       router.push('/')
     } catch (err) {

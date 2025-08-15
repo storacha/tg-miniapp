@@ -9,19 +9,12 @@ import { AlignJustify, LogOut } from 'lucide-react'
 import { useTelegram } from '@/providers/telegram'
 import { useGlobal } from '@/zustand/global'
 import { MouseEventHandler } from 'react'
-import { useW3 as useStoracha } from '@storacha/ui-react'
+import { useLogout } from '@/hooks/useLogout'
 
 export function Menu() {
-  const [{ user }, { logout: telegramLogout }] = useTelegram()
-  const [, { logout }] = useStoracha()
-  const {
-    phoneNumber,
-    setIsStorachaAuthorized,
-    setPhoneNumber,
-    setSpace,
-    setTgSessionString,
-    setUser,
-  } = useGlobal()
+  const [{ user }] = useTelegram()
+  const { phoneNumber } = useGlobal()
+  const logout = useLogout()
   const initials = user?.firstName
     ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase()
     : ''
@@ -29,15 +22,7 @@ export function Menu() {
   const handleLogOutClick: MouseEventHandler<HTMLButtonElement> = async (e) => {
     e.preventDefault()
     if (!confirm('Are you sure you want to log out?')) return
-    localStorage.removeItem('GramJs:apiCache')
-    sessionStorage.clear()
-    await telegramLogout()
-    setPhoneNumber('')
-    setSpace(null)
-    setTgSessionString('')
-    setUser(null)
     await logout()
-    setIsStorachaAuthorized(false)
   }
 
   return (

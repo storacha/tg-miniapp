@@ -64,6 +64,7 @@ interface GlobalState {
   setPhoneNumber: (phone: string) => void
   setSpace: (space: SpaceDID | null) => void
   setTgSessionString: (session?: Session | string) => void
+  clearAuthState: () => void
 }
 
 // Create a factory function that generates user-specific stores
@@ -87,6 +88,14 @@ const createUserGlobalStore = (userId: number) => {
         setSpace: (space) => set({ space }),
         setTgSessionString: (tgSessionString) =>
           set({ tgSessionString: saveSessionToString(tgSessionString) }),
+        clearAuthState: () =>
+          set({
+            isStorachaAuthorized: false,
+            user: null,
+            phoneNumber: '',
+            space: null,
+            tgSessionString: '',
+          }),
       }),
       {
         name: `global-storage-${userId}`, // Each user gets their own storage key
