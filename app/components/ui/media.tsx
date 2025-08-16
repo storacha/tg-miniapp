@@ -10,6 +10,7 @@ import {
   Loader2,
   Text,
   Sparkles,
+  Gamepad,
 } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from '@/lib/utils'
@@ -32,6 +33,7 @@ import {
   GiveawayMediaData,
 } from '@/api'
 import { useTelegram } from '@/providers/telegram'
+import { useUserLocale } from '@/hooks/useUserLocale'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -308,21 +310,21 @@ const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
             className="w-full h-36 object-cover rounded mb-2"
           />
         ) : (
-          <div className="w-full h-36 bg-gray-300 animate-pulse rounded mb-2" />
+          <div className="w-10 h-10 bg-gray-100 flex items-center justify-center rounded mx-auto mb-2">
+            <Gamepad className="w-16 h-16 text-blue-500" />
+          </div>
         )}
 
         <div className="text-sm font-medium mb-1 text-black">
           {metadata.game.title}
         </div>
+        <div className="text-xs text-gray-600 mb-2">
+          {metadata.game.description}
+        </div>
 
         <button
           className="px-3 py-1 bg-blue-500 hover:bg-blue-700 text-white text-sm rounded"
-          onClick={() =>
-            window.open(
-              `https://t.me/${metadata.game.shortName}?game=${metadata.game.shortName}`,
-              '_blank'
-            )
-          }
+          disabled={true}
         >
           Play {metadata.game.title}
         </button>
@@ -334,7 +336,7 @@ const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
 const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
   const [thumbUrl, setThumbUrl] = useState<string>('')
   const [{ user }] = useTelegram()
-
+  const { formatCurrency } = useUserLocale()
   useEffect(() => {
     const photo = metadata.photo
     if (!photo) return
@@ -348,10 +350,7 @@ const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
     // elegram sends totalAmount as an integer multiplied by 100
     // (i.e. amount in minor units, like cents for USD)
     const minorUnit = parseInt(price, 10) / 100
-    return new Intl.NumberFormat(user?.languageCode || 'en-US', {
-      style: 'currency',
-      currency: metadata.currency,
-    }).format(minorUnit)
+    return formatCurrency(minorUnit, metadata.currency)
   }
 
   return (
@@ -412,9 +411,12 @@ const DiceMedia = ({ metadata }: { metadata: DiceMediaData }) => {
   }
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center">
       <span className={cn('text-4xl', getAnimation())}>
         {metadata.emoticon}
+      </span>
+      <span className="text-xs text-gray-500 mt-1">
+        value: {metadata.value}
       </span>
     </div>
   )
