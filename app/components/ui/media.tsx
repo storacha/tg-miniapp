@@ -32,7 +32,6 @@ import {
   DefaultPhotoData,
   GiveawayMediaData,
 } from '@/api'
-import { useTelegram } from '@/providers/telegram'
 import { useUserLocale } from '@/hooks/useUserLocale'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -335,7 +334,6 @@ const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
 
 const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
   const [thumbUrl, setThumbUrl] = useState<string>('')
-  const [{ user }] = useTelegram()
   const { formatCurrency } = useUserLocale()
   useEffect(() => {
     const photo = metadata.photo
@@ -427,6 +425,7 @@ interface GiveawayMediaProps {
 }
 
 export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
+  const { formatDateTime } = useUserLocale()
   const {
     prizeDescription,
     quantity,
@@ -439,7 +438,15 @@ export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
     stars,
   } = metadata
 
-  const until = new Date(untilDate * 1000).toLocaleString()
+  function isoToFlag(countryCode: string): string {
+    return countryCode
+      .toUpperCase()
+      .split('')
+      .map((char) => String.fromCodePoint(char.charCodeAt(0) + 127397))
+      .join('')
+  }
+
+  const until = formatDateTime(untilDate)
 
   return (
     <Bubble>
@@ -456,18 +463,18 @@ export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
         )}
 
         <div className="text-xs text-gray-600 space-y-1">
-          <p>
-            🎁 {quantity} winner{quantity > 1 ? 's' : ''}
-          </p>
-          {months && (
+          {quantity && months ? (
             <p>
-              Duration: {months} month{months > 1 ? 's' : ''}
+              {quantity} Telegram Premium Subscription{quantity > 1 ? 's' : ''}{' '}
+              ({months} month{months > 1 ? 's' : ''})
             </p>
+          ) : (
+            quantity && <p>🏅 Winners: {quantity}</p>
           )}
           {countriesIso2 && countriesIso2?.length > 0 && (
-            <p>🌍 Eligible: {countriesIso2.join(', ')}</p>
+            <p>🌍 Eligible: {countriesIso2.map(isoToFlag).join(', ')}</p>
           )}
-          {stars && <p>⭐ Stars: {stars}</p>}
+          {stars && stars != 'null' && <p>⭐ Stars: {stars}</p>}
           <p>Ends: {until}</p>
           {onlyNewSubscribers && <p>Only new subscribers</p>}
           {winnersAreVisible && <p>Winners will be visible</p>}
@@ -475,18 +482,15 @@ export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
 
         {channels.length > 0 && (
           <div className="text-xs text-gray-500 mt-2">
-            Required channels:{' '}
-            {channels.map((ch) => (
-              <span key={ch} className="text-blue-600">
-                {ch}{' '}
+            Required channels IDs:{' '}
+            {channels.map((ch, idx) => (
+              <span key={ch} className="text-gray-600">
+                {ch}
+                {idx < channels.length - 1 ? ', ' : '.'}
               </span>
             ))}
           </div>
         )}
-
-        <button className="mt-2 px-3 py-1 text-sm rounded bg-blue-500 text-white hover:bg-blue-700 transition-colors">
-          participate
-        </button>
       </div>
     </Bubble>
   )
