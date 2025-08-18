@@ -1,17 +1,18 @@
 import { decryptContent, encryptContent } from './crypto'
+import type { Encrypter, Decrypter, ByteView, EncryptedByteView } from '@/api'
 
-class Cipher {
+class Cipher implements Encrypter, Decrypter {
   #password
 
   constructor(password: string) {
     this.#password = password
   }
 
-  encrypt(data: Uint8Array): Promise<Uint8Array> {
+  async encrypt<T>(data: ByteView<T>): Promise<EncryptedByteView<T>> {
     return encryptContent(data, this.#password)
   }
 
-  decrypt(data: Uint8Array): Promise<Uint8Array> {
+  async decrypt<T>(data: EncryptedByteView<T>): Promise<ByteView<T>> {
     return decryptContent(data, this.#password)
   }
 }
