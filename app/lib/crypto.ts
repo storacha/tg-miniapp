@@ -48,14 +48,14 @@ export async function encryptContent<T>(
 
 /**
  * Decrypts the given encrypted content using AES-CBC.
- * @param encryptedContent - A base64-encoded string containing the salt and encrypted data.
+ * @param encryptedContent - A buffer containing the salt and encrypted data.
  * @param password - The password to derive the decryption key.
- * @returns The decrypted content as a string.
+ * @returns The decrypted content as a ByteView.
  */
-export async function decryptContent(
-  encryptedContent: Uint8Array,
+export async function decryptContent<T>(
+  encryptedContent: EncryptedByteView<T>,
   password: string
-): Promise<Uint8Array> {
+): Promise<ByteView<T>> {
   const salt = encryptedContent.subarray(0, ENCRYPTION_CONFIG.saltLength)
   const encryptedData = encryptedContent.subarray(ENCRYPTION_CONFIG.saltLength)
   const { key, iv } = await deriveKeyAndIV(password, salt)
@@ -66,7 +66,7 @@ export async function decryptContent(
     encryptedData
   )
 
-  return new Uint8Array(decryptedData)
+  return new Uint8Array(decryptedData) as ByteView<T>
 }
 
 /**
