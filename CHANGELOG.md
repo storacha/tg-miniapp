@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.12.3](https://github.com/storacha/tg-miniapp/compare/v2.12.2...v2.12.3) (2025-08-18)
+
+
+### Bug Fixes
+
+* AUTH_KEY_DUPLICATED, initData expired, missing client disconnect ([fa61f59](https://github.com/storacha/tg-miniapp/commit/fa61f59616a5d680dd3724a56186a3853e40d158))
+* **telegram:** clear session for auth key duplicated ([950e5c2](https://github.com/storacha/tg-miniapp/commit/950e5c2b9f32deb6498dcf31c3815c17ca637570))
+* **telegram:** properly handle auth experations, catch auth key duplicated, other fixes ([61291db](https://github.com/storacha/tg-miniapp/commit/61291db9d50a6dc5e46fd9eccc1e69f552598f8f))
+
 ## [2.12.2](https://github.com/storacha/tg-miniapp/compare/v2.12.1...v2.12.2) (2025-08-14)
 
 
