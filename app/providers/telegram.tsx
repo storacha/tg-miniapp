@@ -103,7 +103,10 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
         console.log('Failed session token validation: ', err)
 
         const errorMsg = getErrorMessage(err)
-        if (errorMsg.includes('client authorization failed')) {
+        if (
+          errorMsg.includes('client authorization failed') ||
+          errorMsg.includes('AUTH_KEY_DUPLICATED')
+        ) {
           console.log('Session validation failed, clearing session')
           setTgSessionString('')
           setIsTgAuthorized(false)
