@@ -51,11 +51,14 @@ import { CARWriterStream } from 'carstream'
 import { Entity } from 'telegram/define'
 import { cleanUndef, toAsyncIterable, withCleanUndef } from '@/lib/utils'
 import { createEncodeAndEncryptStream, decryptAndDecode } from '@/lib/crypto'
-import { DID, Link, UnknownLink } from '@ucanto/client'
+import { DID, Link, MultihashDigest, UnknownLink } from '@ucanto/client'
 import { Client as StorachaClient } from '@storacha/client'
 import { CARMetadata } from '@storacha/ui-react'
 import { buildDialogInputPeer } from '../backup/utils'
+import * as PieceHasher from 'fr32-sha2-256-trunc254-padded-binary-tree-multihash'
+import * as Digest from 'multiformats/hashes/digest'
 import bigInt from 'big-integer'
+import { code as pieceHashCode } from '@web3-storage/data-segment/multihash'
 
 type SpaceDID = DID<'key'>
 const versionTag = 'tg-miniapp-backup@0.0.1'
@@ -278,6 +281,20 @@ const backupDialog = async (
       stream: () => blockStream.pipeThrough(new CARWriterStream()),
     },
     {
+      pieceHasher: {
+        code: PieceHasher.code,
+        name: 'fr32-sha2-256-trunc254-padded-binary-tree-multihash',
+        async digest(input): Promise<MultihashDigest<typeof pieceHashCode>> {
+          const hasher = PieceHasher.create()
+          hasher.write(input)
+
+          const bytes = new Uint8Array(hasher.multihashByteLength())
+          hasher.digestInto(bytes, 0, true)
+          hasher.free()
+
+          return Digest.decode(bytes) as MultihashDigest<typeof pieceHashCode>
+        },
+      },
       onShardStored: (meta: CARMetadata) => {
         options?.onShardStored?.(meta, dialogEntity.id)
       },
@@ -1770,6 +1787,14 @@ const toPeerData = withCleanUndef((peer: Api.TypePeer): Type.PeerData => {
         id: String(peer.channelId),
       }
     }
+    default: {
+      // Handle unknown peer types gracefully
+      console.warn(`Unknown peer type: ${(peer as { className: string }).className}`, peer)
+      return {
+        type: 'unknown',
+        id: '0',
+      }
+    }
   }
 })
 
@@ -1895,7 +1920,7 @@ const toMediaData = withCleanUndef(
   (media: Api.TypeMessageMedia): MediaData | undefined => {
     switch (media.className) {
       case 'MessageMediaEmpty':
-        return
+        return undefined
       case 'MessageMediaPhoto': {
         return {
           type: 'photo',
