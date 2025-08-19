@@ -8,7 +8,6 @@ import {
   ExternalLink,
   X,
   Loader2,
-  Sparkles,
   Text,
   Sparkles,
   Gamepad,
@@ -117,10 +116,6 @@ export const Media: React.FC<MediaProps> = ({
     }
     case 'dice': {
       mediaContent = <DiceMedia metadata={metadata} />
-      break
-    }
-    case 'story': {
-      mediaContent = <StoryMedia metadata={metadata} />
       break
     }
     case 'giveaway': {
@@ -371,9 +366,7 @@ const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
         <p className="text-sm text-gray-600">{metadata.description}</p>
         <button
           className="mt-2 w-full px-3 py-1 text-sm rounded bg-blue-500 text-white"
-          onClick={() =>
-            window.open(`https://t.me/${metadata.startParam}`, '_blank')
-          }
+          disabled
         >
           Pay {formatPrice(metadata.totalAmount)}
         </button>
@@ -496,78 +489,6 @@ export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
       </div>
     </Bubble>
   )
-}
-
-const StoryMedia = ({ metadata }: { metadata: StoryMediaData }) => {
-  const [thumbUrl, setThumbUrl] = useState<string | undefined>()
-
-  const story = metadata.story
-
-  useEffect(() => {
-    if (story?.type !== 'default') return
-
-    const photoData = story.media as { type: 'photo'; photo: DefaultPhotoData }
-    const photo = photoData?.photo
-    if (!photo || photo.type !== 'default') return
-
-    const stripped = photo.sizes?.find(
-      (s) => s.type === 'stripped' && 'bytes' in s
-    )
-    const bytes = stripped?.bytes as Uint8Array | undefined
-
-    if (bytes) {
-      try {
-        const url = toJPGDataURL(decodeStrippedThumb(bytes))
-        setThumbUrl(url)
-      } catch (err) {
-        console.error('Failed to decode stripped thumb', err)
-      }
-    }
-  }, [story])
-
-  if (!story || story.type === 'unknown') {
-    return <Bubble>Unsupported story format</Bubble>
-  }
-
-  if (story.type === 'deleted' || story.type === 'skipped') {
-    return (
-      <Bubble>
-        <div className="w-64 aspect-video rounded bg-gray-200 flex items-center justify-center text-gray-500 text-sm">
-          Story is no longer available
-        </div>
-      </Bubble>
-    )
-  }
-
-  if (story.type === 'default') {
-    const caption = story.caption
-
-    return (
-      <Bubble>
-        <div className="w-64 flex flex-col gap-2">
-          {thumbUrl ? (
-            <img
-              src={thumbUrl}
-              alt="Story"
-              className="w-full aspect-video object-cover rounded"
-            />
-          ) : (
-            <div className="w-full aspect-video bg-gray-300 rounded blur-sm flex items-center justify-center text-gray-400 text-sm">
-              Preview unavailable
-            </div>
-          )}
-
-          {caption && (
-            <p className="text-sm text-gray-700 whitespace-pre-line">
-              {caption}
-            </p>
-          )}
-        </div>
-      </Bubble>
-    )
-  }
-
-  return null
 }
 
 const VideoMedia: React.FC<{
