@@ -28,11 +28,8 @@ import {
   StrippedPhotoSizeData,
   InvoiceMediaData,
   DiceMediaData,
-  StoryMediaData,
-  DefaultPhotoData,
   GiveawayMediaData,
 } from '@/api'
-import { useTelegram } from '@/providers/telegram'
 import { useUserLocale } from '@/hooks/useUserLocale'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
