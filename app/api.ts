@@ -1,3 +1,4 @@
+import { AccountDID } from '@storacha/access'
 import {
   Block,
   ByteView,
@@ -111,6 +112,10 @@ export interface CompletedJob extends BaseJob {
   status: 'completed'
   /** Link to the actual backup data. */
   data: string
+  /** Points the user earned with this job */
+  points: number
+  /** Total size in bytes */
+  size: number
   /** Timestamp of when this backup was started. */
   started: number
   /** Timestamp of when this backup completed successfully. */
@@ -140,6 +145,7 @@ export interface JobStorage extends EventTarget {
   add: (dialogs: DialogsById, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
   cancel: (id: JobID) => Promise<void>
+  deleteDialog: (id: JobID, dialogID: ToString<EntityID>) => Promise<void>
 }
 
 export interface TelegramAuth {
@@ -148,6 +154,7 @@ export interface TelegramAuth {
 }
 
 export interface LoginRequest {
+  accountDID: AccountDID
   spaceDID: SpaceDID
   telegramAuth: TelegramAuth
 }
@@ -160,12 +167,24 @@ export interface ExecuteJobRequest extends ExecuteAuth, LoginRequest {
   jobID: JobID
 }
 
+export interface DeleteDialogFromJob extends ExecuteAuth, LoginRequest {
+  jobID: JobID
+  dialogID: ToString<EntityID>
+}
+
+export interface DeleteDialogFromJobRequest extends ExecuteAuth {
+  jobID: JobID
+  dialogID: ToString<EntityID>
+}
+
 export interface CreateJobRequest extends ExecuteAuth {
   dialogs: DialogsById
   period: Period
 }
 
-export interface ListJobsRequest {}
+// An interface declaring no members is equivalent to its supertype.
+// we can change this later when it is not empty
+export type ListJobsRequest = object
 
 export interface FindJobRequest {
   jobID: JobID
@@ -185,6 +204,7 @@ export interface JobClient {
   listJobs: (jr: ListJobsRequest) => Promise<Job[]>
   removeJob: (jr: RemoveJobRequest) => Promise<Job>
   cancelJob: (jr: CancelJobRequest) => Promise<Job>
+  deleteDialogFromJob: (jr: DeleteDialogFromJobRequest) => Promise<void>
 }
 
 export interface Encrypter {
@@ -249,12 +269,17 @@ export interface DialogData extends EntityData {
   messages: DialogDataMessages
 }
 
+export interface SizeRewardInfo {
+  size: number
+  points: number
+}
 export interface DialogInfo extends EntityData {
   initials: string
   isPublic: boolean
   /** This is the entity ID + a prefix indicating the type of dialog */
   dialogId?: ToString<EntityID>
   accessHash?: string
+  sizeRewardInfo?: SizeRewardInfo
 }
 
 export type EntityRecordData = Record<ToString<EntityID>, EntityData>
@@ -2128,7 +2153,6 @@ export interface UnknownMediaData {
 export interface LeaderboardUser {
   id: string
   initials: string
-  thumbSrc: string
   name: string
   points: number
   isMe: boolean

@@ -1,5 +1,215 @@
 # Changelog
 
+## [2.12.2](https://github.com/storacha/tg-miniapp/compare/v2.12.1...v2.12.2) (2025-08-14)
+
+
+### Bug Fixes
+
+* **telegram:** correct callback memoization ([292f8da](https://github.com/storacha/tg-miniapp/commit/292f8dafd6b40a2e4c3e8afd955c1809a71fe744))
+
+## [2.12.1](https://github.com/storacha/tg-miniapp/compare/v2.12.0...v2.12.1) (2025-08-14)
+
+
+### Bug Fixes
+
+* 'no image' when media is loading ([be1f580](https://github.com/storacha/tg-miniapp/commit/be1f580fcc513ef73d02f1caf716e05b744b3ccf))
+* correct percentile calc and load my name no matter where I am ([03e8dd5](https://github.com/storacha/tg-miniapp/commit/03e8dd5020841d59253e52b429960ca86d8acecf))
+* correct percentile calc and load my name no matter where I am ([965fd52](https://github.com/storacha/tg-miniapp/commit/965fd52039a0eae4604182891de620acdf04f90d))
+* dialogs list shows chats with ?? thumbnail and no name ([3735b18](https://github.com/storacha/tg-miniapp/commit/3735b187923467c40855927824aa6cd5256b1fd0))
+* missing pull_request_target event handler in the pr-triage workflow ([75178ae](https://github.com/storacha/tg-miniapp/commit/75178ae972468a1890b313e69010ce8655983f6e))
+* multiple UI bugs ([e5c6cea](https://github.com/storacha/tg-miniapp/commit/e5c6cea1dbfd5b89628366b435389b3b488c2414))
+* podium too ([18f7eed](https://github.com/storacha/tg-miniapp/commit/18f7eed0d82217c4fca41cd71feb4398a88294ce))
+* prevent calendar popover from overflowing screen ([1bde880](https://github.com/storacha/tg-miniapp/commit/1bde8802efe682a97ca0261d0c972d2a07ed5a44))
+* prevent calendar popover from overflowing screen ([6b9af46](https://github.com/storacha/tg-miniapp/commit/6b9af46aab2cb377af00b2050035d7c2a39432f4))
+* ranking percentile calculation ([635e5e1](https://github.com/storacha/tg-miniapp/commit/635e5e14c4fc0764deacee6bd87fb5b8d6456016))
+* use my high quality profile image on leaderboard ([b50681e](https://github.com/storacha/tg-miniapp/commit/b50681efcd02c9aa7f66a662ff996fa21f1a3ecc))
+* use my high quality profile image on leaderboard ([3007d83](https://github.com/storacha/tg-miniapp/commit/3007d8373b28db5e22b097faf64597a888a29ab5))
+* we may not yet be logged in in the datepicker ([36e8a9d](https://github.com/storacha/tg-miniapp/commit/36e8a9d93a20ba3b9ba7b060cba5b3648fcce72e))
+* we may not yet be logged in in the datepicker ([5bad32f](https://github.com/storacha/tg-miniapp/commit/5bad32fcc399f9ef2e40d58cde8601d937758436))
+
+## [2.12.0](https://github.com/storacha/tg-miniapp/compare/v2.11.3...v2.12.0) (2025-08-13)
+
+
+### Features
+
+* **deploy:** upgrade memory ([549696f](https://github.com/storacha/tg-miniapp/commit/549696fcb6dcb356a2b74af436719bd573248487))
+
+
+### Bug Fixes
+
+* **deploy:** only use extra memory for prod ([327c193](https://github.com/storacha/tg-miniapp/commit/327c193951b87b8d95955bb59bcd862a93ab5b4a))
+* **server:** use rust piece hasher ([c8a9692](https://github.com/storacha/tg-miniapp/commit/c8a9692171c1796527bf243384cb4f815ee9b3d0))
+
+## [2.11.3](https://github.com/storacha/tg-miniapp/compare/v2.11.2...v2.11.3) (2025-08-08)
+
+
+### Bug Fixes
+
+* improve calendar picker ([506433a](https://github.com/storacha/tg-miniapp/commit/506433a1475698e6566c4f3d75f368fa92f5c1e1))
+* improve calendar picker ([5f9e624](https://github.com/storacha/tg-miniapp/commit/5f9e624c3b5aa0048e40bfe76af7b8ef3d89274f))
+* let avatar fallback show a gray bg when it is loading instead of "L" ([f6a19c2](https://github.com/storacha/tg-miniapp/commit/f6a19c2e4b6aec14da465b40d07012293d4730f0))
+* let avatar fallback show a gray bg when it is loading instead of "L" ([f074d98](https://github.com/storacha/tg-miniapp/commit/f074d985afb24b899c745eb16c059e0a9852c30f))
+* lint ([9c92202](https://github.com/storacha/tg-miniapp/commit/9c92202390b19a6c1a75623261151d37fbdfddd3))
+* points display and usage report request ([1ae5ad2](https://github.com/storacha/tg-miniapp/commit/1ae5ad2bc0aac74b9e84fd9c1e8ae2e74a890758))
+* points display and usage report request ([a62521e](https://github.com/storacha/tg-miniapp/commit/a62521ef5920de7973843b1ad76329b0a58d5895))
+* ui issues ([d727ee3](https://github.com/storacha/tg-miniapp/commit/d727ee3ea5e672dd22000f2a1dbef8f3a519d5f7))
+* ui issues ([1442bef](https://github.com/storacha/tg-miniapp/commit/1442befdb1f005471ef75c01695f756e195d2309))
+* update dependencies ([b1e9f75](https://github.com/storacha/tg-miniapp/commit/b1e9f753c058b664e6df8a219a741a8722c46e44))
+* update dependencies ([2a7a8d2](https://github.com/storacha/tg-miniapp/commit/2a7a8d2de849c654dfa047b56b7bbe3d92f55ce5))
+* use `openLink` to open the humanode link ([a056005](https://github.com/storacha/tg-miniapp/commit/a05600558d4f13b33eb2663d7766ef4675645174))
+* use `openLink` to open the humanode link ([ecf6764](https://github.com/storacha/tg-miniapp/commit/ecf6764c48055a335a35c0753018daa9c19706c0))
+
+## [2.11.2](https://github.com/storacha/tg-miniapp/compare/v2.11.1...v2.11.2) (2025-07-31)
+
+
+### Bug Fixes
+
+* add StorachaConnect on date page for first login users ([110b261](https://github.com/storacha/tg-miniapp/commit/110b261c5c83ca5b509bef6b0c82b13f44af6292))
+* add StorachaConnect on date page for first login users ([a5c51be](https://github.com/storacha/tg-miniapp/commit/a5c51be878281b4f41b9dad8edbb9ab1978dba53))
+
+## [2.11.1](https://github.com/storacha/tg-miniapp/compare/v2.11.0...v2.11.1) (2025-07-29)
+
+
+### Bug Fixes
+
+* log and capture auth errors _after_ setting state ([47d0d1f](https://github.com/storacha/tg-miniapp/commit/47d0d1fb729508cbcf50f702c4f9e50b14258d1b))
+* log and capture auth errors _after_ setting state ([9868b25](https://github.com/storacha/tg-miniapp/commit/9868b25cbcf4c281198cf9b14fffbee57a1dd372))
+
+## [2.11.0](https://github.com/storacha/tg-miniapp/compare/v2.10.1...v2.11.0) (2025-07-28)
+
+
+### Features
+
+* after one failed login attempt, give the user a way to reset lo… ([801f9ee](https://github.com/storacha/tg-miniapp/commit/801f9ee4be565022d32e96e9165a2a77132a7323))
+* after one failed login attempt, give the user a way to reset login state ([5d56ac9](https://github.com/storacha/tg-miniapp/commit/5d56ac93f18e9bd67e52a3de8facef1121290b6f))
+
+
+### Bug Fixes
+
+* issue with inline url ([15ea823](https://github.com/storacha/tg-miniapp/commit/15ea823385b7b09ad08d65c794926f620b603b16))
+* issue with inline url ([0376bb4](https://github.com/storacha/tg-miniapp/commit/0376bb49da100db054560dc1344e63a4bb033c2d))
+
+## [2.10.1](https://github.com/storacha/tg-miniapp/compare/v2.10.0...v2.10.1) (2025-07-24)
+
+
+### Bug Fixes
+
+* add custom period selection for users with a paid Storacha Plan ([85e1082](https://github.com/storacha/tg-miniapp/commit/85e1082dead72ada24651c0c4b6c6e3a0cf4c04f))
+* add custom period selection for users with a paid Storacha Plan ([9f2ccce](https://github.com/storacha/tg-miniapp/commit/9f2cccea6f50dbc6c08a6778445f8b32c1f537d8))
+* improve date selection with proper time boundaries ([f274e3e](https://github.com/storacha/tg-miniapp/commit/f274e3ea9abbe92f57b3cd260123df3a9ecd4316))
+* **storacha:** give upload/get + space/blob/get caps ([98ee14c](https://github.com/storacha/tg-miniapp/commit/98ee14c28ba6a1336b5008e73b7aac6f270b203f))
+* **storacha:** give upload/get + space/blob/get caps ([c87b586](https://github.com/storacha/tg-miniapp/commit/c87b586d2c70081bcaf20ef0989e5d377d25acf4))
+* wrong use of db bigint ([c78ae53](https://github.com/storacha/tg-miniapp/commit/c78ae537623574b99aa257d449e8bcf253cb2605))
+* wrong use of DB BIGINT ([e704dbc](https://github.com/storacha/tg-miniapp/commit/e704dbc4f88cb3ac2ed6d62fad68604cbe6077d8))
+
+## [2.10.0](https://github.com/storacha/tg-miniapp/compare/v2.9.0...v2.10.0) (2025-07-23)
+
+
+### Features
+
+* add bot webhook handling ([a3e7617](https://github.com/storacha/tg-miniapp/commit/a3e76176a0b19d46d829f51f5b4574e16aedbe60))
+* add bot webhook handling ([ee59daa](https://github.com/storacha/tg-miniapp/commit/ee59daada4801872f98c030fa93fd310971a580a))
+
+
+### Bug Fixes
+
+* add requested changes ([8c68dc6](https://github.com/storacha/tg-miniapp/commit/8c68dc638004b0945d2c829fa1c5aa991f0bc0f3))
+* build issues ([63ca4ad](https://github.com/storacha/tg-miniapp/commit/63ca4ad13f5116618f5805957ec814c36ec47ab9))
+* check for user plan before blocking upload ([2820620](https://github.com/storacha/tg-miniapp/commit/2820620e93c47c4c59f7bdf9b093dd375cbb56a1))
+* clean up inconsistent phone number UX ([4e5228f](https://github.com/storacha/tg-miniapp/commit/4e5228fb04df064cd1692e8349b31389989b8af3))
+* revert CHANGELOG ([4d00df6](https://github.com/storacha/tg-miniapp/commit/4d00df68e8637bcd5e8ff970dcb5666a1d2addf1))
+* use the user ID in the telegram session name ([17af0a1](https://github.com/storacha/tg-miniapp/commit/17af0a131d79f552d0ec192a59f40f5f0e7d2484))
+
+## [2.9.0](https://github.com/storacha/tg-miniapp/compare/v2.8.0...v2.9.0) (2025-07-16)
+
+
+### Features
+
+* add structured, contextual logging to job execution flow ([53ba9e0](https://github.com/storacha/tg-miniapp/commit/53ba9e0f3bbf705a32b69dc2324bbf2a3374b3d2))
+* improved job logging with context ([046cbb0](https://github.com/storacha/tg-miniapp/commit/046cbb025d91f653efdc9f629cfbcfb56302f6ab))
+
+
+### Bug Fixes
+
+* **build:** fix build errors ([1bfd724](https://github.com/storacha/tg-miniapp/commit/1bfd72485a4825ab77525ef3f671bf7647289aba))
+* conflicts with main ([5d734fb](https://github.com/storacha/tg-miniapp/commit/5d734fb574e6cf8b0123cbe85f54a6b62ae25b64))
+* **jobs:** run processing asyncronously ([c2d7d46](https://github.com/storacha/tg-miniapp/commit/c2d7d46f5257f1947287d7f120642732fc1b6d1d))
+
+## [2.8.0](https://github.com/storacha/tg-miniapp/compare/v2.7.0...v2.8.0) (2025-07-15)
+
+
+### Features
+
+* set app name to avoid showing pricing table in email ([1878c0a](https://github.com/storacha/tg-miniapp/commit/1878c0a79770a62127fd86f729545d14cb61aa12))
+
+## [2.7.0](https://github.com/storacha/tg-miniapp/compare/v2.6.0...v2.7.0) (2025-07-15)
+
+
+### Features
+
+* stop backup when people exceed the free storage limit ([b7e9976](https://github.com/storacha/tg-miniapp/commit/b7e9976dcc0ed35b1b226d461fb12eb982f2c4b5))
+
+
+### Bug Fixes
+
+* add missing usage check on onShardStored ([e0a681d](https://github.com/storacha/tg-miniapp/commit/e0a681d6789821107fbb9bca9f10dfe3f91b1939))
+
+## [2.6.0](https://github.com/storacha/tg-miniapp/compare/v2.5.0...v2.6.0) (2025-07-14)
+
+### Features
+
+- add a CLAUDE.md to make it easier to CLAUDE ([f7158c8](https://github.com/storacha/tg-miniapp/commit/f7158c8ea5f07016c1f901e45eb02574e0be636c))
+- add a CLAUDE.md to make it easier to CLAUDE ([8e87ff3](https://github.com/storacha/tg-miniapp/commit/8e87ff327d6109807d573264d36722f251019bf7))
+- add ability to delete backups ([89c2888](https://github.com/storacha/tg-miniapp/commit/89c28888a31ebab57d31b839abcd46230545a156))
+- add ability to delete backups ([15459db](https://github.com/storacha/tg-miniapp/commit/15459dbadac3899dcbdd3c6300b1706ae3490843))
+- add delete backup ([83fa39d](https://github.com/storacha/tg-miniapp/commit/83fa39dcedb2161726f594530e0aa9fc6224c5cb))
+- add points and size columns to jobs table for accurate point deduction on dialog deletion ([befb809](https://github.com/storacha/tg-miniapp/commit/befb809d6cb820c6b5ea73dfb29e4a9d896e60bf))
+- call delete backup from client side ([9258d48](https://github.com/storacha/tg-miniapp/commit/9258d489d316112313104e71a9865a041e4445f4))
+- reintroduce high quality image fetcher ([d81b886](https://github.com/storacha/tg-miniapp/commit/d81b8864d5a613af1426531c071dbbf131bd229f))
+- subtract points on backup deletion ([b01fce9](https://github.com/storacha/tg-miniapp/commit/b01fce99dd2ae7b010ef214ec79f5402a170c965))
+
+### Bug Fixes
+
+- add build and test to CI ([aa7801f](https://github.com/storacha/tg-miniapp/commit/aa7801fd9fca48d3d9760176286979b0cf9fb4c7))
+- add build and test to CI ([fa48518](https://github.com/storacha/tg-miniapp/commit/fa485188e20cf32ee6b77e4417c99bd1545defe4))
+- add missing deps to hook ([0077429](https://github.com/storacha/tg-miniapp/commit/0077429e16b21a10e4d125e4859bdb3769eb4be3))
+- fetch high quality images for profile pictures in the list of chats ([7e2ef50](https://github.com/storacha/tg-miniapp/commit/7e2ef50febf177ad683474c5adf368795c1979bf))
+- get build working ([d9f16ac](https://github.com/storacha/tg-miniapp/commit/d9f16ac3794af583f9e0edd2e65ec72a50231f24))
+- I don't think defaults actually works here ([8c06cf8](https://github.com/storacha/tg-miniapp/commit/8c06cf854bba38da4876a877c5cd8de3d93154af))
+- ignore .claude ([27b6523](https://github.com/storacha/tg-miniapp/commit/27b652328b537d72eaeee7ee8ef09c449384f75d))
+- ignore .claude ([6529694](https://github.com/storacha/tg-miniapp/commit/6529694e54a636ccecc7a6336946c14f09693e84))
+- initialize env in test and build ([b4dfd51](https://github.com/storacha/tg-miniapp/commit/b4dfd5161b38a8353a5b26f7b014c96564559086))
+- lint ([b4fdef6](https://github.com/storacha/tg-miniapp/commit/b4fdef63f976daf0ad6a475c1f15bbb6f9fd6312))
+- progress calculation ([11b9092](https://github.com/storacha/tg-miniapp/commit/11b909266eab69d4efd66e9c5e9463605d1a8a1d))
+- ranking update ([9b60a58](https://github.com/storacha/tg-miniapp/commit/9b60a583d300cadf69ecb050eeb77eed1b40df4d))
+- remove complete backup from space if there's only one dialog ([8c3ddfb](https://github.com/storacha/tg-miniapp/commit/8c3ddfb8f9a909c99d40f78de6450a8ae46e792f))
+- rename telegram session ([ee9e0d4](https://github.com/storacha/tg-miniapp/commit/ee9e0d42d54274a0e1b74deec2615dcbc88cf0bd))
+- Revert "Merge pull request [#224](https://github.com/storacha/tg-miniapp/issues/224) from storacha/feat/hq-images" ([6aac385](https://github.com/storacha/tg-miniapp/commit/6aac3858a7f0116d143d2dd066a3efde4f8a43d9))
+- try setting working directory in env setup ([5629b96](https://github.com/storacha/tg-miniapp/commit/5629b9692c5079fde3af4012afc6c3cdec2d71df))
+- use env vars to config sentry ([4b797d7](https://github.com/storacha/tg-miniapp/commit/4b797d738d752a9c556d8c1151f078a34c5ec19a))
+- use high quality images in the chat header too ([bf24c0b](https://github.com/storacha/tg-miniapp/commit/bf24c0b872bd6b1efb35426aee8508c18b2e1c9f))
+- use high quality images in the chat header too ([6db1adc](https://github.com/storacha/tg-miniapp/commit/6db1adcca2e11ab19ad7b3144c2ab9de18be5f15))
+
+## [2.5.0](https://github.com/storacha/tg-miniapp/compare/v2.4.0...v2.5.0) (2025-07-09)
+
+### Features
+
+- **runner:** add video download size selection ([de7d85c](https://github.com/storacha/tg-miniapp/commit/de7d85ca6de895a3f464e62ae4f76bdeaaf7ca00))
+
+### Bug Fixes
+
+- allow cross-site requests to enable Telegram browser support ([b105a7f](https://github.com/storacha/tg-miniapp/commit/b105a7ff8f41476a3f4535e19decfbceb0918e44))
+- don't show ranking info if not loaded ([583842f](https://github.com/storacha/tg-miniapp/commit/583842fc5836926323c7efa47f1ff74f56a5c7d0))
+- don't show ranking info if not loaded ([443ccb7](https://github.com/storacha/tg-miniapp/commit/443ccb7af8262150831340a7317898af637c0738))
+- initdata not found ([a6d0e03](https://github.com/storacha/tg-miniapp/commit/a6d0e03bd926ea2c5c1d0fbe41eafdd702d09ea1))
+- lazy load image media ([#225](https://github.com/storacha/tg-miniapp/issues/225)) ([0a9441c](https://github.com/storacha/tg-miniapp/commit/0a9441c2b7509058008d8e702f676fe6a03f33a9))
+- only show telegram timeout error if client log level is set to debug ([fa0fa4f](https://github.com/storacha/tg-miniapp/commit/fa0fa4f126d96717a6c1f9bdd04f3a446413f16c))
+- **runner:** fix toDocumentAttributeData ([49a85c4](https://github.com/storacha/tg-miniapp/commit/49a85c4a74de84fef3ccbff836684f3b6b754c58))
+- **runner:** improve upload tracking ([0adfbb3](https://github.com/storacha/tg-miniapp/commit/0adfbb353d5b3d8c5d2d6fb8e4a06179157965f8))
+- show empty backup instead of throwing an error ([13e4371](https://github.com/storacha/tg-miniapp/commit/13e437107c4945d1561b169849dc44b660de8be0))
+- show empty backup instead of throwing an error ([328d0e6](https://github.com/storacha/tg-miniapp/commit/328d0e69e3aedf15d820950e376222df5023cf31))
+- **utils:** handle chat type ([cb0a150](https://github.com/storacha/tg-miniapp/commit/cb0a150be126e955edff6443c70dc0e13b73cdb9))
+
 ## [2.4.0](https://github.com/storacha/tg-miniapp/compare/v2.3.1...v2.4.0) (2025-07-01)
 
 ### Features

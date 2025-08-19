@@ -10,10 +10,9 @@ import {
   Ranking,
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
-import { TelegramClient } from 'telegram'
+import { TelegramClient, Api } from 'telegram'
 import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
-import bigInt from 'big-integer'
 import { toResultFn } from '@/lib/errorhandling'
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
 import {
@@ -23,12 +22,11 @@ import {
   listJobs as jobsListJob,
   removeJob as jobsRemoveJob,
   cancelJob as jobsCancelJob,
+  deleteDialogFromJob as jobsDeleteDialogFromJob,
 } from '@/lib/server/jobs'
 import { SpaceDID } from '@storacha/access'
 import { toEntityData } from '@/lib/server/runner'
-import { getThumbSrc } from '@/lib/backup/utils'
 import supervillains from '@/lib/supervillains.json'
-import { Api } from '@/vendor/telegram'
 import { clearSession } from '@/lib/server/session'
 
 const names = supervillains
@@ -73,6 +71,7 @@ export const findJob = toResultFn(jobsFindJob)
 export const listJobs = toResultFn(jobsListJob)
 export const removeJob = toResultFn(jobsRemoveJob)
 export const cancelJob = toResultFn(jobsCancelJob)
+export const deleteDialogFromJob = toResultFn(jobsDeleteDialogFromJob)
 
 const withClient = <T extends [...unknown[]], U>(
   fn: (client: TelegramClient, ...args: T) => Promise<U>
@@ -187,43 +186,22 @@ export const getLeaderboard = toResultFn(
     for (let i = 0; i < dbUsers.length; i++) {
       const id = dbUsers[i].telegramId
       let name
-      let thumbSrc = ''
-      if (i < 3) {
-        try {
-          const tgUser =
-            id === me.id.toString() ? me : await client.getEntity(bigInt(id))
-          if (tgUser.className !== 'User') {
-            throw new Error(`${tgUser.className} is not a User`)
-          }
-          name =
-            [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
-            tgUser.username ||
-            ''
-          thumbSrc = getThumbSrc(
-            tgUser.photo?.className === 'UserProfilePhoto' &&
-              tgUser.photo.strippedThumb
-              ? new Uint8Array(tgUser.photo.strippedThumb)
-              : undefined
-          )
-        } catch (err) {
-          if (err instanceof Error) {
-            console.warn(`failed to get leaderboard user: ${err.message}`)
-          } else {
-            console.log(`failed to get leaderboard user: `, err)
-          }
-        }
+      if (id === me.id.toString()) {
+        const tgUser = me
+        name =
+          [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
+          tgUser.username ||
+          ''
       }
       if (!name) {
         name = names[nameIndex]
         nameIndex++
       }
 
-      console.log('ME?!?!?', id, me, me.id.toString())
       leaderboard.push({
         id,
         name,
         initials: getInitials(name),
-        thumbSrc,
         points: dbUsers[i].points,
         isMe: id === me.id.toString(),
       })

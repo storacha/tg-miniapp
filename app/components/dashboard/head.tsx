@@ -10,6 +10,8 @@ import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 import { useGlobal } from '@/zustand/global'
 import { getRanking } from '../server'
 import { useError } from '@/providers/error'
+import { useBackups } from '@/providers/backup'
+import { useUserLocale } from '@/hooks/useUserLocale'
 
 export default function Head() {
   const router = useRouter()
@@ -17,21 +19,35 @@ export default function Head() {
   const { tgSessionString, space } = useGlobal()
   const [ranking, setRanking] = useState<Ranking | undefined>()
   const { setError } = useError()
+  const [{ backups }] = useBackups()
+  const { formatNumber } = useUserLocale()
 
-  useEffect(() => {
-    if (!space) {
-      return
+  const fetchRanking = async () => {
+    if (!space) return
+
+    try {
+      const ranking = fromResult(await getRanking(tgSessionString, space))
+      setRanking(ranking)
+    } catch (error) {
+      setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
+      setRanking(undefined)
     }
-    ;(async () => {
-      try {
-        const ranking = fromResult(await getRanking(tgSessionString, space))
-        setRanking(ranking)
-      } catch (error) {
-        setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
-        setRanking(undefined)
-      }
-    })()
+  }
+
+  // Initial fetch
+  useEffect(() => {
+    fetchRanking()
   }, [tgSessionString, space])
+
+  // Listen for backup changes
+  useEffect(() => {
+    fetchRanking()
+  }, [backups.items]) // Refetch when backups change
+
+  const formatPoints = (points?: number) => {
+    if (!points) return '00'
+    return formatNumber(points)
+  }
 
   return (
     <div className="bg-background rounded-sm">
@@ -43,7 +59,7 @@ export default function Head() {
               <p>#{ranking.rank}</p>
               <div className="flex justify-center items-center gap-1">
                 <Coin size={25} />
-                <p>{ranking ? ranking.points.toLocaleString() : '00'}</p>
+                <p>{formatPoints(ranking?.points)}</p>
               </div>
             </>
           ) : (

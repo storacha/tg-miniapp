@@ -20,6 +20,7 @@ export function Menu() {
     setPhoneNumber,
     setSpace,
     setTgSessionString,
+    setUser,
   } = useGlobal()
   const initials = user?.firstName
     ? (user.firstName[0] + (user?.lastName?.[0] ?? '')).toUpperCase()
@@ -34,6 +35,7 @@ export function Menu() {
     setPhoneNumber('')
     setSpace(null)
     setTgSessionString('')
+    setUser(null)
     await logout()
     setIsStorachaAuthorized(false)
   }
@@ -63,25 +65,6 @@ export function Menu() {
             </button>
           </div>
         </DrawerTitle>
-
-        {/* <div className="bg-background">
-					<div className="py-5 px-5 flex flex-col gap-2 border-b border-foreground/10">
-						<p className="text-base text-foreground/80">Storage</p>
-						<Progress value={55} className="w-full" />
-						<p className="text-sm text-foreground/80">45% of free 5 GB used</p>
-					</div>
-					<div className="p-5">
-						<div className="flex flex-col justify-center items-center gap-5 py-5 bg-pink-100 px-5 rounded-xl">
-							<div className="flex flex-col gap-2">
-								<p className="text-center font-medium">🚀 Go Beyond Limits!</p>
-								<p className="text-sm text-foreground/80 text-center">
-									Get premium storage to save everything—documents, media, and memories with no limits!
-								</p>
-							</div>
-							<Button className="w-full">Go Pro</Button>
-						</div>
-					</div>
-				</div> */}
       </DrawerContent>
     </Drawer>
   )

@@ -9,6 +9,9 @@ import {
   X,
   Loader2,
   Sparkles,
+  Text,
+  Sparkles,
+  Gamepad,
 } from 'lucide-react'
 import { Document, Page, pdfjs } from 'react-pdf'
 import { decodeStrippedThumb, toJPGDataURL, cn } from '@/lib/utils'
@@ -31,6 +34,7 @@ import {
   GiveawayMediaData,
 } from '@/api'
 import { useTelegram } from '@/providers/telegram'
+import { useUserLocale } from '@/hooks/useUserLocale'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -40,6 +44,7 @@ interface MediaProps {
   mediaUrl?: string
   metadata: MediaData
   time?: string
+  loading: boolean
 }
 
 const getThumbURL = (document: DocumentData) => {
@@ -76,12 +81,17 @@ const getDocumentType = (media: DocumentMediaData) => {
   return 'other'
 }
 
-export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
+export const Media: React.FC<MediaProps> = ({
+  mediaUrl,
+  metadata,
+  time,
+  loading,
+}) => {
   let mediaContent
 
   switch (metadata.type) {
     case 'photo': {
-      mediaContent = <ImageMedia mediaUrl={mediaUrl} />
+      mediaContent = <ImageMedia mediaUrl={mediaUrl} loading={loading} />
       break
     }
     case 'geo-live':
@@ -122,21 +132,37 @@ export const Media: React.FC<MediaProps> = ({ mediaUrl, metadata, time }) => {
 
       switch (docType) {
         case 'gif': {
-          mediaContent = <GifMedia mediaUrl={mediaUrl} metadata={metadata} />
+          mediaContent = (
+            <GifMedia
+              mediaUrl={mediaUrl}
+              metadata={metadata}
+              loading={loading}
+            />
+          )
           break
         }
         case 'image': {
-          mediaContent = <ImageMedia mediaUrl={mediaUrl} />
+          mediaContent = <ImageMedia mediaUrl={mediaUrl} loading={loading} />
           break
         }
         case 'video': {
-          mediaContent = <VideoMedia mediaUrl={mediaUrl} metadata={metadata} />
+          mediaContent = (
+            <VideoMedia
+              mediaUrl={mediaUrl}
+              metadata={metadata}
+              loading={loading}
+            />
+          )
           break
         }
         case 'audio': {
           mediaContent = (
             <Bubble>
-              <AudioMedia metadata={metadata} mediaUrl={mediaUrl} />
+              <AudioMedia
+                metadata={metadata}
+                mediaUrl={mediaUrl}
+                loading={loading}
+              />
             </Bubble>
           )
           break
@@ -190,13 +216,18 @@ const PlaceholderBubble: React.FC<{ label?: string }> = ({ label }) => (
   </div>
 )
 
-const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="no image" />
+const ImageMedia: React.FC<{ mediaUrl?: string; loading: boolean }> = ({
+  mediaUrl,
+  loading,
+}) => {
+  if (loading) return <PlaceholderBubble label="loading image..." />
+  if (!mediaUrl) return <PlaceholderBubble label="image unavailable" />
   return (
     <div className="flex justify-center">
       <img
         src={mediaUrl}
         alt={'Image'}
+        loading="lazy"
         className="max-w-[10rem] max-h-60 object-cover rounded-lg"
       />
     </div>
@@ -206,7 +237,8 @@ const ImageMedia: React.FC<{ mediaUrl?: string }> = ({ mediaUrl }) => {
 const AudioMedia: React.FC<{
   metadata: DocumentMediaData
   mediaUrl?: string
-}> = ({ metadata, mediaUrl }) => {
+  loading: boolean
+}> = ({ metadata, mediaUrl, loading }) => {
   const waveform = (
     metadata.document?.attributes?.find(
       (attr) => 'waveform' in attr
@@ -214,8 +246,10 @@ const AudioMedia: React.FC<{
   )?.waveform
   const mime = metadata.document?.mimeType || 'audio/mpeg'
 
-  if (!mediaUrl)
+  if (loading)
     return <div className="p-2 text-sm text-gray-500">loading audio...</div>
+  if (!mediaUrl)
+    return <div className="p-2 text-sm text-gray-500">audio unavailable</div>
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-2">
@@ -277,21 +311,21 @@ const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
             className="w-full h-36 object-cover rounded mb-2"
           />
         ) : (
-          <div className="w-full h-36 bg-gray-300 animate-pulse rounded mb-2" />
+          <div className="w-10 h-10 bg-gray-100 flex items-center justify-center rounded mx-auto mb-2">
+            <Gamepad className="w-16 h-16 text-blue-500" />
+          </div>
         )}
 
         <div className="text-sm font-medium mb-1 text-black">
           {metadata.game.title}
         </div>
+        <div className="text-xs text-gray-600 mb-2">
+          {metadata.game.description}
+        </div>
 
         <button
           className="px-3 py-1 bg-blue-500 hover:bg-blue-700 text-white text-sm rounded"
-          onClick={() =>
-            window.open(
-              `https://t.me/${metadata.game.shortName}?game=${metadata.game.shortName}`,
-              '_blank'
-            )
-          }
+          disabled={true}
         >
           Play {metadata.game.title}
         </button>
@@ -302,8 +336,7 @@ const GameMedia: React.FC<GameMediaProps> = ({ metadata }) => {
 
 const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
   const [thumbUrl, setThumbUrl] = useState<string>('')
-  const [{ user }] = useTelegram()
-
+  const { formatCurrency } = useUserLocale()
   useEffect(() => {
     const photo = metadata.photo
     if (!photo) return
@@ -317,10 +350,7 @@ const InvoiceMedia = ({ metadata }: { metadata: InvoiceMediaData }) => {
     // elegram sends totalAmount as an integer multiplied by 100
     // (i.e. amount in minor units, like cents for USD)
     const minorUnit = parseInt(price, 10) / 100
-    return new Intl.NumberFormat(user?.languageCode || 'en-US', {
-      style: 'currency',
-      currency: metadata.currency,
-    }).format(minorUnit)
+    return formatCurrency(minorUnit, metadata.currency)
   }
 
   return (
@@ -381,9 +411,12 @@ const DiceMedia = ({ metadata }: { metadata: DiceMediaData }) => {
   }
 
   return (
-    <div className="flex items-center justify-center">
+    <div className="flex flex-col items-center justify-center">
       <span className={cn('text-4xl', getAnimation())}>
         {metadata.emoticon}
+      </span>
+      <span className="text-xs text-gray-500 mt-1">
+        value: {metadata.value}
       </span>
     </div>
   )
@@ -394,6 +427,7 @@ interface GiveawayMediaProps {
 }
 
 export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
+  const { formatDateTime } = useUserLocale()
   const {
     prizeDescription,
     quantity,
@@ -406,7 +440,15 @@ export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
     stars,
   } = metadata
 
-  const until = new Date(untilDate * 1000).toLocaleString()
+  function isoToFlag(countryCode: string): string {
+    return countryCode
+      .toUpperCase()
+      .split('')
+      .map((char) => String.fromCodePoint(char.charCodeAt(0) + 127397))
+      .join('')
+  }
+
+  const until = formatDateTime(untilDate)
 
   return (
     <Bubble>
@@ -423,18 +465,18 @@ export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
         )}
 
         <div className="text-xs text-gray-600 space-y-1">
-          <p>
-            🎁 {quantity} winner{quantity > 1 ? 's' : ''}
-          </p>
-          {months && (
+          {quantity && months ? (
             <p>
-              Duration: {months} month{months > 1 ? 's' : ''}
+              {quantity} Telegram Premium Subscription{quantity > 1 ? 's' : ''}{' '}
+              ({months} month{months > 1 ? 's' : ''})
             </p>
+          ) : (
+            quantity && <p>🏅 Winners: {quantity}</p>
           )}
           {countriesIso2 && countriesIso2?.length > 0 && (
-            <p>🌍 Eligible: {countriesIso2.join(', ')}</p>
+            <p>🌍 Eligible: {countriesIso2.map(isoToFlag).join(', ')}</p>
           )}
-          {stars && <p>⭐ Stars: {stars}</p>}
+          {stars && stars != 'null' && <p>⭐ Stars: {stars}</p>}
           <p>Ends: {until}</p>
           {onlyNewSubscribers && <p>Only new subscribers</p>}
           {winnersAreVisible && <p>Winners will be visible</p>}
@@ -442,18 +484,15 @@ export const GiveawayMedia: React.FC<GiveawayMediaProps> = ({ metadata }) => {
 
         {channels.length > 0 && (
           <div className="text-xs text-gray-500 mt-2">
-            Required channels:{' '}
-            {channels.map((ch) => (
-              <span key={ch} className="text-blue-600">
-                {ch}{' '}
+            Required channels IDs:{' '}
+            {channels.map((ch, idx) => (
+              <span key={ch} className="text-gray-600">
+                {ch}
+                {idx < channels.length - 1 ? ', ' : '.'}
               </span>
             ))}
           </div>
         )}
-
-        <button className="mt-2 px-3 py-1 text-sm rounded bg-blue-500 text-white hover:bg-blue-700 transition-colors">
-          participate
-        </button>
       </div>
     </Bubble>
   )
@@ -534,8 +573,10 @@ const StoryMedia = ({ metadata }: { metadata: StoryMediaData }) => {
 const VideoMedia: React.FC<{
   mediaUrl?: string
   metadata: DocumentMediaData
-}> = ({ mediaUrl, metadata }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="no video" />
+  loading: boolean
+}> = ({ mediaUrl, metadata, loading }) => {
+  if (loading) return <PlaceholderBubble label="loading video..." />
+  if (!mediaUrl) return <PlaceholderBubble label="video unavailable" />
 
   const mime = metadata.document?.mimeType?.toLowerCase() || 'video/mp4'
   const thumbUrl = metadata.document
@@ -557,8 +598,10 @@ const VideoMedia: React.FC<{
 const GifMedia: React.FC<{
   mediaUrl?: string
   metadata?: DocumentMediaData
-}> = ({ mediaUrl, metadata }) => {
-  if (!mediaUrl) return <PlaceholderBubble label="no gif" />
+  loading: boolean
+}> = ({ mediaUrl, metadata, loading }) => {
+  if (loading) return <PlaceholderBubble label="loading gif..." />
+  if (!mediaUrl) return <PlaceholderBubble label="gif unavailable" />
 
   const mime = metadata?.document?.mimeType?.toLowerCase() || 'video/mp4'
 
@@ -702,7 +745,7 @@ const WebPageMedia: React.FC<{ metadata: WebPageMediaData }> = ({
       href={url || '#'}
       target="_blank"
       rel="noopener noreferrer"
-      className="relative min-w-[260px] w-full max-w-sm rounded-lg bg-muted p-4 no-underline hover:bg-muted/90 overflow-hidden block"
+      className="relative min-w-[260px] w-full max-w-sm rounded-lg bg-muted p-2 no-underline hover:bg-muted/90 overflow-hidden block"
     >
       <div className="absolute top-3 right-3 text-blue-600">
         <ExternalLink className="h-4 w-4" />
@@ -728,7 +771,9 @@ const WebPageMedia: React.FC<{ metadata: WebPageMediaData }> = ({
             )}
           </>
         ) : (
-          <span className="text-sm text-gray-500">Preview not available</span>
+          <div className="flex justify-center items-center w-full">
+            <Text className="h-8 w-8 text-gray-400" />
+          </div>
         )}
       </div>
     </a>
@@ -766,6 +811,7 @@ const FileMedia: React.FC<{
           <img
             src={thumbUrl}
             alt="File Thumbnail"
+            loading="lazy"
             className="w-12 h-12 object-cover rounded-md"
           />
         ) : (

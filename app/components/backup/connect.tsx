@@ -1,5 +1,5 @@
-import { useW3 as useStoracha } from '@storacha/ui-react'
-import { email as parseEmail } from '@storacha/did-mailto'
+import { AppName, useW3 as useStoracha } from '@storacha/ui-react'
+import { fromEmail, email as parseEmail } from '@storacha/did-mailto'
 import {
   Drawer,
   DrawerContent,
@@ -152,7 +152,7 @@ export const StorachaConnect = ({
 }) => {
   const [{ user }] = useTelegram()
   const [{ accounts, client }] = useStoracha()
-  const { setIsStorachaAuthorized, setSpace } = useGlobal()
+  const { setIsStorachaAuthorized, setSpace, setUser } = useGlobal()
 
   const [email, setEmail] = useState('')
   const [connErr, setConnErr] = useState<Error>()
@@ -169,7 +169,16 @@ export const StorachaConnect = ({
       setConnErr(undefined)
       setVerifying(true)
       logStorachaLoginStarted()
-      const account = await client.login(parseEmail(email))
+
+      setUser({
+        id: user?.id || 0,
+        name: `${user?.firstName} ${user?.lastName || ''}`.trim(),
+        accountDID: fromEmail(parseEmail(email)),
+      })
+
+      const account = await client.login(parseEmail(email), {
+        appName: AppName.TGMiniapp,
+      })
       const plan = await account.plan.get()
 
       if (plan.ok?.product) {

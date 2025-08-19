@@ -102,6 +102,19 @@ export const cleanUndef = <T extends object>(obj: T): T => {
   return obj
 }
 
+export function formatBytes(bytes: number): string {
+  if (bytes <= 1024) return `${bytes}B`
+  const units = ['KB', 'MB', 'GB', 'TB']
+  let i = -1
+  do {
+    bytes = bytes / 1024
+    i++
+  } while (bytes >= 1024 && i < units.length - 1)
+  {
+    return `${bytes.toFixed(2)}${units[i]}`
+  }
+}
+
 export const withCleanUndef =
   <I, O>(f: (input: I) => O): ((input: I) => O) =>
   (input: I) => {
@@ -117,7 +130,7 @@ export const getInitials = (name: string) => {
     .filter((part) => part.length > 0) // Remove empty parts
 
   if (parts.length === 0) {
-    return '??'
+    return ''
   }
 
   return parts.length === 1
@@ -155,4 +168,20 @@ export function parseWithUIntArrays(str: string): unknown {
     }
     return value
   })
+}
+
+export const startOfMonth = (now: string | number | Date) => {
+  const d = new Date(now)
+  d.setUTCDate(1)
+  d.setUTCHours(0)
+  d.setUTCMinutes(0)
+  d.setUTCSeconds(0)
+  d.setUTCMilliseconds(0)
+  return d
+}
+
+export const startOfLastMonth = (now: string | number | Date) => {
+  const d = startOfMonth(now)
+  d.setUTCMonth(d.getUTCMonth() - 1)
+  return d
 }

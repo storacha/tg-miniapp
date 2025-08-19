@@ -26,9 +26,13 @@ export function ChatHeader({
         <div className="flex items-center gap-4">
           <Avatar className="w-14 h-14">
             <AvatarImage src={image} />
-            <AvatarFallback className="bg-gray-300">
-              {getInitials(name)}
-            </AvatarFallback>
+            {name && name.toLowerCase() !== 'loading...' ? (
+              <AvatarFallback className="bg-gray-300">
+                {getInitials(name)}
+              </AvatarFallback>
+            ) : (
+              <AvatarFallback className="bg-gray-300" />
+            )}
           </Avatar>
           <div>
             <h1 className="text-base font-semibold text-foreground">{name}</h1>

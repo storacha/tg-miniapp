@@ -42,9 +42,24 @@ export const useUserLocale = () => {
     }
   }
 
+  const formatNumber = (num: number) => {
+    return num.toLocaleString(userLocale, {
+      maximumFractionDigits: 1,
+    })
+  }
+
+  const formatCurrency = (amount: number, currency: string) =>
+    new Intl.NumberFormat(userLocale, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount)
+
   return {
     formatDate,
     formatTime,
     formatDateTime,
+    formatNumber,
+    formatCurrency,
   }
 }

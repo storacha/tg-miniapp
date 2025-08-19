@@ -16,16 +16,19 @@ import { StringSession } from '@/vendor/telegram/sessions'
 import { TelegramClientParams } from '@/vendor/telegram/client/telegramBaseClient'
 import { getErrorMessage } from '@/lib/errorhandling'
 import { useAnalytics } from '@/lib/analytics'
+import { defaultClientParams } from '@/lib/server/constants'
+import { logAndCaptureError } from '@/lib/sentry'
+
+class PhoneNumberMismatchError extends Error {
+  constructor() {
+    super(
+      'Phone number mismatch: The phone number you entered does not match the Telegram account that opened this Mini App. Please use the correct phone number or open the Mini App from the matching Telegram account.'
+    )
+  }
+}
 
 const apiId = parseInt(process.env.NEXT_PUBLIC_TELEGRAM_API_ID ?? '')
 const apiHash = process.env.NEXT_PUBLIC_TELEGRAM_API_HASH ?? ''
-const appVersion = process.env.version ?? '1.0.0'
-const defaultClientParams: TelegramClientParams = {
-  connectionRetries: 5,
-  deviceModel: 'Storacha',
-  systemVersion: 'Linux',
-  appVersion,
-}
 
 function CountDown({ onResend }: { onResend: () => unknown }) {
   const [count, setCount] = useState(59)
@@ -88,11 +91,12 @@ function OTPForm({
   }
 
   const disabled = code === null || code.length < 5 || loading
+  const isPhoneNumberMismatch = error instanceof PhoneNumberMismatchError
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-screen bg-background"
+      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-dvh bg-background"
     >
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-primary font-semibold text-2xl text-center">
@@ -122,7 +126,7 @@ function OTPForm({
         </p>
       </div>
       <div className="flex flex-col justify-center items-center gap-3">
-        {disabled ? (
+        {disabled || isPhoneNumberMismatch ? (
           <Button
             type="submit"
             className="w-full"
@@ -133,7 +137,7 @@ function OTPForm({
           </Button>
         ) : (
           <Button type="submit" className="w-full" disabled={disabled}>
-            {loading ? 'Loading...' : 'Submit OTP'}
+            {loading ? 'Loading...' : 'Submit Code'}
           </Button>
         )}
       </div>
@@ -164,7 +168,7 @@ function TwoFAForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-screen bg-background"
+      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-dvh bg-background"
     >
       <div className="flex flex-col items-center gap-2">
         <h1 className="text-primary font-semibold text-2xl text-center">
@@ -205,7 +209,9 @@ export default function TelegramAuth() {
   const [code, setCode] = useState('')
   const { phoneNumber, setPhoneNumber, tgSessionString, setTgSessionString } =
     useGlobal()
-  const [{ user }, { setIsTgAuthorized }] = useTelegram()
+  const [{ user }, { setIsTgAuthorized, logout }] = useTelegram()
+  const [loginAttemptCount, setLoginAttemptCount] = useState(0)
+  const incrementLoginAttemptCount = () => setLoginAttemptCount((c) => c + 1)
   const [is2FARequired, set2FARequired] = useState(false)
   const [password, setPassword] = useState('')
   const [srp, setSRP] = useState<Api.account.Password>()
@@ -216,7 +222,7 @@ export default function TelegramAuth() {
       new StringSession(tgSessionString),
       apiId,
       apiHash,
-      defaultClientParams
+      defaultClientParams as unknown as TelegramClientParams
     )
     setClient(newClient)
   }, [tgSessionString])
@@ -228,6 +234,7 @@ export default function TelegramAuth() {
     try {
       setLoading(true)
       setError(undefined)
+      incrementLoginAttemptCount()
       logTelegramLoginStarted()
 
       if (!client.connected) {
@@ -277,10 +284,9 @@ export default function TelegramAuth() {
       if (result instanceof Api.auth.AuthorizationSignUpRequired) {
         throw new Error('user needs to sign up')
       }
-      if (process.env.NODE_ENV === 'production') {
-        if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
-          throw new Error('login user and user using the app must match')
-        }
+      // Verify the authenticated user matches the Mini App user
+      if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
+        throw new PhoneNumberMismatchError()
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
@@ -331,10 +337,9 @@ export default function TelegramAuth() {
       if (result instanceof Api.auth.AuthorizationSignUpRequired) {
         throw new Error('user needs to sign up')
       }
-      if (process.env.NODE_ENV === 'production') {
-        if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
-          throw new Error('login user and user using the app must match')
-        }
+      // Verify the authenticated user matches the Mini App user
+      if (BigInt(result.user.id.toString()) !== BigInt(user?.id ?? 0)) {
+        throw new PhoneNumberMismatchError()
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
@@ -347,6 +352,7 @@ export default function TelegramAuth() {
         setError(new Error('Your password was incorrect. Please try again.'))
       } else {
         setError(err)
+        logAndCaptureError(err)
       }
     } finally {
       setLoading(false)
@@ -390,69 +396,98 @@ export default function TelegramAuth() {
     )
   }
 
+  async function resetLoginState() {
+    await logout()
+    setError(undefined)
+  }
+
   return (
-    <form
-      className="pt-20 pb-10 px-5 flex flex-col items-stretch justify-between h-screen bg-primary/10"
-      onSubmit={handlePhoneSubmit}
-    >
-      <div className="flex flex-col items-center gap-2">
-        <h1 className="text-primary font-semibold text-2xl text-center">
-          Storacha
-        </h1>
-        <div className="py-10 flex flex-col items-center gap-5">
-          <h1 className="text-xl font-semibold">Authorization</h1>
-          <p className="text-center text-blue-600/80">
-            Authorize access to your Telegram chats to securely proceed with
-            your backups.
-          </p>
-          <div className="w-full">
-            <p className="text-blue-600/80 text-center my-2">
-              Your phone number:
+    <div className="min-h-dvh bg-primary/10 flex flex-col">
+      <form
+        className="flex-1 pt-20 pb-10 px-5 flex flex-col justify-between"
+        onSubmit={handlePhoneSubmit}
+      >
+        <div className="flex flex-col items-center gap-2">
+          <h1 className="text-primary font-semibold text-2xl text-center">
+            Storacha
+          </h1>
+          <div className="py-10 flex flex-col items-center gap-5">
+            <h1 className="text-xl font-semibold">Authorization</h1>
+            <p className="text-center text-blue-600/80">
+              Authorize access to your Telegram chats to securely proceed with
+              your backups.
             </p>
-            <Input
-              className="bg-white"
-              type="tel"
-              placeholder="e.g. +12223334455"
-              value={phoneNumber}
-              onChange={(e) => {
-                setError(undefined)
-                setPhoneNumber(e.target.value)
-              }}
-              required
-            />
-            {error ? (
-              <p className="text-red-600 text-center text-xs my-2">
-                {error.message}
+            <div className="w-full">
+              <p className="text-blue-600/80 text-center my-2">
+                Your phone number:
               </p>
-            ) : (
-              <p className="text-blue-600/80 text-center text-xs my-2">
-                Please enter your number in{' '}
-                <a
-                  href="https://telegram.org/faq#login-and-sms"
-                  target="_blank"
-                  className="underline"
-                >
-                  international format
-                </a>
-                .
-              </p>
-            )}
+              <Input
+                className="bg-white"
+                type="tel"
+                placeholder="+12223334455"
+                value={`${phoneNumber}`}
+                onChange={(e) => {
+                  setError(undefined)
+                  setPhoneNumber(e.target.value)
+                }}
+                onFocus={(e) => {
+                  if (!phoneNumber || phoneNumber === '') {
+                    setPhoneNumber('+')
+                    setTimeout(() => {
+                      e.target.setSelectionRange(1, 1)
+                    }, 0)
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace' && phoneNumber === '+') {
+                    e.preventDefault()
+                  }
+                }}
+                required
+              />
+              {error ? (
+                <p className="text-red-600 text-center text-xs my-2">
+                  {error.message}
+                </p>
+              ) : (
+                <p className="text-blue-600/80 text-center text-xs my-2">
+                  Please enter your number in{' '}
+                  <a
+                    href="https://telegram.org/faq#login-and-sms"
+                    target="_blank"
+                    className="underline"
+                  >
+                    international format
+                  </a>
+                  .
+                </p>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-      <div className="flex flex-col justify-center items-center">
-        <p className="text-center text-blue-600/80 mb-3">
-          You will receive a code in Telegram. Please enter it in the next step
-          to continue.
-        </p>
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading || !phoneNumber}
-        >
-          {loading ? 'Sending...' : 'Send Pin'}
-        </Button>
-      </div>
-    </form>
+        <div className="flex flex-col justify-center items-center">
+          <Button
+            type="submit"
+            className="w-full mb-3"
+            disabled={loading || !phoneNumber}
+          >
+            {loading ? 'Sending...' : 'Send Pin'}
+          </Button>
+          <p className="text-center text-blue-600/80 mb-3">
+            You will receive a code in Telegram. Please enter it in the next
+            step to continue.
+          </p>
+        </div>
+        {error && loginAttemptCount > 1 && (
+          <p className="text-xs text-center mt-10">
+            If you are consistently experiencing login issues, please try
+            resetting your login state and try again:
+            <Button onClick={resetLoginState} size="sm" className="my-2">
+              Reset Login State
+            </Button>
+          </p>
+        )}
+      </form>
+    </div>
   )
 }
