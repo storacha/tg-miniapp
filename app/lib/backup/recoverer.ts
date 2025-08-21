@@ -11,152 +11,26 @@ import {
   MessageData,
   RestoredBackup,
 } from '@/api'
+import Bottleneck from 'bottleneck'
 
 const gatewayURL =
   process.env.NEXT_PUBLIC_STORACHA_GATEWAY_URL || 'https://w3s.link'
 
-// const sleep = (ms: number, signal?: AbortSignal) =>
-//   new Promise<void>((resolve, reject) => {
-//     const id = setTimeout(() => {
-//       if (signal) signal.removeEventListener('abort', onAbort)
-//       resolve()
-//     }, ms)
-//     const onAbort = () => {
-//       clearTimeout(id)
-//       reject(new DOMException('Aborted', 'AbortError'))
-//     }
-//     if (signal) {
-//       if (signal.aborted) onAbort()
-//       else signal.addEventListener('abort', onAbort, { once: true })
-//     }
-//   })
-
-///// WITH HEAD POLLING:
-
-// export const getFromStoracha = async (
-//   cid: string,
-// {
-//     maxTimeoutMs = 120_000, // 2 minutes
-//     initialDelayMs = 500,
-//     maxDelayMs = 5000,
-//     signal,
-//   }: {
-//     maxTimeoutMs?: number
-//     initialDelayMs?: number
-//     maxDelayMs?: number
-//     signal?: AbortSignal
-//   } = {}
-// ): Promise<Response> => {
-//   const url = new URL(`/ipfs/${cid}`, gatewayURL)
-//   let delay = initialDelayMs
-// const startTime = Date.now()
-
-//  while (Date.now() - startTime < maxTimeoutMs) {
-//     const headResponse = await fetch(url, {
-//       method: 'HEAD',
-//       redirect: 'manual' ,
-//       cache: 'no-store',
-//       signal,
-//     })
-
-//     const is3xx = headResponse.status >= 300 && headResponse.status < 400
-//     const isOpaqueRedirect = headResponse.type === 'opaqueredirect'
-
-//     if (headResponse.ok) {
-//       const response = await fetch(url, { redirect: 'manual' })
-//       if (response.ok) return response
-
-//       // If GET fails but HEAD succeeded, treat as temporary issue and continue polling
-//     }
-
-//     if (is3xx || isOpaqueRedirect) {
-//       const remainingTime = maxTimeoutMs - (Date.now() - startTime)
-
-//       if (remainingTime <= 0) {
-//         throw new Error(
-//           `Timeout after ${maxTimeoutMs}ms waiting for resource: ${url}`
-//         )
-//       }
-
-//       const jitter = Math.random() * 100
-//       const waitMs = Math.min(delay + jitter, maxDelayMs, remainingTime)
-//       await sleep(waitMs, signal)
-
-//       delay = Math.min(delay * 2, maxDelayMs)
-//       continue
-//     }
-
-//     // For non-retriable errors, throw immediately
-//     throw new Error(
-//       `Failed to fetch: ${headResponse.status} ${headResponse.statusText} ${url}`
-//     )
-//   }
-
-//   throw new Error(`Timeout after ${maxTimeoutMs}ms: ${url}`)
-// }
-
-////// WITH RETRIES:
-
-// export const getFromStoracha = async (
-//   cid: string,
-//   {
-//     maxTimeoutMs = 120000, // 2 minutes default timeout
-//     initialDelayMs = 500,
-//     maxDelayMs = 5000,
-//     signal
-//   } : {
-//     maxTimeoutMs?: number
-//     initialDelayMs?: number
-//     maxDelayMs?: number
-//     signal?: AbortSignal
-//   } = {}
-// ): Promise<Response> => {
-//   let delay = initialDelayMs
-//   const url = new URL(`/ipfs/${cid}`, gatewayURL)
-//   const startTime = Date.now()
-
-//   while (Date.now() - startTime < maxTimeoutMs) {
-//     const response = await fetch(url, { redirect: 'manual' , signal})
-
-//     if (response.ok) return response
-
-//     const is3xx = response.status >= 300 && response.status < 400
-//     const isOpaqueRedirect = response.type === 'opaqueredirect' // browsers in manual redirect mode
-
-//     if (is3xx || isOpaqueRedirect) {
-//       const remainingTime = maxTimeoutMs - (Date.now() - startTime)
-
-//       if (remainingTime <= 0) {
-//         throw new Error(
-//           `Timeout after ${maxTimeoutMs}ms waiting for resource: ${url}`
-//         )
-//       }
-
-//       const jitter = Math.random() * 100
-//       const waitMs = Math.min(delay + jitter, maxDelayMs, remainingTime)
-//       await sleep(waitMs, signal)
-
-//       delay = Math.min(delay * 2, maxDelayMs)
-//       continue
-//     }
-
-//     throw new Error(
-//       `Failed to fetch: ${response.status} ${response.statusText} ${url}`
-//     )
-//   }
-
-//   throw new Error(`Timeout after ${maxTimeoutMs}ms: ${url}`)
-// }
+const limiter = new Bottleneck({
+  minTime: 10, // 10 ms per request will give us 100 requests per minute
+})
 
 export const getFromStoracha = async (cid: string) => {
-  const url = new URL(`/ipfs/${cid}`, gatewayURL)
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch: ${response.status} ${response.statusText} ${url}`
-    )
-  }
-  return response
+  return await limiter.schedule(async () => {
+    const url = new URL(`/ipfs/${cid}`, gatewayURL)
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch: ${response.status} ${response.statusText} ${url}`
+      )
+    }
+    return response
+  })
 }
 
 export const restoreBackup = async (
