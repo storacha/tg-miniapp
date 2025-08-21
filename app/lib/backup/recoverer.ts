@@ -18,7 +18,35 @@ const gatewayURL =
 
 const limiter = new Bottleneck({
   minTime: 10, // 10 ms per request will give us 100 requests per minute
+  retryDelayOptions: {
+    base: 1000, // Start with 1 second delay
+    max: 30000, // Max 30 seconds delay
+    multiplier: 2, // Exponential backoff
+    jitter: true, // Add randomness to prevent thundering herd
+  },
 })
+
+limiter.on('failed', async (error, jobInfo) => {
+  const errorMessage = error.message.toLowerCase()
+  const shouldRetry =
+    errorMessage.includes('too many requests') ||
+    errorMessage.includes('failed to fetch') ||
+    error.name === 'TypeError' // Network-level failures
+
+  if (shouldRetry && jobInfo.retryCount < 5) {
+    console.warn(
+      `Request failed, retrying (${jobInfo.retryCount + 1}/5):`,
+      error.message
+    )
+    return 1000 * Math.pow(2, jobInfo.retryCount) // Exponential backoff
+  }
+
+  return null // Don't retry
+})
+
+limiter.on('retry', (error, jobInfo) =>
+  console.log(`Now retrying ${jobInfo.options.id}`)
+)
 
 export const getFromStoracha = async (cid: string) => {
   return await limiter.schedule(async () => {
