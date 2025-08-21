@@ -166,7 +166,6 @@ const loadMessagesProgressively = async (
             raw,
             encryptedRawMedia
           )
-          mediaMap[mediaCid] = rawMedia
           onMediaLoaded(mediaCid, rawMedia)
         } catch (error) {
           console.warn(`Failed to load media ${mediaCid}:`, error)

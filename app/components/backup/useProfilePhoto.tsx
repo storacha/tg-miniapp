@@ -12,7 +12,6 @@ export function useProfilePhoto(
   useEffect(
     function () {
       if (!entityId) return
-      console.log('loading HQ for id ', entityId)
       ;(async function () {
         // session is required for this to work unless it's been cached
         // but we keep it in a query param rather than the URL so that browsers with support for
