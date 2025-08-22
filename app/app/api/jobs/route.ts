@@ -3,6 +3,7 @@ import { getDB } from '@/lib/server/db'
 import { getTelegramId, handleJob } from '@/lib/server/jobs'
 import { getSession } from '@/lib/server/session'
 import { parseWithUIntArrays, stringifyWithUIntArrays } from '@/lib/utils'
+import { gracefulShutdown } from '@/lib/server/graceful-shutdown'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,15 @@ function isJobAuthed(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (gracefulShutdown.isShutdownInitiated()) {
+    return new Response('Service temporarily unavailable', {
+      status: 503,
+      headers: {
+        'Retry-After': '30', // Tell clients to retry after 30 seconds (By default, there is a 30 second delay between the delivery of SIGTERM and SIGKILL signals)
+      },
+    })
+  }
+
   console.log(`Handling job batch...`)
   if (!isJobAuthed(request)) {
     console.error(`Job auth not found.`)
