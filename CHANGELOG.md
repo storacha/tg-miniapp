@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.12.4](https://github.com/storacha/tg-miniapp/compare/v2.12.3...v2.12.4) (2025-08-22)
+
+
+### Bug Fixes
+
+* configure storacha client ([28f42ef](https://github.com/storacha/tg-miniapp/commit/28f42ef1bbac004fd1e6b8f91963de5b1d729c68))
+* images not loading after backup is done ([0f6c222](https://github.com/storacha/tg-miniapp/commit/0f6c222f57501ae32be25695e1997e3a514c5197))
+* loading backup and images ([d3f8eb9](https://github.com/storacha/tg-miniapp/commit/d3f8eb9ff4ae6c5ea9bfd5c3a2bc902dff3789b7))
+
 ## [2.12.3](https://github.com/storacha/tg-miniapp/compare/v2.12.2...v2.12.3) (2025-08-18)
 
 
