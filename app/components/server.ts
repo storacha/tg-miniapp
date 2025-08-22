@@ -62,7 +62,7 @@ const sqsQueueFn = () => {
   }
 }
 
-const queueFn = queueURL ? sqsQueueFn() : localQueueFn()
+export const queueFn = queueURL ? sqsQueueFn() : localQueueFn()
 
 export const login = toResultFn(jobsLoginJob)
 export const storeInitData = toResultFn(jobsStoreInitData)
