@@ -108,8 +108,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
           errorMsg.includes('AUTH_KEY_DUPLICATED')
         ) {
           console.log('Session validation failed, clearing session')
-          setTgSessionString('')
-          setIsTgAuthorized(false)
+          await logout()
         }
       } finally {
         setIsValidating(false)
@@ -134,6 +133,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       await logoutTelegram(tgSessionString)
       // we clear the TG session string once we are successfully logged out
       setTgSessionString('')
+      setIsTgAuthorized(false)
       // redirect to home page after logout
       router.push('/')
     } catch (err) {
