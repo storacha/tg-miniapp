@@ -16,7 +16,7 @@
   "engines": {
     "node": ">=18"
   },
-  "version": "2.12.3",
+  "version": "2.12.4",
   "lint-staged": {
     "app/**/*.{ts,tsx}": [
       "prettier --write",
