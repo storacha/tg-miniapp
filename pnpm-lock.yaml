@@ -119,6 +119,9 @@ importers:
       big-integer:
         specifier: ^1.6.52
         version: 1.6.52
+      bottleneck:
+        specifier: ^2.19.5
+        version: 2.19.5
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -205,7 +208,7 @@ importers:
         version: 2.5.5
       tailwindcss-animate:
         specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@3.4.1(ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)))
+        version: 1.0.7(tailwindcss@3.4.1(ts-node@9.1.1(typescript@5.5.4)))
       telegram:
         specifier: 2.26.8
         version: 2.26.8
@@ -257,7 +260,7 @@ importers:
         version: 3.5.3
       tailwindcss:
         specifier: ^3.4.1
-        version: 3.4.1(ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))
+        version: 3.4.1(ts-node@9.1.1(typescript@5.5.4))
       typescript:
         specifier: 5.5.4
         version: 5.5.4
@@ -4371,6 +4374,9 @@ packages:
   bluebird@3.7.2:
     resolution: {integrity: sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==}
 
+  bottleneck@2.19.5:
+    resolution: {integrity: sha512-VHiNCbI1lKdl44tGrhNfU3lup0Tj/ZBMJB5/2ZbNXRCPuRCO7ed2mgcK4r17y+KB2EfuYuRaVlwNbAeaWGSpbw==}
+
   bowser@2.11.0:
     resolution: {integrity: sha512-AlcaJBi/pqqJBIQ8U9Mcpc9i8Aqxn88Skv5d+xBX006BY5u8N3mGLHa5Lgppa7L/HfwgwLgZ6NYs+Ag6uUmJRA==}
 
@@ -7040,6 +7046,7 @@ packages:
 
   path-match@1.2.4:
     resolution: {integrity: sha512-UWlehEdqu36jmh4h5CWJ7tARp1OEVKGHKm6+dg9qMq5RKUTV5WJrGgaZ3dN2m7WFAXDbjlHzvJvL/IUpy84Ktw==}
+    deprecated: This package is archived and no longer maintained. For support, visit https://github.com/expressjs/express/discussions
 
   path-parse@1.0.7:
     resolution: {integrity: sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==}
@@ -14005,6 +14012,8 @@ snapshots:
 
   bluebird@3.7.2: {}
 
+  bottleneck@2.19.5: {}
+
   bowser@2.11.0: {}
 
   brace-expansion@1.1.11:
@@ -17009,13 +17018,13 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.5.2
 
-  postcss-load-config@4.0.2(postcss@8.5.2)(ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)):
+  postcss-load-config@4.0.2(postcss@8.5.2)(ts-node@9.1.1(typescript@5.5.4)):
     dependencies:
       lilconfig: 3.1.3
       yaml: 2.7.0
     optionalDependencies:
       postcss: 8.5.2
-      ts-node: 10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)
+      ts-node: 9.1.1(typescript@5.5.4)
 
   postcss-nested@6.2.0(postcss@8.5.2):
     dependencies:
@@ -17854,11 +17863,11 @@ snapshots:
 
   tailwind-merge@2.5.5: {}
 
-  tailwindcss-animate@1.0.7(tailwindcss@3.4.1(ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))):
+  tailwindcss-animate@1.0.7(tailwindcss@3.4.1(ts-node@9.1.1(typescript@5.5.4))):
     dependencies:
-      tailwindcss: 3.4.1(ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))
+      tailwindcss: 3.4.1(ts-node@9.1.1(typescript@5.5.4))
 
-  tailwindcss@3.4.1(ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4)):
+  tailwindcss@3.4.1(ts-node@9.1.1(typescript@5.5.4)):
     dependencies:
       '@alloc/quick-lru': 5.2.0
       arg: 5.0.2
@@ -17877,7 +17886,7 @@ snapshots:
       postcss: 8.5.2
       postcss-import: 15.1.0(postcss@8.5.2)
       postcss-js: 4.0.1(postcss@8.5.2)
-      postcss-load-config: 4.0.2(postcss@8.5.2)(ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4))
+      postcss-load-config: 4.0.2(postcss@8.5.2)(ts-node@9.1.1(typescript@5.5.4))
       postcss-nested: 6.2.0(postcss@8.5.2)
       postcss-selector-parser: 6.1.2
       resolve: 1.22.10
@@ -18106,27 +18115,6 @@ snapshots:
     optionalDependencies:
       '@swc/core': 1.11.29(@swc/helpers@0.5.17)
 
-  ts-node@10.9.1(@swc/core@1.11.29(@swc/helpers@0.5.17))(@types/node@20.0.0)(typescript@5.5.4):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      '@tsconfig/node10': 1.0.11
-      '@tsconfig/node12': 1.0.11
-      '@tsconfig/node14': 1.0.3
-      '@tsconfig/node16': 1.0.4
-      '@types/node': 20.0.0
-      acorn: 8.14.1
-      acorn-walk: 8.3.4
-      arg: 4.1.3
-      create-require: 1.1.1
-      diff: 4.0.2
-      make-error: 1.3.6
-      typescript: 5.5.4
-      v8-compile-cache-lib: 3.0.1
-      yn: 3.1.1
-    optionalDependencies:
-      '@swc/core': 1.11.29(@swc/helpers@0.5.17)
-    optional: true
-
   ts-node@9.1.1(typescript@4.9.5):
     dependencies:
       arg: 4.1.3
@@ -18136,6 +18124,17 @@ snapshots:
       source-map-support: 0.5.21
       typescript: 4.9.5
       yn: 3.1.1
+
+  ts-node@9.1.1(typescript@5.5.4):
+    dependencies:
+      arg: 4.1.3
+      create-require: 1.1.1
+      diff: 4.0.2
+      make-error: 1.3.6
+      source-map-support: 0.5.21
+      typescript: 5.5.4
+      yn: 3.1.1
+    optional: true
 
   ts-toolbelt@6.15.5: {}
 

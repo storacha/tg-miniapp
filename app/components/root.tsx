@@ -41,8 +41,8 @@ import { useDidMount } from '../hooks/useDidMount'
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
 
-// TODO: Temporary, until service respects `did:web:up.storacha.network`
-const serviceID = parseDID('did:web:web3.storage')
+// TODO: Temporary, if it's not forced the default provider is still set to did:web:web3.storage
+const serviceID = parseDID('did:web:up.storacha.network')
 // TODO: Temporary, until service respects `did:web:up.storacha.network`
 const connection = uploadServiceConnection({ id: serviceID })
 // Add the miniapp identifier to the client header
@@ -162,6 +162,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
         console.log('found existing encryption password')
       }
 
+      console.log('default provider: ', storacha?.defaultProvider())
       await storacha.setCurrentSpace(space)
 
       try {

@@ -143,6 +143,78 @@ const UserInfo: React.FC<{ thumbSrc: string; userName: string }> = ({
   )
 }
 
+const MessageItem: React.FC<{
+  userId: string
+  msg: MessageData
+  mediaMap: Record<string, Uint8Array>
+  showDate: boolean
+  showSenderHeader: boolean
+  date: string
+  sender: string
+  thumbSrc: string
+}> = ({
+  userId,
+  msg,
+  mediaMap,
+  showDate,
+  showSenderHeader,
+  date,
+  sender,
+  thumbSrc,
+}) => {
+  const isOutgoing = msg.from === userId
+
+  let mediaUrl: string | undefined
+  let isMediaLoading = false
+
+  if (msg.media?.content) {
+    const cid = msg.media.content.toString()
+    const rawContent = mediaMap[cid]
+
+    isMediaLoading = !rawContent
+
+    const type =
+      msg.media.metadata.type === 'document'
+        ? msg.media.metadata.document?.mimeType
+        : ''
+
+    if (rawContent) {
+      mediaUrl = URL.createObjectURL(new Blob([rawContent], { type }))
+    }
+  }
+
+  return (
+    <Fragment key={msg.id}>
+      {showDate && <ServiceMessage text={date} />}
+      {msg.type === 'message' && (
+        <div className={`flex ${isOutgoing ? 'justify-end' : 'justify-start'}`}>
+          <div className="flex flex-col max-w-[75%]">
+            {showSenderHeader && (
+              <UserInfo thumbSrc={thumbSrc} userName={sender} />
+            )}
+            {msg.media ? (
+              <MessageWithMedia
+                isOutgoing={isOutgoing}
+                date={msg.date}
+                message={msg.message}
+                metadata={msg.media.metadata}
+                mediaUrl={mediaUrl}
+                loadingMedia={isMediaLoading}
+              />
+            ) : (
+              <Message
+                isOutgoing={isOutgoing}
+                date={msg.date}
+                message={msg.message}
+              />
+            )}
+          </div>
+        </div>
+      )}
+    </Fragment>
+  )
+}
+
 function BackupDialog({
   userId,
   dialog,
@@ -256,55 +328,18 @@ function BackupDialog({
                 )
               }
 
-              let mediaUrl: string | undefined
-              let isMediaLoading = false
-              if (msg.media?.content) {
-                const rawContent = mediaMap[msg.media.content.toString()]
-                isMediaLoading = !rawContent
-                const type =
-                  msg.media.metadata.type === 'document'
-                    ? msg.media.metadata.document?.mimeType
-                    : ''
-                if (rawContent) {
-                  mediaUrl = URL.createObjectURL(
-                    new Blob([rawContent], { type })
-                  )
-                }
-              }
-
               return (
-                <Fragment key={msg.id}>
-                  {showDate && <ServiceMessage text={date} />}
-                  {msg.type === 'message' && (
-                    <div
-                      className={`flex ${
-                        isOutgoing ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <div className="flex flex-col max-w-[75%]">
-                        {showSenderHeader && (
-                          <UserInfo thumbSrc={thumbSrc} userName={sender} />
-                        )}
-                        {msg.media ? (
-                          <MessageWithMedia
-                            isOutgoing={isOutgoing}
-                            date={msg.date}
-                            message={msg.message}
-                            metadata={msg.media.metadata}
-                            mediaUrl={mediaUrl}
-                            loadingMedia={isMediaLoading}
-                          />
-                        ) : (
-                          <Message
-                            isOutgoing={isOutgoing}
-                            date={msg.date}
-                            message={msg.message}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </Fragment>
+                <MessageItem
+                  key={msg.id}
+                  userId={userId}
+                  msg={msg}
+                  mediaMap={mediaMap}
+                  date={date}
+                  showDate={showDate}
+                  showSenderHeader={showSenderHeader}
+                  sender={sender}
+                  thumbSrc={thumbSrc}
+                />
               )
             })
           )}
