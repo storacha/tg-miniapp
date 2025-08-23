@@ -64,7 +64,12 @@ class Handler {
       throw new Error('Server is shutting down, job will be requeued')
     }
 
-    gracefulShutdown.registerActiveJob(request)
+    const telegramCleanup = async () => {
+      if (this.telegram) {
+        await this.telegram.disconnect()
+      }
+    }
+    gracefulShutdown.registerActiveJob(request, telegramCleanup)
 
     const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
