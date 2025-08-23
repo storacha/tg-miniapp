@@ -2,12 +2,18 @@ import { ExecuteJobRequest, Job } from '@/api'
 import { getDB } from './db'
 import { createLogger } from './logger'
 import { queueFn } from '@/components/server'
+import pMap from 'p-map'
 
 const logger = createLogger({ module: 'graceful-shutdown' })
 
+interface ActiveJob {
+  request: ExecuteJobRequest
+  telegramCleanup: () => Promise<void>
+}
+
 export class GracefulShutdownManager {
   private isShuttingDown = false
-  private activeJobs = new Map<string, ExecuteJobRequest>()
+  private activeJobs = new Map<string, ActiveJob>()
   private shutdownPromise?: Promise<void>
 
   constructor() {
@@ -19,8 +25,14 @@ export class GracefulShutdownManager {
     return this.isShuttingDown
   }
 
-  registerActiveJob(jobRequest: ExecuteJobRequest) {
-    this.activeJobs.set(jobRequest.jobID, jobRequest)
+  registerActiveJob(
+    jobRequest: ExecuteJobRequest,
+    telegramCleanup: () => Promise<void>
+  ) {
+    this.activeJobs.set(jobRequest.jobID, {
+      request: jobRequest,
+      telegramCleanup,
+    })
   }
 
   unregisterActiveJob(jobId: string) {
@@ -43,8 +55,15 @@ export class GracefulShutdownManager {
     try {
       logger.info('Stopping acceptance of new job requests') //  the jobs/route endpoint will reject new requests
 
-      await this.requeueActiveJobs()
-      await this.disconnectTelegramClients()
+      await pMap(
+        this.activeJobs.entries(),
+        ([jobId, activeJob]) => this.processJobForShutdown(jobId, activeJob),
+        {
+          concurrency: 5, // Process max 5 jobs simultaneously
+          stopOnError: false, // Continue even if some jobs fail
+        }
+      )
+      this.activeJobs.clear()
 
       logger.info('Graceful shutdown completed successfully')
     } catch (error) {
@@ -54,29 +73,24 @@ export class GracefulShutdownManager {
     }
   }
 
-  private async requeueActiveJobs() {
+  private async processJobForShutdown(jobId: string, activeJob: ActiveJob) {
     const db = getDB()
 
-    for (const [jobId, jobRequest] of this.activeJobs) {
-      try {
-        logger.info('Requeuing active job', { jobId })
+    try {
+      logger.info('Disconnecting Telegram client')
+      await activeJob.telegramCleanup()
 
-        await queueFn(jobRequest)
+      logger.info('Requeuing active job', { jobId })
+      await queueFn(activeJob.request)
 
-        await db.updateJob(jobId, {
-          status: 'queued',
-          updated: Date.now(),
-        } as Job) // this also sets the progress and startedAt to null
-      } catch (error) {
-        logger.error('Failed to requeue job', { jobId, error })
-      }
+      logger.info('Updating job status', { jobId })
+      await db.updateJob(jobId, {
+        status: 'queued',
+        updated: Date.now(),
+      } as Job) // this also sets the progress and startedAt to null
+    } catch (error) {
+      logger.error('Failed to requeue job', { jobId, error })
     }
-  }
-
-  private async disconnectTelegramClients() {
-    // TODO: Implement telegram client cleanup
-    // need to track active telegram connections and disconnect them
-    logger.info('Disconnecting Telegram clients')
   }
 }
 
