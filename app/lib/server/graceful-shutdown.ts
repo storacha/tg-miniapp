@@ -1,7 +1,7 @@
 import { ExecuteJobRequest, Job } from '@/api'
 import { getDB } from './db'
 import { createLogger } from './logger'
-import { queueFn } from '@/components/server'
+import { queueFn } from '@/lib/server/queue'
 import pMap from 'p-map'
 
 const logger = createLogger({ module: 'graceful-shutdown' })
