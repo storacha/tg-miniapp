@@ -177,39 +177,49 @@ export const listDialogs = toResultFn(
   )
 )
 
-export const getLeaderboard = toResultFn(
-  withClient(async (client: TelegramClient): Promise<LeaderboardUser[]> => {
-    const [dbUsers, me] = await Promise.all([
-      getDB().leaderboard(),
-      client.getMe(),
-    ])
-    const leaderboard: LeaderboardUser[] = []
-    let nameIndex = 0
-    for (let i = 0; i < dbUsers.length; i++) {
-      const id = dbUsers[i].telegramId
-      let name
-      if (id === me.id.toString()) {
-        const tgUser = me
-        name =
-          [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
-          tgUser.username ||
-          ''
-      }
-      if (!name) {
-        name = names[nameIndex]
-        nameIndex++
-      }
+export const getLeaderboardWithRanking = toResultFn(
+  withClient(
+    async (
+      client: TelegramClient,
+      space?: SpaceDID
+    ): Promise<{ leaderboard: LeaderboardUser[]; ranking?: Ranking }> => {
+      const me = await client.getMe()
+      const myTelegramId = me?.id?.toString()
 
-      leaderboard.push({
-        id,
-        name,
-        initials: getInitials(name),
-        points: dbUsers[i].points,
-        isMe: id === me.id.toString(),
-      })
+      const { leaderboard: dbUsers, ranking } = await getDB().leaderboard(
+        myTelegramId,
+        space
+      )
+
+      const leaderboard: LeaderboardUser[] = []
+      let nameIndex = 0
+
+      for (let i = 0; i < dbUsers.length; i++) {
+        const id = dbUsers[i].telegramId
+        let name
+        if (id === myTelegramId) {
+          const tgUser = me
+          name =
+            [tgUser.firstName, tgUser.lastName].filter((s) => !!s).join(' ') ||
+            tgUser.username ||
+            ''
+        }
+        if (!name) {
+          name = names[nameIndex]
+          nameIndex++
+        }
+
+        leaderboard.push({
+          id,
+          name,
+          initials: getInitials(name),
+          points: dbUsers[i].points,
+          isMe: id === myTelegramId,
+        })
+      }
+      return { leaderboard, ranking }
     }
-    return leaderboard
-  })
+  )
 )
 
 export const getRanking = toResultFn(

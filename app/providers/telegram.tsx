@@ -130,6 +130,11 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const logout = useCallback(async () => {
     try {
       setIsTgAuthorized(false)
+      // reset dialogs
+      setOffsetParams({ limit: 20 })
+      setDialogs([])
+      setHasMore(true)
+
       if (!tgSessionString) return
       await logoutTelegram(tgSessionString)
       // we clear the TG session string once we are successfully logged out
@@ -146,13 +151,35 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const listDialogs = useCallback(
     async (paginationParams = { limit: 10 }) => {
       if (!tgSessionString) return { chats: [], offsetParams: {} }
-      try {
+
+      const fetchDialogs = async (params: typeof paginationParams) => {
         const { chats, offsetParams } = fromResult(
-          await listDialogsRequest(tgSessionString, paginationParams)
+          await listDialogsRequest(tgSessionString, params)
         )
         return { chats, offsetParams }
+      }
+
+      try {
+        return await fetchDialogs(paginationParams)
       } catch (err) {
-        setError(getErrorMessage(err), { title: 'Error fetching dialogs' })
+        const errorMessage = getErrorMessage(err)
+
+        // Handle entity lookup errors that occur after re-login
+        if (errorMessage.includes('Could not find the input entity')) {
+          console.log(
+            'Entity lookup failed after re-login, resetting pagination...'
+          )
+
+          try {
+            return await fetchDialogs({ limit: paginationParams.limit })
+          } catch (retryErr) {
+            setError(getErrorMessage(retryErr), {
+              title: 'Error fetching dialogs',
+            })
+          }
+        } else {
+          setError(errorMessage, { title: 'Error fetching dialogs' })
+        }
         return { chats: [], offsetParams: {} }
       }
     },

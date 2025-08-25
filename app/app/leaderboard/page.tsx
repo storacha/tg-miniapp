@@ -8,7 +8,7 @@ import { Layouts } from '@/components/layouts'
 import Users from '@/components/leaderboard/users'
 import { Banner } from '@/components/leaderboard/banner'
 import { Podium } from '@/components/leaderboard/podium'
-import { getLeaderboard, getRanking } from '@/components/server'
+import { getLeaderboardWithRanking } from '@/components/server'
 import { fromResult, getErrorMessage } from '@/lib/errorhandling'
 
 export default function Page() {
@@ -18,29 +18,23 @@ export default function Page() {
   const { setError } = useError()
 
   useEffect(() => {
-    ;(async () => {
+    const fetchData = async () => {
       try {
-        const leaderboard = fromResult(await getLeaderboard(tgSessionString))
-        setLeaderboard(leaderboard)
+        const data = fromResult(
+          await getLeaderboardWithRanking(tgSessionString, space ?? undefined)
+        )
+        setLeaderboard(data.leaderboard)
+        setRanking(data.ranking)
       } catch (error) {
         const title = 'Error fetching leaderboard!'
         console.error(title, error)
         setError(getErrorMessage(error), { title })
         setLeaderboard([])
+        setRanking(undefined)
       }
+    }
 
-      if (space) {
-        try {
-          const ranking = fromResult(await getRanking(tgSessionString, space))
-          setRanking(ranking)
-        } catch (error) {
-          const title = 'Error fetching ranking!'
-          console.error(title, error)
-          setError(getErrorMessage(error), { title })
-          setRanking(undefined)
-        }
-      }
-    })()
+    fetchData()
   }, [tgSessionString, space])
 
   return (
