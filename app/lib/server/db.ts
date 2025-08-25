@@ -102,11 +102,15 @@ type JobInput = Input<
   | 'createdAt'
   | 'updatedAt'
 >
+type LeaderboardWithRanking = { leaderboard: User[]; ranking?: Ranking }
 export interface TGDatabase {
   findOrCreateUser(input: UserInput): Promise<User>
   updateUser(id: string, input: User): Promise<User>
   incrementUserPoints(id: string, pointsToAdd: number): Promise<User>
-  leaderboard(): Promise<User[]>
+  leaderboard(
+    telegramId?: string,
+    space?: string
+  ): Promise<LeaderboardWithRanking>
   rank(input: UserInput): Promise<Ranking | undefined>
   createJob(input: JobInput): Promise<Job>
   getJobByID(id: string, userId: string): Promise<Job>
@@ -161,12 +165,57 @@ export function getDB(): TGDatabase {
       }
       return results[0]
     },
-    async leaderboard() {
-      return await sql<User[]>`
-        select * from users
-        order by points desc
-        limit 100
-      `
+    async leaderboard(telegramId?: string, space?: string) {
+      return await sql.begin(async (sql) => {
+        // ensure all queries in this transaction see the same snapshot
+        await sql`SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`
+
+        const leaderboard = await sql<User[]>`
+          select * from users
+          order by points desc
+          limit 100
+        `
+
+        let ranking: Ranking | undefined
+
+        if (telegramId && space) {
+          const results = await sql<{ rank: number }[]>`
+            select (select count(*) from users u2 where u2.points>=u1.points) as rank from users u1 where u1.telegram_id=${telegramId} and u1.storacha_space=${space}
+          `
+          if (results[0]) {
+            const totals = await sql<{ total: number }[]>`
+              select count(*) as total from users
+            `
+
+            if (!totals[0]) {
+              throw new Error('error getting total')
+            }
+
+            const points = await sql<{ points: number }[]>`
+              select points from users 
+              where users.telegram_id = ${telegramId} and users.storacha_space=${space}
+            `
+
+            if (!points[0]) {
+              throw new Error('error getting points')
+            }
+
+            const percentile =
+              totals[0].total === 1
+                ? 100
+                : ((totals[0].total - results[0].rank) /
+                    (totals[0].total - 1)) *
+                  100
+
+            ranking = {
+              rank: results[0].rank,
+              percentile,
+              points: points[0].points,
+            }
+          }
+        }
+        return { leaderboard, ranking }
+      })
     },
     async rank(input: UserInput) {
       const results = await sql<{ rank: number }[]>`
