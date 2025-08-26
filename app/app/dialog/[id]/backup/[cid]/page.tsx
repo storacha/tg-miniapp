@@ -320,7 +320,7 @@ function BackupDialog({
               lastSenderId = msg.from ?? null
 
               let thumbSrc = ''
-              if (msg.from && participants[msg.from].photo?.strippedThumb) {
+              if (msg.from && participants[msg.from]?.photo?.strippedThumb) {
                 thumbSrc = toJPGDataURL(
                   decodeStrippedThumb(
                     participants[msg.from].photo?.strippedThumb as Uint8Array

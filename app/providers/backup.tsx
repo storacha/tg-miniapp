@@ -342,13 +342,15 @@ export const Provider = ({
 
       try {
         await jobStore.deleteDialog(id, dialogID)
+        const backups = await jobStore.listCompleted()
+        setBackups(backups.items)
       } catch (error: any) {
         const msg = 'Error deleting backup!'
         console.error(msg, error)
         setError(getErrorMessage(error), { title: msg })
       }
     },
-    [jobStore]
+    [jobStore, setError]
   )
 
   useEffect(() => {
