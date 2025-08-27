@@ -357,7 +357,7 @@ function BackupDialog({
 
 export default function Page() {
   const router = useRouter()
-  const [{}, { getMe }] = useTelegram()
+  const [{ user }] = useTelegram()
   const [
     { backups, restoredBackup },
     { restoreBackup, fetchMoreMessages, resetBackup },
@@ -365,7 +365,8 @@ export default function Page() {
   const { id, cid: backupCid } = useParams<{ id: string; cid: string }>()
   const searchParams = useSearchParams()
   const type = searchParams.get('type') as EntityType
-  const [userId, setUserId] = useState<string>()
+
+  const userId = user?.id?.toString()
 
   const dialog = restoredBackup.item?.dialogData
 
@@ -412,9 +413,7 @@ export default function Page() {
 
   useEffect(() => {
     const fetchBackup = async () => {
-      const userId = await getMe()
       if (!userId) return
-      setUserId(userId)
       if (
         restoredBackup.loading ||
         (restoredBackup.item && restoredBackup.item.backupCid === backupCid)
@@ -424,7 +423,7 @@ export default function Page() {
     }
 
     fetchBackup()
-  }, [backupCid, restoreBackup, getMe])
+  }, [backupCid, restoreBackup, userId])
 
   const handleFetchMoreMessages = async () => {
     if (

@@ -27,7 +27,7 @@ async function getHiResPhotoBlob(
   id: string,
   accessHash?: string
 ): Promise<Result<string | Buffer | undefined>> {
-  let client: TelegramClient | undefined = undefined
+  let client: TelegramClient | null = null
   try {
     client = await getTelegramClient(sessionString)
     const entity = await tryHardToFetchEntity(client, id, accessHash)
@@ -38,7 +38,8 @@ async function getHiResPhotoBlob(
     return { error: { message } }
   } finally {
     if (client) {
-      await client.disconnect()
+      // this disconnect all connections and also disconnects any borrowed sender instances
+      await client.destroy()
     }
   }
 }
