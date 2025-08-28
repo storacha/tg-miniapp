@@ -79,7 +79,7 @@ const withClient = <T extends [...unknown[]], U>(
   fn: (client: TelegramClient, ...args: T) => Promise<U>
 ): ((sessionString: string, ...args: T) => Promise<U>) => {
   return async (sessionString: string, ...args: T) => {
-    let client = await getTelegramClient(sessionString)
+    const client = await getTelegramClient(sessionString)
 
     if (!client.connected) {
       await client.connect()

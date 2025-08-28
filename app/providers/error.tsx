@@ -1,10 +1,15 @@
 import ErrorModal from '@/components/ui/error-modal'
-import React, { createContext, useContext, useState, ReactNode } from 'react'
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from 'react'
 
 interface ErrorOptions {
   title?: string
-  autoClose?: boolean
-  duration?: number
   onClose?: () => void
 }
 
@@ -31,38 +36,36 @@ export const Context = createContext<ContextValue>(ContextDefaultValue)
 export function ErrorProvider({ children }: { children: ReactNode }) {
   const [error, setErrorState] = useState<ErrorState | null>(null)
 
-  const setError = (msg: string | null, options: ErrorOptions = {}) => {
-    if (!msg) {
-      setErrorState(null)
-      return
-    }
-
-    const { title, autoClose = false, duration = 5000, onClose } = options
-    setErrorState({
-      message: msg,
-      title,
-      onClose: () => {
-        if (onClose) onClose()
+  const setError = useCallback(
+    (msg: string | null, options: ErrorOptions = {}) => {
+      if (!msg) {
         setErrorState(null)
-      },
+        return
+      }
+
+      const { title, onClose } = options
+      setErrorState({
+        message: msg,
+        title,
+        onClose,
+      })
+    },
+    []
+  )
+
+  const handleClose = useCallback(() => {
+    setErrorState((prev) => {
+      if (prev?.onClose) {
+        prev.onClose()
+      }
+      return null
     })
+  }, [])
 
-    if (autoClose) {
-      setTimeout(() => {
-        handleClose()
-      }, duration)
-    }
-  }
-
-  const handleClose = () => {
-    if (error?.onClose) {
-      error.onClose()
-    }
-    setErrorState(null)
-  }
+  const contextValue = useMemo(() => ({ setError }), [setError])
 
   return (
-    <Context.Provider value={{ setError }}>
+    <Context.Provider value={contextValue}>
       {children}
       <ErrorModal
         open={!!error}
