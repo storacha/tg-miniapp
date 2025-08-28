@@ -6,10 +6,37 @@ import {
   defaultClientParams,
 } from '@/lib/server/constants'
 
+/**
+ * Override console.error globally to handle TIMEOUT errors from Telegram client
+ * This is a workaround for the issue where Telegram client logs TIMEOUT errors
+ * directly via console.error bypassing the library's logger system
+ */
+const _origConsoleError = console.error
+
+// attach a guard to globalThis so we don't override multiple times
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (!(globalThis as any).__telegram_console_error_overridden) {
+  console.error = (...args: unknown[]) => {
+    const err = args[0]
+    const isTelegramTimeout =
+      err instanceof Error &&
+      err.message === 'TIMEOUT' &&
+      typeof err.stack === 'string' &&
+      err.stack.includes('telegram')
+    if (isTelegramTimeout) {
+      console.debug(String(err))
+      return
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    _origConsoleError.apply(console, args as any)
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ;(globalThis as any).__telegram_console_error_overridden = true
+}
+
 export const getTelegramClient = async (
   session: string
 ): Promise<TelegramClient> => {
-  console.log('getTelegramClient with: ', session)
   const sessionString = new StringSession(session)
   // DC ip servers need to be set to IP addresses on node
   // see https://github.com/gram-js/gramjs/issues/344#issuecomment-1405518285
@@ -33,26 +60,6 @@ export const getTelegramClient = async (
     telegramAPIHash,
     defaultClientParams
   )
-
-  /**
-   * Override console.error globally to handle TIMEOUT errors from Telegram client
-   * This is a workaround for the issue where Telegram client logs TIMEOUT errors
-   * directly via console.error bypassing the library's logger system
-   */
-  const originalError = console.error
-  // eslint-disable-next-line
-  console.error = (...args: any[]) => {
-    const err = args[0]
-    const isTelegramTimeout =
-      err instanceof Error &&
-      err.message === 'TIMEOUT' &&
-      err.stack?.includes('telegram')
-    if (isTelegramTimeout) {
-      telegramClient.logger.debug(String(err)) // Now only logs it if setLogLevel is set to debug
-      return
-    }
-    originalError.apply(console, args)
-  }
 
   if (!(await telegramClient.connect())) {
     throw new Error('failed to connect to telegram')

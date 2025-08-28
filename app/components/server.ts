@@ -87,7 +87,13 @@ const withClient = <T extends [...unknown[]], U>(
     try {
       return await fn(client, ...args)
     } finally {
-      await client.disconnect()
+      try {
+        // this disconnect all connections and also disconnects any borrowed sender instances
+        // it also makes the client unusable, but this is not a problem since we are always creating a new one
+        await client.destroy()
+      } catch (error) {
+        console.warn('Error cleaning up Telegram client:', error)
+      }
     }
   }
 }

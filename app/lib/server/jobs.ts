@@ -173,7 +173,11 @@ export const handleJob = async (request: ExecuteJobRequest) => {
   try {
     return await handler.handleJob(request)
   } finally {
-    handler.telegram.disconnect()
+    try {
+      await handler.telegram.destroy()
+    } catch (error) {
+      console.warn('Error cleaning up job handler Telegram client:', error)
+    }
   }
 }
 
@@ -186,7 +190,11 @@ export const deleteDialogFromJob = async (
   try {
     return await handler.deleteDialogFromJob(req)
   } finally {
-    handler.telegram.disconnect()
+    try {
+      await handler.telegram.destroy()
+    } catch (error) {
+      console.warn('Error cleaning up job handler Telegram client:', error)
+    }
   }
 }
 
