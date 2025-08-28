@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.12.5](https://github.com/storacha/tg-miniapp/compare/v2.12.4...v2.12.5) (2025-08-28)
+
+
+### Bug Fixes
+
+* app crash when viewing a backup ([eaaba80](https://github.com/storacha/tg-miniapp/commit/eaaba8051f3853751d017bb79f54499462e0117e))
+* ensure consistent ranking between banner and leaderboard list ([a1a6368](https://github.com/storacha/tg-miniapp/commit/a1a6368f0ec3784830bd1a32efcd6448df502ec3))
+* memory leak ([25fafe2](https://github.com/storacha/tg-miniapp/commit/25fafe20fef816caa716fa759cb4959e75b112d4))
+* memory leak from TelegramClient ([4b23fa9](https://github.com/storacha/tg-miniapp/commit/4b23fa959747bcc57f03c30ce30da0254788e328))
+* multiple UI bugs ([82b6186](https://github.com/storacha/tg-miniapp/commit/82b6186ccf9f8d14a52f5d024795db3512873a3a))
+* remove unused setTimeout from error provider ([dc81cf9](https://github.com/storacha/tg-miniapp/commit/dc81cf986a652e0ad525a4f8377ee3ef74dc56b6))
+* reset dialog pagination on logout and handle stale entity references ([1e8a0a0](https://github.com/storacha/tg-miniapp/commit/1e8a0a0f791dc28b961910cd66b2f2af2c972470))
+
 ## [2.12.4](https://github.com/storacha/tg-miniapp/compare/v2.12.3...v2.12.4) (2025-08-22)
 
 
