@@ -3,8 +3,11 @@ import { getDB } from '@/lib/server/db'
 import { getTelegramId, handleJob } from '@/lib/server/jobs'
 import { getSession } from '@/lib/server/session'
 import { parseWithUIntArrays, stringifyWithUIntArrays } from '@/lib/utils'
+import { createLogger } from '@/lib/server/logger'
 
 export const dynamic = 'force-dynamic'
+
+const logger = createLogger({ service: 'jobs-api' })
 
 function isJobAuthed(request: Request) {
   if (process.env.BACKUP_PASSWORD) {
@@ -18,7 +21,7 @@ function isJobAuthed(request: Request) {
       .split(':')
     return username === 'user' && password === process.env.BACKUP_PASSWORD
   } else {
-    console.warn(
+    logger.warn(
       'no auth password set for handling jobs, assuming authentication'
     )
     return true
@@ -26,9 +29,9 @@ function isJobAuthed(request: Request) {
 }
 
 export async function POST(request: Request) {
-  console.log(`Handling job batch...`)
+  logger.info('Handling job batch')
   if (!isJobAuthed(request)) {
-    console.error(`Job auth not found.`)
+    logger.error('Job auth not found')
     return new Response('Unauthorized', { status: 401 })
   }
 
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  console.log(`setting up notification stream for job updates`)
+  logger.info('Setting up notification stream for job updates')
   try {
     const session = await getSession()
     const db = getDB()
@@ -49,7 +52,7 @@ export async function GET() {
       storachaAccount: session.accountDID,
       telegramId: telegramId.toString(),
     })
-    console.log('subscribing updates for user', dbUser.id)
+    logger.info('Subscribing updates for user', { userId: dbUser.id })
     let unsubscribe: () => void
     // Create a new ReadableStream
     const stream = new ReadableStream({
@@ -60,14 +63,14 @@ export async function GET() {
           unsubscribe = await db.subscribeToJobUpdates(
             dbUser.id,
             (action, job) => {
-              console.debug('received job update', action, job.id)
+              logger.debug('Received job update', { action, jobId: job.id })
               controller.enqueue(
                 encodeSSE(action, stringifyWithUIntArrays(job))
               )
             }
           )
         } catch (error) {
-          console.error('Stream error:', error)
+          logger.error('Stream error', { error: error instanceof Error ? error.message : String(error) })
           controller.enqueue(encodeSSE('error', 'Stream interrupted'))
           controller.close()
         }
@@ -88,7 +91,7 @@ export async function GET() {
       status: 200,
     })
   } catch (error) {
-    console.error('Server error:', error)
+    logger.error('Server error', { error: error instanceof Error ? error.message : String(error) })
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       headers: { 'Content-Type': 'application/json' },
       status: 500,

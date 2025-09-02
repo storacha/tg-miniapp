@@ -4,6 +4,7 @@ import { CAR, HTTP } from '@ucanto/transport'
 import { ed25519 } from '@ucanto/principal'
 import type { Service } from '@storacha/client/types'
 import { TelegramClientParams } from 'telegram/client/telegramBaseClient'
+import { createLogger } from './logger'
 
 let cachedServerConstants: {
   SERVER_IDENTITY_PRIVATE_KEY: string
@@ -11,6 +12,8 @@ let cachedServerConstants: {
   SESSION_PASSWORD: string
   SESSION_COOKIE_NAME: string
 }
+
+const logger = createLogger({ service: 'server-constants' })
 
 export const getServerConstants = () => {
   if (cachedServerConstants) {
@@ -32,8 +35,9 @@ export const getServerConstants = () => {
   const SESSION_COOKIE_NAME =
     process.env.SESSION_COOKIE_NAME || DEFAULT_COOKIE_VALUE
   if (!process.env.SESSION_COOKIE_NAME) {
-    console.warn(
-      `SESSION_COOKIE_NAME is not set - using default value of ${DEFAULT_COOKIE_VALUE}`
+    logger.warn(
+      'SESSION_COOKIE_NAME is not set - using default value',
+      { defaultValue: DEFAULT_COOKIE_VALUE }
     )
   }
   cachedServerConstants = {
