@@ -139,35 +139,45 @@ export const getInitials = (name: string) => {
 }
 
 export function stringifyWithUIntArrays(obj: unknown): string {
-  return JSON.stringify(obj, (_, value) => {
-    if (value instanceof Uint8Array) {
-      return {
-        __typedarray__: true,
-        type: value.constructor.name,
-        data: Array.from(value),
+  try {
+    return JSON.stringify(obj, (_, value) => {
+      if (value instanceof Uint8Array) {
+        return {
+          __typedarray__: true,
+          type: value.constructor.name,
+          data: Array.from(value),
+        }
       }
-    }
-    return value
-  })
+      return value
+    })
+  } catch (error) {
+    console.error('Error serializing object:', error)
+    throw new Error('Failed to serialize object', { cause: error })
+  }
 }
 
 export function parseWithUIntArrays(str: string): unknown {
-  return JSON.parse(str, (_, value) => {
-    if (
-      value &&
-      value.__typedarray__ &&
-      typeof value.type === 'string' &&
-      Array.isArray(value.data)
-    ) {
-      switch (value.type) {
-        case 'Uint8Array':
-          return new Uint8Array(value.data)
-        default:
-          return value
+  try {
+    return JSON.parse(str, (_, value) => {
+      if (
+        value &&
+        value.__typedarray__ &&
+        typeof value.type === 'string' &&
+        Array.isArray(value.data)
+      ) {
+        switch (value.type) {
+          case 'Uint8Array':
+            return new Uint8Array(value.data)
+          default:
+            return value
+        }
       }
-    }
-    return value
-  })
+      return value
+    })
+  } catch (error) {
+    console.error('Error parsing object:', error)
+    throw new Error('Failed to parse object', { cause: error })
+  }
 }
 
 export const startOfMonth = (now: string | number | Date) => {

@@ -6,6 +6,7 @@ import { ExecuteJobRequest } from '@/api'
 const queueURL = process.env.JOBS_QUEUE_ID
 
 const localQueueFn = () => {
+  console.debug('creating message for local queue...')
   return async (jr: ExecuteJobRequest) => {
     after(async () => {
       console.log('initiate job', jr.jobID)
@@ -26,7 +27,8 @@ const sqsQueueFn = () => {
       QueueUrl: queueURL,
       MessageBody: stringifyWithUIntArrays(jr),
     })
-    await client.send(command)
+    const result = await client.send(command)
+    console.log('SQS message sent successfully:', result.MessageId)
   }
 }
 
