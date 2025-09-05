@@ -66,7 +66,8 @@ class Handler {
 
     const telegramCleanup = async () => {
       if (this.telegram) {
-        await this.telegram.disconnect()
+        await this.telegram.destroy()
+        console.log('telegram client disconnected')
       }
     }
     gracefulShutdown.registerActiveJob(request, telegramCleanup)

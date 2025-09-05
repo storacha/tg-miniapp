@@ -1,8 +1,13 @@
-import { ExecuteJobRequest, Job } from '@/api'
+import { ExecuteJobRequest } from '@/api'
 import { getDB } from './db'
 import { createLogger } from './logger'
 import { queueFn } from '@/lib/server/queue'
 import pMap from 'p-map'
+
+declare global {
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  const __storacha_graceful_shutdown_listener_registered__: boolean | undefined
+}
 
 const logger = createLogger({ module: 'graceful-shutdown' })
 
@@ -17,8 +22,17 @@ export class GracefulShutdownManager {
   private shutdownPromise?: Promise<void>
 
   constructor() {
-    process.on('SIGTERM', () => this.initiateShutdown()) // Listen for SIGTERM from ECS
-    process.on('SIGINT', () => this.initiateShutdown())
+    const GLOBAL_FLAG = '__storacha_graceful_shutdown_listener_registered__'
+    if (!globalThis[GLOBAL_FLAG as keyof typeof globalThis]) {
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore setting dynamic global property
+      globalThis[GLOBAL_FLAG] = true
+      logger.info('Registering GracefulShutdown listener')
+      process.on('SIGTERM', () => this.initiateShutdown()) // Listen for SIGTERM from ECS
+      process.on('SIGINT', () => this.initiateShutdown())
+    } else {
+      logger.info('GracefulShutdown listener already registered, skipping')
+    }
   }
 
   isShutdownInitiated(): boolean {
@@ -55,9 +69,11 @@ export class GracefulShutdownManager {
     try {
       logger.info('Stopping acceptance of new job requests') //  the jobs/route endpoint will reject new requests
 
+      const jobEntries = Array.from(this.activeJobs.entries())
       await pMap(
-        this.activeJobs.entries(),
-        ([jobId, activeJob]) => this.processJobForShutdown(jobId, activeJob),
+        jobEntries,
+        async ([jobId, activeJob]) =>
+          this.processJobForShutdown(jobId, activeJob),
         {
           concurrency: 5, // Process max 5 jobs simultaneously
           stopOnError: false, // Continue even if some jobs fail
@@ -74,20 +90,36 @@ export class GracefulShutdownManager {
   }
 
   private async processJobForShutdown(jobId: string, activeJob: ActiveJob) {
+    await this.requeueActiveJob(jobId, activeJob)
+    await this.markJobAsQueued(jobId)
+    await this.disconnectTelegramClient(jobId, activeJob)
+  }
+
+  private async markJobAsQueued(jobId: string) {
     const db = getDB()
 
     try {
+      logger.info('Updating job status', { jobId })
+      await db.setJobAsQueued(jobId) // this also sets the progress and startedAt to null
+      logger.info('Job status updated successfully', { jobId })
+    } catch (error) {
+      logger.error('db.setJobAsQueued failed', { jobId, error })
+    }
+  }
+
+  private async disconnectTelegramClient(jobId: string, activeJob: ActiveJob) {
+    try {
       logger.info('Disconnecting Telegram client')
       await activeJob.telegramCleanup()
+    } catch (error) {
+      logger.error('Failed to disconnect Telegram client', { jobId, error })
+    }
+  }
 
-      logger.info('Requeuing active job', { jobId })
+  private async requeueActiveJob(jobId: string, activeJob: ActiveJob) {
+    try {
+      logger.info('Requeuing active job', { jobId, request: activeJob.request })
       await queueFn(activeJob.request)
-
-      logger.info('Updating job status', { jobId })
-      await db.updateJob(jobId, {
-        status: 'queued',
-        updated: Date.now(),
-      } as Job) // this also sets the progress and startedAt to null
     } catch (error) {
       logger.error('Failed to requeue job', { jobId, error })
     }
