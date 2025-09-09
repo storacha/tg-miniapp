@@ -108,3 +108,26 @@ module "app" {
   env_files = var.env_files
   domain_base = var.domain_base
 }
+
+
+data "aws_iam_policy_document" "task_protection" {
+  statement {
+    effect = "Allow"
+    resources = ["*"]
+    actions = [        
+      "ecs:UpdateTaskProtection",
+      "ecs:GetTaskProtection"
+    ]
+  }
+}
+
+resource "aws_iam_policy" "task_protection" {
+  name        = "${terraform.workspace}-${var.app}-task-protection-policy"
+  description = "Policy for the task protection role"
+  policy      = data.aws_iam_policy_document.task_protection.json
+}
+
+resource "aws_iam_role_policy_attachment" "task_protection" {
+  role       = "${terraform.workspace}-${var.app}-task-role"
+  policy_arn = aws_iam_policy.task_protection.arn
+}

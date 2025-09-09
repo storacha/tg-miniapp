@@ -116,6 +116,7 @@ export interface TGDatabase {
   getJobByID(id: string, userId: string): Promise<Job>
   deleteJob(id: string, userId: string): Promise<void>
   getJobsByUserID(userId: string): Promise<Job[]>
+  setJobAsQueued(id: string): Promise<void>
   updateJob(id: string, input: Job): Promise<Job>
   removeJob(id: string, userId: string): Promise<void>
   subscribeToJobUpdates(
@@ -293,6 +294,22 @@ export function getDB(): TGDatabase {
         select * from jobs where user_id = ${id}
       `
       return dbJobs.map(fromDbJob)
+    },
+    async setJobAsQueued(id) {
+      const results = await sql<DbJob[]>`
+        update jobs set 
+          status = 'queued', 
+          progress = ${null}, 
+          started_at = ${null}, 
+          updated_at = ${new Date()}
+        where id = ${id} and status not in ('canceled', 'completed')
+        returning *
+      `
+      if (!results[0]) {
+        console.log(`No job found with id ${id} to set as queued`)
+      } else {
+        console.log(`Job with id ${id} set as queued`)
+      }
     },
     async updateJob(id, input) {
       const results = await sql<DbJob[]>`

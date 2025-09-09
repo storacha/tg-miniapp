@@ -16,6 +16,7 @@ import { createLogger } from './logger'
 import { getErrorMessage } from '../errorhandling'
 import { getStorachaUsage, isStorageLimitExceeded } from '../storacha'
 import { AccountDID } from '@storacha/access'
+import { gracefulShutdown } from './graceful-shutdown'
 
 export interface Context extends RunnerContext {
   db: TGDatabase
@@ -59,6 +60,18 @@ class Handler {
   }
 
   async handleJob(request: ExecuteJobRequest) {
+    if (gracefulShutdown.isShutdownInitiated()) {
+      throw new Error('Server is shutting down, job will be requeued')
+    }
+
+    const telegramCleanup = async () => {
+      if (this.telegram) {
+        await this.telegram.destroy()
+        console.log('telegram client disconnected')
+      }
+    }
+    await gracefulShutdown.registerActiveJob(request, telegramCleanup)
+
     const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
 
@@ -379,24 +392,31 @@ class Handler {
         phase: 'complete',
       })
     } catch (err) {
-      // Backup job failed
-      logger.error('Backup job failed', {
-        step: 'jobFailed',
-        phase: 'error',
-        error: getErrorMessage(err),
-      })
+      if (gracefulShutdown.isShutdownInitiated()) {
+        logger.warn('Job interrupted by shutdown, will be requeued', {
+          jobId: id,
+        })
+      } else {
+        logger.error('Backup job failed', {
+          step: 'jobFailed',
+          phase: 'error',
+          error: getErrorMessage(err),
+        })
 
-      await this.#db.updateJob(id, {
-        id,
-        status: 'failed',
-        params,
-        progress,
-        cause: (err as Error).message,
-        created,
-        started,
-        finished: Date.now(),
-        updated: Date.now(),
-      })
+        await this.#db.updateJob(id, {
+          id,
+          status: 'failed',
+          params,
+          progress,
+          cause: (err as Error).message,
+          created,
+          started,
+          finished: Date.now(),
+          updated: Date.now(),
+        })
+      }
+    } finally {
+      await gracefulShutdown.unregisterActiveJob(request.jobID)
     }
   }
 

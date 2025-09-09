@@ -1,20 +1,19 @@
 'use server'
 
-import { after } from 'next/server'
 import {
   CreateJobRequest,
   DialogInfo,
-  ExecuteJobRequest,
   Job,
   LeaderboardUser,
   Ranking,
 } from '@/api'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
 import { TelegramClient, Api } from 'telegram'
-import { cleanUndef, getInitials, stringifyWithUIntArrays } from '@/lib/utils'
+import { cleanUndef, getInitials } from '@/lib/utils'
 import { getDB } from '@/lib/server/db'
 import { toResultFn } from '@/lib/errorhandling'
-import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs'
+import { queueFn } from '@/lib/server/queue'
+
 import {
   storeInitData as jobsStoreInitData,
   login as jobsLoginJob,
@@ -34,35 +33,6 @@ const names = supervillains
   .map((value) => ({ value, sort: Math.random() }))
   .sort((a, b) => a.sort - b.sort)
   .map(({ value }) => value)
-
-const queueURL = process.env.JOBS_QUEUE_ID
-
-const localQueueFn = () => {
-  return async (jr: ExecuteJobRequest) => {
-    after(async () => {
-      console.log('initiate job', jr.jobID)
-      fetch(process.env.LOCAL_URL + '/api/jobs', {
-        method: 'POST',
-        body: JSON.stringify({ body: stringifyWithUIntArrays(jr) }),
-      })
-    })
-  }
-}
-
-const sqsQueueFn = () => {
-  console.debug('creating message for sqs queue id: ', queueURL)
-  const client = new SQSClient({})
-
-  return async (jr: ExecuteJobRequest) => {
-    const command = new SendMessageCommand({
-      QueueUrl: queueURL,
-      MessageBody: stringifyWithUIntArrays(jr),
-    })
-    await client.send(command)
-  }
-}
-
-const queueFn = queueURL ? sqsQueueFn() : localQueueFn()
 
 export const login = toResultFn(jobsLoginJob)
 export const storeInitData = toResultFn(jobsStoreInitData)

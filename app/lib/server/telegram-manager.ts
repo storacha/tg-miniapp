@@ -5,6 +5,7 @@ import {
   telegramAPIHash,
   defaultClientParams,
 } from '@/lib/server/constants'
+import { LogLevel } from 'telegram/extensions/Logger'
 
 /**
  * Override console.error globally to handle TIMEOUT errors from Telegram client
@@ -60,6 +61,8 @@ export const getTelegramClient = async (
     telegramAPIHash,
     defaultClientParams
   )
+
+  telegramClient.setLogLevel(LogLevel.ERROR)
 
   if (!(await telegramClient.connect())) {
     throw new Error('failed to connect to telegram')
