@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.13.0](https://github.com/storacha/tg-miniapp/compare/v2.12.5...v2.13.0) (2025-09-09)
+
+
+### Features
+
+* add graceful shutdown for ECS SIGTERM ([ee8edb2](https://github.com/storacha/tg-miniapp/commit/ee8edb206fe8e5f7b784ee29fe8a0361f2424130))
+* add graceful shutdown for ECS SIGTERM ([6fdf9e7](https://github.com/storacha/tg-miniapp/commit/6fdf9e76d2f59d32c075d0b542e7390af4a7fdd1))
+* add telegram cleanup to graceful shutdown ([5845247](https://github.com/storacha/tg-miniapp/commit/584524763ae98fb559aa6d7fb96d3b5c7d7bd268))
+* **server:** add scale-in protection for AWS ([85c5676](https://github.com/storacha/tg-miniapp/commit/85c56767713790d4d46d21c5f0967ea4883e0d0e))
+
+
+### Bug Fixes
+
+* build issue ([fa06606](https://github.com/storacha/tg-miniapp/commit/fa06606921f5649f950706a7edd3b5203e8623c5))
+* update job status to queued ([2b1e0f2](https://github.com/storacha/tg-miniapp/commit/2b1e0f24909f5c9076372a76e28fcb40df09ee25))
+
 ## [2.12.5](https://github.com/storacha/tg-miniapp/compare/v2.12.4...v2.12.5) (2025-08-28)
 
 
