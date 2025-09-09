@@ -14,9 +14,10 @@ function isJobAuthed(request: Request) {
 
     const encodedCreds = header.split(' ')[1]
     if (!encodedCreds) return false
-    const [username, password] = Buffer.from(encodedCreds, 'base64')
+    const [username, ...passwordparts] = Buffer.from(encodedCreds, 'base64')
       .toString()
       .split(':')
+    const password = passwordparts.join(':')
     return username === 'user' && password === process.env.BACKUP_PASSWORD
   } else {
     console.warn(

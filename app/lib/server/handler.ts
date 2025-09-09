@@ -70,7 +70,7 @@ class Handler {
         console.log('telegram client disconnected')
       }
     }
-    gracefulShutdown.registerActiveJob(request, telegramCleanup)
+    await gracefulShutdown.registerActiveJob(request, telegramCleanup)
 
     const job = await this.#db.getJobByID(request.jobID, this.#dbUser.id)
     if (!job) throw new Error(`job not found: ${request.jobID}`)
@@ -416,7 +416,7 @@ class Handler {
         })
       }
     } finally {
-      gracefulShutdown.unregisterActiveJob(request.jobID)
+      await gracefulShutdown.unregisterActiveJob(request.jobID)
     }
   }
 

@@ -3,10 +3,20 @@ import { getDB } from './db'
 import { createLogger } from './logger'
 import { queueFn } from '@/lib/server/queue'
 import pMap from 'p-map'
+import { Result } from '@ucanto/core/schema'
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/naming-convention
   const __storacha_graceful_shutdown_listener_registered__: boolean | undefined
+}
+
+export interface IGracefulShutdownManager {
+  isShutdownInitiated(): boolean
+  registerActiveJob(
+    jobRequest: ExecuteJobRequest,
+    telegramCleanup: () => Promise<void>
+  ): Promise<void>
+  unregisterActiveJob(jobId: string): Promise<void>
 }
 
 const logger = createLogger({ module: 'graceful-shutdown' })
@@ -16,12 +26,43 @@ interface ActiveJob {
   telegramCleanup: () => Promise<void>
 }
 
-export class GracefulShutdownManager {
-  private isShuttingDown = false
-  private activeJobs = new Map<string, ActiveJob>()
+class GracefulShutdownManager implements IGracefulShutdownManager {
+  private _isShuttingDown = false
+  private _activeJobs = new Map<string, ActiveJob>()
+
+  startShuttingDown() {
+    this._isShuttingDown = true
+  }
+
+  isShutdownInitiated() {
+    return this._isShuttingDown
+  }
+
+  get activeJobs() {
+    return this._activeJobs
+  }
+
+  async registerActiveJob(
+    jobRequest: ExecuteJobRequest,
+    telegramCleanup: () => Promise<void>
+  ) {
+    this._activeJobs.set(jobRequest.jobID, {
+      request: jobRequest,
+      telegramCleanup,
+    })
+  }
+
+  async unregisterActiveJob(jobId: string) {
+    this._activeJobs.delete(jobId)
+  }
+}
+
+class LocalGracefulShutdownManager extends GracefulShutdownManager {
   private shutdownPromise?: Promise<void>
 
   constructor() {
+    super()
+    // Ensure signal handlers are only registered once
     const GLOBAL_FLAG = '__storacha_graceful_shutdown_listener_registered__'
     if (!globalThis[GLOBAL_FLAG as keyof typeof globalThis]) {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -35,28 +76,10 @@ export class GracefulShutdownManager {
     }
   }
 
-  isShutdownInitiated(): boolean {
-    return this.isShuttingDown
-  }
-
-  registerActiveJob(
-    jobRequest: ExecuteJobRequest,
-    telegramCleanup: () => Promise<void>
-  ) {
-    this.activeJobs.set(jobRequest.jobID, {
-      request: jobRequest,
-      telegramCleanup,
-    })
-  }
-
-  unregisterActiveJob(jobId: string) {
-    this.activeJobs.delete(jobId)
-  }
-
   private async initiateShutdown() {
-    if (this.isShuttingDown) return this.shutdownPromise
+    if (this.isShutdownInitiated()) return this.shutdownPromise
 
-    this.isShuttingDown = true
+    this.startShuttingDown()
     logger.info('Graceful shutdown initiated', {
       activeJobCount: this.activeJobs.size,
     })
@@ -90,16 +113,15 @@ export class GracefulShutdownManager {
   }
 
   private async processJobForShutdown(jobId: string, activeJob: ActiveJob) {
-    await this.requeueActiveJob(jobId, activeJob)
-    await this.markJobAsQueued(jobId)
     await this.disconnectTelegramClient(jobId, activeJob)
+    await this.markJobAsQueued(jobId)
+    await this.requeueActiveJob(jobId, activeJob)
   }
 
   private async markJobAsQueued(jobId: string) {
-    const db = getDB()
-
     try {
       logger.info('Updating job status', { jobId })
+      const db = getDB()
       await db.setJobAsQueued(jobId) // this also sets the progress and startedAt to null
       logger.info('Job status updated successfully', { jobId })
     } catch (error) {
@@ -111,6 +133,7 @@ export class GracefulShutdownManager {
     try {
       logger.info('Disconnecting Telegram client')
       await activeJob.telegramCleanup()
+      logger.info('Telegram client disconnected successfully', { jobId })
     } catch (error) {
       logger.error('Failed to disconnect Telegram client', { jobId, error })
     }
@@ -120,10 +143,100 @@ export class GracefulShutdownManager {
     try {
       logger.info('Requeuing active job', { jobId, request: activeJob.request })
       await queueFn(activeJob.request)
+      logger.info('Job successfully requeued', { jobId })
     } catch (error) {
       logger.error('Failed to requeue job', { jobId, error })
     }
   }
 }
 
-export const gracefulShutdown = new GracefulShutdownManager()
+interface ProtectionStatus {
+  ExpirationDate: string
+  ProtectionEnabled: boolean
+  TaskArn: string
+}
+
+class AwsGracefulShutdownManager extends GracefulShutdownManager {
+  async _setProtectionEnabled(
+    enabled: boolean
+  ): Promise<Result<ProtectionStatus, Error>> {
+    try {
+      const resp = await fetch(
+        `${process.env.ECS_AGENT_URI}/task-protection/v1/state`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(
+            enabled
+              ? {
+                  ProtectionEnabled: true,
+                  ExpiresInMinutes: 45,
+                }
+              : { ProtectionEnabled: false }
+          ),
+        }
+      )
+      const respObj = await resp.json()
+      if (respObj.failure) {
+        return {
+          error: new Error(
+            `Failed to set task protection: ${respObj.failure.Reason}`
+          ),
+        }
+      }
+      if (respObj.error) {
+        return {
+          error: new Error(
+            `Failed to set task protection: ${respObj.error.Message}`
+          ),
+        }
+      }
+      return { ok: respObj.protection }
+    } catch (error) {
+      if (error instanceof Error) {
+        return { error }
+      } else {
+        return { error: new Error('Unknown error setting task protection') }
+      }
+    }
+  }
+
+  async unregisterActiveJob(jobId: string): Promise<void> {
+    await super.unregisterActiveJob(jobId)
+    // If no active jobs remain, we can disable task protection
+    if (this.activeJobs.size === 0) {
+      const result = await this._setProtectionEnabled(false)
+      if (result.error) {
+        logger.error('Failed to disable task protection', {
+          error: result.error.message,
+        })
+      } else {
+        logger.info('Task protection disabled', { protection: result.ok })
+      }
+    }
+  }
+  async registerActiveJob(
+    jobRequest: ExecuteJobRequest,
+    telegramCleanup: () => Promise<void>
+  ): Promise<void> {
+    await super.registerActiveJob(jobRequest, telegramCleanup)
+    // In AWS ECS, we protect against scale-in termination when a job is active
+    // we use a 45 minute expiration, and calling this has the effect of "re-upping" the timer
+    // so as long as we have active jobs, we should be protected
+    const result = await this._setProtectionEnabled(true)
+    if (result.error) {
+      logger.error('Failed to enable task protection', {
+        error: result.error.message,
+      })
+    } else {
+      logger.info('Task protection enabled', { protection: result.ok })
+    }
+  }
+}
+
+export const gracefulShutdown: IGracefulShutdownManager = process.env
+  .ECS_AGENT_URI
+  ? new AwsGracefulShutdownManager()
+  : new LocalGracefulShutdownManager()
