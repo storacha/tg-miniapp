@@ -67,7 +67,7 @@ export default function Head() {
           )}
         </div>
       </div>
-      <div className="flex justify-between items-center px-3 pb-4">
+      <div className="flex justify-between items-center px-4 pb-4">
         <Button
           className="w-full bg-blue-500 hover:bg-blue-600"
           onClick={() => router.push('/leaderboard')}

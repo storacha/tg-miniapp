@@ -111,3 +111,24 @@ export const getErrorMessage = (err: unknown) => {
 
   return 'Unknown error'
 }
+
+export const toUserFriendlyError = (err: unknown): string => {
+  const text = getErrorMessage(err)
+
+  if (text.includes('CONNECTION_NOT_INITED')) {
+    return `You hit a Telegram limit!
+This happens when Telegram asks you to wait before downloading files from their servers. Don’t worry, it’s not a problem with the app, it’s just how the Telegram API works for your account.
+Please wait about 1 hour before starting a new backup.`
+  }
+  if (text.includes('AUTH_KEY_UNREGISTERED')) {
+    return 'Your Telegram session has expired. Please log out and log in again.'
+  }
+  if (text.includes('NETWORK_MIGRATE')) {
+    return 'Telegram network issue. Please try again later.'
+  }
+  if (text) {
+    return text
+  }
+
+  return 'An unexpected error occurred. Please try again.'
+}

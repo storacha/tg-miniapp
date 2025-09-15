@@ -7,6 +7,7 @@ import Head from '@/components/dashboard/head'
 import { Button } from '@/components/ui/button'
 import { StorachaConnect } from '@/components/backup/connect'
 import BackedChats from '@/components/dashboard/backed-chats'
+import { toUserFriendlyError } from '@/lib/errorhandling'
 
 export default function Dashboard() {
   const router = useRouter()
@@ -89,9 +90,11 @@ const JobItem = ({
           )}
         </div>
         {job.status === 'failed' && job.cause && (
-          <p className="px-5 pt-1 text-red-900 text-xs">Error: {job.cause}</p>
+          <p className="px-5 pt-1 text-red-900 text-xs whitespace-pre-line">
+            Error: {toUserFriendlyError(job.cause)}
+          </p>
         )}
-        <div className="flex justify-between items-center px-3 py-3">
+        <div className="flex justify-between items-center px-4 py-3">
           <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
             <div
               className="bg-blue-900 h-2.5 rounded-full transition-[width] duration-500 ease-out"

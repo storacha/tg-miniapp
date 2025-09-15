@@ -1,9 +1,10 @@
 import bigInt from 'big-integer'
-import { Api, TelegramClient } from 'telegram'
+import { TelegramClient } from 'telegram'
 import { NextRequest } from 'next/server'
 
 import { Result } from '@ucanto/client'
 import { getTelegramClient } from '@/lib/server/telegram-manager'
+import { buildDialogInputPeer, getEntityTypeFromId } from '@/lib/backup/utils'
 
 async function tryHardToFetchEntity(
   client: TelegramClient,
@@ -15,10 +16,10 @@ async function tryHardToFetchEntity(
   } catch {
     // there seem to be a few user entities that don't load properly using the code above
     // but do load if we construct the Peer manually, so do that as a fallback
-    return new Api.InputPeerUser({
-      userId: bigInt(id),
-      accessHash: accessHash ? bigInt(accessHash) : bigInt(0),
-    })
+    const entityType = getEntityTypeFromId(id)
+    return (
+      buildDialogInputPeer({ id, accessHash, type: entityType }) ?? bigInt(id)
+    )
   }
 }
 
