@@ -292,7 +292,7 @@ export const Provider = ({
       } catch (error: any) {
         const msg = 'Error adding backup job!'
         console.error(msg, error)
-        setError(getErrorMessage(error), { title: msg })
+        setError(error, { title: msg })
         return undefined
       }
     },
@@ -310,7 +310,7 @@ export const Provider = ({
       } catch (error: any) {
         const msg = 'Error removing backup job!'
         console.error(msg, error)
-        setError(getErrorMessage(error), { title: msg })
+        setError(error, { title: msg })
       }
     },
     [jobStore]
@@ -327,7 +327,7 @@ export const Provider = ({
       } catch (error: any) {
         const msg = 'Error canceling backup job!'
         console.error(msg, error)
-        setError(getErrorMessage(error), { title: msg })
+        setError(error, { title: msg })
       }
     },
     [jobStore]
@@ -347,7 +347,7 @@ export const Provider = ({
       } catch (error: any) {
         const msg = 'Error deleting backup!'
         console.error(msg, error)
-        setError(getErrorMessage(error), { title: msg })
+        setError(error, { title: msg })
       }
     },
     [jobStore, setError]
@@ -368,7 +368,7 @@ export const Provider = ({
       } catch (err: any) {
         const msg = `Failed to list pending backups in job change handler`
         console.error(msg, err)
-        setError(getErrorMessage(err), { title: msg })
+        setError(err, { title: msg })
         setJobsError(err)
       }
 
@@ -381,7 +381,7 @@ export const Provider = ({
       } catch (err: any) {
         const msg = `Failed to list completed backups in job change handler`
         console.error(msg, err)
-        setError(getErrorMessage(err), { title: msg })
+        setError(err, { title: msg })
         setBackupsError(err)
       }
     }

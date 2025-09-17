@@ -1,4 +1,6 @@
 import ErrorModal from '@/components/ui/error-modal'
+import { getErrorMessage } from '@/lib/errorhandling'
+import { useSentryContext } from '@/hooks/useSentryContext'
 import React, {
   createContext,
   useContext,
@@ -20,7 +22,7 @@ interface ErrorState {
 }
 
 export interface ContextActions {
-  setError: (error: string | null, options?: ErrorOptions) => void
+  setError: (error: unknown | null, options?: ErrorOptions) => void
 }
 
 export type ContextValue = ContextActions
@@ -35,22 +37,35 @@ export const Context = createContext<ContextValue>(ContextDefaultValue)
 
 export function ErrorProvider({ children }: { children: ReactNode }) {
   const [error, setErrorState] = useState<ErrorState | null>(null)
+  const { captureError } = useSentryContext()
 
   const setError = useCallback(
-    (msg: string | null, options: ErrorOptions = {}) => {
-      if (!msg) {
+    (err: unknown | null, options: ErrorOptions = {}) => {
+      if (!err) {
         setErrorState(null)
         return
       }
-
       const { title, onClose } = options
-      setErrorState({
-        message: msg,
-        title,
-        onClose,
-      })
+      if (err instanceof Error) {
+        setErrorState({
+          message: getErrorMessage(err),
+          title,
+          onClose,
+        })
+        captureError(err, {
+          tags: { component: 'ErrorProvider' },
+          extra: { title },
+        })
+      } else {
+        const message = typeof err === 'string' ? err : getErrorMessage(err)
+        setErrorState({
+          message,
+          title,
+          onClose,
+        })
+      }
     },
-    []
+    [captureError]
   )
 
   const handleClose = useCallback(() => {

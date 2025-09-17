@@ -7,6 +7,7 @@ import { useGlobal } from '@/zustand/global'
 import { formatBytes } from '@/lib/utils'
 import { useState, useEffect } from 'react'
 import { getStorachaUsage } from '@/lib/storacha'
+import { useSentryContext } from '@/hooks/useSentryContext'
 
 export interface SummaryProps {
   chats: DialogsById
@@ -23,6 +24,8 @@ export const Summary = ({
   onSubmit,
 }: SummaryProps) => {
   const [storageUsed, setStorageUsed] = useState<number>()
+  const { captureError } = useSentryContext()
+
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
     onSubmit()
@@ -40,12 +43,22 @@ export const Summary = ({
         const usage = await getStorachaUsage(client, space)
         setStorageUsed(usage)
       } catch (err) {
-        console.error('Failed to fetch storage usage', err)
+        captureError(err, {
+          tags: {
+            operation: 'fetch-storage-usage',
+            component: 'backup-summary',
+          },
+          extra: {
+            space: space.toString(),
+            hasClient: !!client,
+            message: 'Failed to fetch storage usage',
+          },
+        })
       }
     }
 
     fetchStorageUsage()
-  }, [space, client])
+  }, [space, client, captureError])
 
   return (
     <form onSubmit={handleSubmit}>

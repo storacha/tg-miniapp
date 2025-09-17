@@ -9,7 +9,7 @@ import Users from '@/components/leaderboard/users'
 import { Banner } from '@/components/leaderboard/banner'
 import { Podium } from '@/components/leaderboard/podium'
 import { getLeaderboardWithRanking } from '@/components/server'
-import { fromResult, getErrorMessage } from '@/lib/errorhandling'
+import { fromResult } from '@/lib/errorhandling'
 
 export default function Page() {
   const { tgSessionString, space } = useGlobal()
@@ -28,7 +28,7 @@ export default function Page() {
       } catch (error) {
         const title = 'Error fetching leaderboard!'
         console.error(title, error)
-        setError(getErrorMessage(error), { title })
+        setError(error, { title })
         setLeaderboard([])
         setRanking(undefined)
       }

@@ -1,5 +1,6 @@
 'use client'
 import { useEffect } from 'react'
+import { logAndCaptureError } from '@/lib/sentry'
 
 export function ErrorPage({
   error,
@@ -9,7 +10,10 @@ export function ErrorPage({
   reset?: () => void
 }) {
   useEffect(() => {
-    console.error(error)
+    logAndCaptureError(error, {
+      tags: { component: 'ErrorPage' },
+      extra: { digest: error.digest },
+    })
   }, [error])
 
   return (

@@ -43,4 +43,13 @@ export default withSentryConfig(nextConfig, {
   // https://docs.sentry.io/product/crons/
   // https://vercel.com/docs/cron-jobs
   // automaticVercelMonitors: true,
+
+  // This is the auth token used to upload source maps to Sentry.
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Needed so we can distinguish our app errors from third-party errors in Sentry
+  // It's used together with the thirdPartyErrorFilterIntegration in instrumentation-client.ts
+  unstable_sentryWebpackPluginOptions: {
+    applicationKey: 'tg-miniapp',
+  },
 })
