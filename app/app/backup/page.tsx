@@ -57,10 +57,7 @@ export default function Page() {
       )}
       {step === 1 && (
         <>
-          <Dates
-            onPeriodChange={setPeriod}
-            onSubmit={() => setStep(2)}
-          />
+          <Dates onPeriodChange={setPeriod} onSubmit={() => setStep(2)} />
           {!isStorachaAuthorized && (
             <StorachaConnect open={true} onDismiss={() => setStep(0)} />
           )}
