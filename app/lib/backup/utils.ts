@@ -1,6 +1,6 @@
 import bigInt from 'big-integer'
 import { Entity } from '@/vendor/telegram/define'
-import { DialogInfo, EntityID, EntityType, ToString } from '@/api'
+import { EntityID, EntityType, ToString } from '@/api'
 import { Api } from '@/vendor/telegram'
 import { decodeStrippedThumb, toJPGDataURL } from '../utils'
 
@@ -69,19 +69,38 @@ export const getThumbSrc = (strippedThumbBytes?: Uint8Array) => {
   return thumbSrc
 }
 
-export const buildDialogInputPeer = (dialogInfo: DialogInfo) => {
-  const bigId = bigInt(dialogInfo.id)
-  const bigHash = dialogInfo.accessHash
-    ? bigInt(dialogInfo.accessHash)
-    : bigInt(0)
+export const buildDialogInputPeer = ({
+  id,
+  accessHash,
+  type,
+}: {
+  id: string
+  accessHash?: string
+  type: EntityType
+}) => {
+  const bigId = bigInt(id)
+  const bigHash = accessHash ? bigInt(accessHash) : bigInt(0)
 
-  if (dialogInfo.type === 'user') {
+  if (type === 'user') {
     return new Api.InputPeerUser({ userId: bigId, accessHash: bigHash })
-  } else if (dialogInfo.type === 'channel') {
+  } else if (type === 'channel') {
     return new Api.InputPeerChannel({ channelId: bigId, accessHash: bigHash })
-  } else if (dialogInfo.type === 'chat') {
+  } else if (type === 'chat') {
     return new Api.InputPeerChat({ chatId: bigId })
   }
 
   return undefined
+}
+
+/**
+ * Determines the entity type based on the ID format pattern
+ */
+export const getEntityTypeFromId = (id: string): EntityType => {
+  if (id.startsWith('-100')) {
+    return 'channel'
+  } else if (id.startsWith('-')) {
+    return 'chat'
+  } else {
+    return 'user'
+  }
 }
