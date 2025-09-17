@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.1](https://github.com/storacha/tg-miniapp/compare/v2.13.0...v2.13.1) (2025-09-17)
+
+
+### Bug Fixes
+
+* improve UI alignment, error display formatting & entity image fetching ([eae4b66](https://github.com/storacha/tg-miniapp/commit/eae4b66b5ea87b24da62a0c716e664799dbdbf88))
+* improve UI alignment, error display formatting, and entity image fetching ([ba09609](https://github.com/storacha/tg-miniapp/commit/ba09609c4b9c32008c19f102ebf97dc103bdf77f))
+
 ## [2.13.0](https://github.com/storacha/tg-miniapp/compare/v2.12.5...v2.13.0) (2025-09-09)
 
 
