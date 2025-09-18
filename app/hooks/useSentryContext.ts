@@ -32,28 +32,7 @@ export function useSentryContext() {
     [user]
   )
 
-  const captureBackupError = useCallback(
-    (
-      error: unknown,
-      backupContext?: {
-        dialogId?: string
-        progress?: number
-      }
-    ) => {
-      captureError(error, {
-        tags: {
-          errorType: 'backup',
-        },
-        extra: {
-          backup: backupContext,
-        },
-      })
-    },
-    [captureError]
-  )
-
   return {
     captureError,
-    captureBackupError,
   }
 }
