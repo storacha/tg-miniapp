@@ -4,8 +4,13 @@ import { getTelegramId, handleJob } from '@/lib/server/jobs'
 import { getSession } from '@/lib/server/session'
 import { parseWithUIntArrays, stringifyWithUIntArrays } from '@/lib/utils'
 import { gracefulShutdown } from '@/lib/server/graceful-shutdown'
+import { createLogger } from '@/lib/server/logger'
+import { addBreadcrumb } from '@sentry/nextjs'
 
 export const dynamic = 'force-dynamic'
+
+// Create logger for jobs API route
+const logger = createLogger({ route: 'api/jobs' })
 
 function isJobAuthed(request: Request) {
   if (process.env.BACKUP_PASSWORD) {
@@ -20,15 +25,24 @@ function isJobAuthed(request: Request) {
     const password = passwordparts.join(':')
     return username === 'user' && password === process.env.BACKUP_PASSWORD
   } else {
-    console.warn(
-      'no auth password set for handling jobs, assuming authentication'
+    logger.warn(
+      'No auth password set for handling jobs, assuming authentication'
     )
     return true
   }
 }
 
 export async function POST(request: Request) {
+  addBreadcrumb({
+    message: 'Job POST request received',
+    level: 'info',
+  })
+
   if (gracefulShutdown.isShutdownInitiated()) {
+    addBreadcrumb({
+      message: 'Service unavailable - graceful shutdown in progress',
+      level: 'warning',
+    })
     return new Response('Service temporarily unavailable', {
       status: 503,
       headers: {
@@ -37,22 +51,39 @@ export async function POST(request: Request) {
     })
   }
 
-  console.log(`Handling job batch...`)
+  logger.info('Handling job batch...')
   if (!isJobAuthed(request)) {
-    console.error(`Job auth not found.`)
+    addBreadcrumb({
+      message: 'Job authentication failed',
+      level: 'error',
+    })
+    logger.error('Job authentication failed', {
+      error: 'Unauthorized access attempt',
+    })
     return new Response('Unauthorized', { status: 401 })
   }
 
+  addBreadcrumb({
+    message: 'Job authentication successful',
+    level: 'info',
+  })
+
   const message = await request.json()
+
+  addBreadcrumb({
+    message: 'Job message parsed, starting execution',
+    level: 'info',
+  })
 
   handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
   return Response.json({}, { status: 202 })
 }
 
 export async function GET() {
-  console.log(`setting up notification stream for job updates`)
+  logger.info('Setting up notification stream for job updates')
   try {
     const session = await getSession()
+
     const db = getDB()
     const telegramId = getTelegramId(session.telegramAuth)
     const dbUser = await db.findOrCreateUser({
@@ -60,25 +91,42 @@ export async function GET() {
       storachaAccount: session.accountDID,
       telegramId: telegramId.toString(),
     })
-    console.log('subscribing updates for user', dbUser.id)
+
+    logger.info('Subscribing updates for user', {
+      userId: dbUser.id,
+      telegramId,
+      tags: { operation: 'subscribe_job_updates' },
+    })
     let unsubscribe: () => void
     // Create a new ReadableStream
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          // Notify client of successful connection
           controller.enqueue(encodeSSE('init', 'Connecting...'))
           unsubscribe = await db.subscribeToJobUpdates(
             dbUser.id,
             (action, job) => {
-              console.debug('received job update', action, job.id)
+              logger.debug('Received job update', {
+                action,
+                jobId: job.id,
+                userId: dbUser.id,
+                tags: { operation: 'job_update' },
+              })
               controller.enqueue(
                 encodeSSE(action, stringifyWithUIntArrays(job))
               )
             }
           )
         } catch (error) {
-          console.error('Stream error:', error)
+          addBreadcrumb({
+            message: 'SSE stream setup failed',
+            level: 'error',
+          })
+
+          logger.error('Stream setup error', {
+            error: error as Error,
+            tags: { operation: 'stream_setup' },
+          })
           controller.enqueue(encodeSSE('error', 'Stream interrupted'))
           controller.close()
         }
@@ -99,7 +147,10 @@ export async function GET() {
       status: 200,
     })
   } catch (error) {
-    console.error('Server error:', error)
+    logger.error('Server error in job stream', {
+      error: error as Error,
+      tags: { operation: 'main_handler' },
+    })
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       headers: { 'Content-Type': 'application/json' },
       status: 500,

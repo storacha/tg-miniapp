@@ -13,7 +13,6 @@ import { MAX_FREE_BYTES, mRachaPointsPerByte } from './constants'
 import { SHARD_SIZE } from '@storacha/upload-client'
 import { formatBytes } from '../utils'
 import { createLogger } from './logger'
-import { getErrorMessage } from '../errorhandling'
 import { getStorachaUsage, isStorageLimitExceeded } from '../storacha'
 import { AccountDID } from '@storacha/access'
 import { gracefulShutdown } from './graceful-shutdown'
@@ -197,7 +196,7 @@ class Handler {
               dialogId: dialogId.toString(),
               step: 'onDialogRetrieved',
               phase: 'processing',
-              error: getErrorMessage(err),
+              error: err,
             })
             throw new Error(
               `Failed to retrieve dialog ${dialogId.toString()}.`,
@@ -249,7 +248,7 @@ class Handler {
             logger.error('Error updating progress during messages retrieval', {
               dialogId: dialogId.toString(),
               step: 'onMessagesRetrieved',
-              error: getErrorMessage(err),
+              error: err,
             })
             throw new Error(
               `Failed to retrieve messages for dialog ${dialogId.toString()}.`,
@@ -283,7 +282,9 @@ class Handler {
               })
 
               onShardStoredError = new Error(
-                `This backup would exceed your ${formatBytes(MAX_FREE_BYTES)} storage limit.`
+                `This backup would exceed your ${formatBytes(
+                  MAX_FREE_BYTES
+                )} storage limit.`
               )
             }
 
@@ -324,7 +325,7 @@ class Handler {
             logger.error('Error updating progress during shard storage', {
               step: 'onShardStored',
               phase: 'error',
-              error: getErrorMessage(err),
+              error: err,
             })
 
             if (!onShardStoredError) {
@@ -400,7 +401,7 @@ class Handler {
         logger.error('Backup job failed', {
           step: 'jobFailed',
           phase: 'error',
-          error: getErrorMessage(err),
+          error: err,
         })
 
         await this.#db.updateJob(id, {

@@ -1,7 +1,10 @@
+import { getErrorMessage } from '../errorhandling'
+import { logAndCaptureError } from '../sentry'
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 
 export interface BaseLogContext {
   correlationId?: string
+  error?: unknown
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
@@ -73,14 +76,20 @@ export class Logger {
     message: string,
     context?: BaseLogContext
   ): LogEntry {
+    const formattedContext = {
+      ...this.defaultContext,
+      ...context,
+    }
+
+    if (formattedContext.error) {
+      formattedContext.error = getErrorMessage(formattedContext.error)
+    }
+
     return {
       timestamp: new Date().toISOString(),
       level,
       message,
-      context: {
-        ...this.defaultContext,
-        ...context,
-      },
+      context: formattedContext,
     }
   }
 
@@ -93,7 +102,25 @@ export class Logger {
   }
 
   error(message: string, context?: BaseLogContext) {
-    this.adapter.write(this.formatLog('error', message, context))
+    const logEntry = this.formatLog('error', message, context)
+    this.adapter.write(logEntry)
+
+    let errorObj: Error
+    let tags: BaseLogContext = {}
+
+    if (context && context.error) {
+      const { error, ...rest } = context
+      errorObj =
+        error instanceof Error ? error : new Error(getErrorMessage(error))
+      tags = rest
+    } else {
+      errorObj = new Error('Unknown error')
+    }
+
+    logAndCaptureError(errorObj, {
+      extra: { message },
+      tags,
+    })
   }
 
   debug(message: string, context?: BaseLogContext) {

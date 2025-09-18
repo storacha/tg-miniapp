@@ -210,7 +210,7 @@ class AwsGracefulShutdownManager extends GracefulShutdownManager {
       const result = await this._setProtectionEnabled(false)
       if (result.error) {
         logger.error('Failed to disable task protection', {
-          error: result.error.message,
+          error: result.error,
         })
       } else {
         logger.info('Task protection disabled', { protection: result.ok })
@@ -228,7 +228,7 @@ class AwsGracefulShutdownManager extends GracefulShutdownManager {
     const result = await this._setProtectionEnabled(true)
     if (result.error) {
       logger.error('Failed to enable task protection', {
-        error: result.error.message,
+        error: result.error,
       })
     } else {
       logger.info('Task protection enabled', { protection: result.ok })
