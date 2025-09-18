@@ -44,7 +44,9 @@ export class ConsoleLogAdapter implements LogAdapter {
       return
     }
 
-    const logString = JSON.stringify(logEntry)
+    const logString = JSON.stringify(logEntry, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    )
 
     switch (logEntry.level) {
       case 'error':

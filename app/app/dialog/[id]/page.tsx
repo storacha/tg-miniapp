@@ -8,8 +8,11 @@ import { useMemo, useState } from 'react'
 import { useUserLocale } from '@/hooks/useUserLocale'
 import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { EntityType } from '@/api'
+import { logAndAddContext } from '@/lib/sentry'
+import { useSentryContext } from '@/hooks/useSentryContext'
 
 export default function BackupSelectionPage() {
+  const { captureError } = useSentryContext()
   const { id } = useParams<{ id: string }>()
   const [{ backups }, { restoreBackup, deleteBackup }] = useBackups()
   const router = useRouter()
@@ -54,9 +57,15 @@ export default function BackupSelectionPage() {
     if (!selectedBackup) return
     setIsDeleting(true)
     try {
-      console.log(
-        `Deleting backup with ID: ${selectedBackup.id} and CID: ${selectedBackup.cid}`
-      )
+      logAndAddContext('Backup deletion requested', {
+        category: 'ui.dialog',
+        level: 'info',
+        data: {
+          id,
+          backupId: selectedBackup.id,
+          backupCid: selectedBackup.cid,
+        },
+      })
       const onlyOne = dialogBackups.length === 1
       await deleteBackup(selectedBackup.id, id)
       console.log(`deletion completed`)
@@ -64,7 +73,17 @@ export default function BackupSelectionPage() {
         router.push('/')
       }
     } catch (error) {
-      console.error(error)
+      captureError(error, {
+        tags: {
+          page: 'dialog',
+          action: 'delete',
+        },
+        extra: {
+          id,
+          backupId: selectedBackup.id,
+          backupCid: selectedBackup.cid,
+        },
+      })
     } finally {
       setIsDeleting(false)
       setConfirmDelete(false)

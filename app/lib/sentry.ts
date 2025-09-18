@@ -1,4 +1,9 @@
-import { captureException, withScope } from '@sentry/nextjs'
+import {
+  captureException,
+  withScope,
+  addBreadcrumb,
+  Breadcrumb,
+} from '@sentry/nextjs'
 
 /**
  * Enhanced error logging and capture for Sentry with context support.
@@ -42,5 +47,24 @@ export function logAndCaptureError(
   } catch (e) {
     console.error('error sending error to Sentry:', err)
     console.error("the error from Sentry's captureException is:", e)
+  }
+}
+
+/**
+ * Log a message and add a Sentry breadcrumb
+ * @param message The log message
+ * @param breadcrumb Breadcrumb context
+ */
+export function logAndAddContext(
+  message: string,
+  breadcrumb?: Omit<Breadcrumb, 'message'>
+) {
+  console.log(message)
+  try {
+    if (breadcrumb) {
+      addBreadcrumb({ message, ...breadcrumb })
+    }
+  } catch (error) {
+    console.error('Error adding breadcrumb:', error)
   }
 }
