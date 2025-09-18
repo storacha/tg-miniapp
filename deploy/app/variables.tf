@@ -74,3 +74,8 @@ variable "next_public_humanode_client_id" {
   description = "value for next_public_humanode_client_id secret"
   type = string
 }
+
+variable "sentry_auth_token" {
+  description = "Sentry auth token for source map uploads"
+  type = string
+}
