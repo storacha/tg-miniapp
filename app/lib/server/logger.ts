@@ -1,7 +1,10 @@
+import { getErrorMessage } from '../errorhandling'
+import { logAndCaptureError } from '../sentry'
 export type LogLevel = 'info' | 'warn' | 'error' | 'debug'
 
 export interface BaseLogContext {
   correlationId?: string
+  error?: unknown
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any
 }
@@ -41,7 +44,9 @@ export class ConsoleLogAdapter implements LogAdapter {
       return
     }
 
-    const logString = JSON.stringify(logEntry)
+    const logString = JSON.stringify(logEntry, (key, value) =>
+      typeof value === 'bigint' ? value.toString() : value
+    )
 
     switch (logEntry.level) {
       case 'error':
@@ -73,14 +78,20 @@ export class Logger {
     message: string,
     context?: BaseLogContext
   ): LogEntry {
+    const formattedContext = {
+      ...this.defaultContext,
+      ...context,
+    }
+
+    if (formattedContext.error) {
+      formattedContext.error = getErrorMessage(formattedContext.error)
+    }
+
     return {
       timestamp: new Date().toISOString(),
       level,
       message,
-      context: {
-        ...this.defaultContext,
-        ...context,
-      },
+      context: formattedContext,
     }
   }
 
@@ -93,7 +104,31 @@ export class Logger {
   }
 
   error(message: string, context?: BaseLogContext) {
-    this.adapter.write(this.formatLog('error', message, context))
+    const logEntry = this.formatLog('error', message, context)
+    this.adapter.write(logEntry)
+
+    let errorObj = new Error('Unknown error')
+    let tags: Record<string, string> | undefined
+    let user: { accountDID?: string; telegramId?: string } | undefined
+    let extra: Record<string, unknown> = { message }
+
+    if (context) {
+      const { error, tags: ctxTags, user: ctxUser, ...rest } = context
+
+      if (error)
+        errorObj =
+          error instanceof Error ? error : new Error(getErrorMessage(error))
+      if (ctxTags) tags = ctxTags
+      if (ctxUser) user = ctxUser
+
+      extra = { ...extra, ...rest }
+    }
+
+    logAndCaptureError(errorObj, {
+      tags,
+      user,
+      extra,
+    })
   }
 
   debug(message: string, context?: BaseLogContext) {

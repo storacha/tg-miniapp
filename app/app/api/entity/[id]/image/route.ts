@@ -32,6 +32,7 @@ async function getHiResPhotoBlob(
   try {
     client = await getTelegramClient(sessionString)
     const entity = await tryHardToFetchEntity(client, id, accessHash)
+    // @ts-expect-error - imported Buffer is different from Buffer
     return { ok: await client.downloadProfilePhoto(entity) }
   } catch (e) {
     // @ts-expect-error e has no type, ignore

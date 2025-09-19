@@ -539,7 +539,7 @@ const getMediaBytes = async (ctx: Context, message: Api.Message) => {
       }
     }
   }
-
+  // @ts-expect-error  Conversion of type 'string | Buffer | undefined' to type 'Buffer'
   return new Uint8Array((await message.downloadMedia()) as Buffer)
 }
 const syncDialogEntity = async (client: TelegramClient, entityId: string) => {

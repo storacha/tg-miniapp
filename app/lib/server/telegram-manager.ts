@@ -56,6 +56,7 @@ export const getTelegramClient = async (
     sessionString.port
   )
   const telegramClient = new TelegramClient(
+    // @ts-expect-error type 'StringSession' is not assignable to parameter of type 'string | Session'
     sessionString,
     telegramAPIID,
     telegramAPIHash,

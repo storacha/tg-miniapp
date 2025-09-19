@@ -11,4 +11,17 @@ Sentry.init({
 
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: false,
+
+  // Set sample rate for error events
+  sampleRate: 1.0,
+
+  // Configure tracing - lower rate for production
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+
+  // Add default tags for the edge runtime
+  initialScope: {
+    tags: {
+      runtime: 'edge',
+    },
+  },
 })

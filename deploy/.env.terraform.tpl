@@ -13,3 +13,4 @@ TF_VAR_next_public_telegram_api_hash= # enter a value for NEXT_PUBLIC_TELEGRAM_A
 TF_VAR_next_public_humanode_auth_url= # enter a value for NEXT_PUBLIC_HUMANODE_AUTH_URL secret
 TF_VAR_next_public_humanode_oauth_callback_url= # enter a value for NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL secret
 TF_VAR_next_public_humanode_client_id= # enter a value for NEXT_PUBLIC_HUMANODE_CLIENT_ID secret
+TF_VAR_sentry_auth_token= # enter Sentry auth token for source map uploads

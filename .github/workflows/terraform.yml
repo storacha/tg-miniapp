@@ -40,6 +40,8 @@ on:
         required: true
       cloudflare-api-token:
         required: true
+      sentry-auth-token:
+        required: true
         
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.workspace }}-${{ github.event.pull_request.number || github.ref }}
@@ -64,6 +66,7 @@ env:
   TF_VAR_next_public_humanode_client_id: ${{ secrets.next-public-humanode-client-id }}
   TF_VAR_cloudflare_zone_id: ${{ secrets.cloudflare-zone-id }}
   CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare-api-token }}
+  TF_VAR_sentry_auth_token: ${{ secrets.sentry-auth-token }}
   DEPLOY_ENV: ci
 
 permissions:

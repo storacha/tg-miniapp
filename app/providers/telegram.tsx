@@ -144,7 +144,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
     } catch (err) {
       const title = 'Failed to log out from Telegram!'
       console.error(title, err)
-      setError(getErrorMessage(err), { title })
+      setError(err, { title })
     }
   }, [tgSessionString, setError])
 
@@ -173,12 +173,12 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
           try {
             return await fetchDialogs({ limit: paginationParams.limit })
           } catch (retryErr) {
-            setError(getErrorMessage(retryErr), {
+            setError(retryErr, {
               title: 'Error fetching dialogs',
             })
           }
         } else {
-          setError(errorMessage, { title: 'Error fetching dialogs' })
+          setError(err, { title: 'Error fetching dialogs' })
         }
         return { chats: [], offsetParams: {} }
       }
@@ -199,7 +199,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       setHasMore(chats.length > 0)
     } catch (err: any) {
       console.error('Failed to fetch dialogs:', err)
-      setError(getErrorMessage(err), { title: 'Failed to load dialogs!' })
+      setError(err, { title: 'Failed to load dialogs!' })
     } finally {
       setLoadingDialogs(false)
     }
@@ -211,7 +211,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       const me = fromResult(await getMeRequest(tgSessionString))
       return me
     } catch (err) {
-      setError(getErrorMessage(err), { title: 'Error fetching user info' })
+      setError(err, { title: 'Error fetching user info' })
       return undefined
     }
   }, [tgSessionString])

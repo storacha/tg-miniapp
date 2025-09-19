@@ -11,6 +11,7 @@ import { Layouts } from '@/components/layouts'
 import { Summary } from '@/components/backup/summary'
 import { StorachaConnect } from '@/components/backup/connect'
 import { useAnalytics } from '@/lib/analytics'
+import { logAndAddContext } from '@/lib/sentry'
 
 export default function Page() {
   const router = useRouter()
@@ -24,6 +25,11 @@ export default function Page() {
 
   useEffect(() => {
     logBackupOpened()
+    logAndAddContext('Backup page load', {
+      category: 'ui.backup',
+      level: 'info',
+      data: { space },
+    })
   }, [])
 
   function handleBack() {
@@ -40,8 +46,17 @@ export default function Page() {
     const id = await addBackupJob(chats, period)
     if (!id) {
       setStarting(false)
+      logAndAddContext('Backup job failed to start', {
+        category: 'ui.backup',
+        level: 'error',
+      })
       return
     }
+    logAndAddContext('Backup job added', {
+      category: 'ui.backup',
+      level: 'info',
+      data: { id },
+    })
     console.log('backup job added with ID', id)
     router.push('/')
   }
@@ -57,10 +72,7 @@ export default function Page() {
       )}
       {step === 1 && (
         <>
-          <Dates
-            onPeriodChange={setPeriod}
-            onSubmit={() => setStep(2)}
-          />
+          <Dates onPeriodChange={setPeriod} onSubmit={() => setStep(2)} />
           {!isStorachaAuthorized && (
             <StorachaConnect open={true} onDismiss={() => setStep(0)} />
           )}

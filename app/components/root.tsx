@@ -17,7 +17,7 @@ import { useGlobal } from '@/zustand/global'
 import { parseWithUIntArrays } from '@/lib/utils'
 import { generateRandomPassword } from '@/lib/crypto'
 import { create as createJobStorage } from '@/lib/store/jobs'
-import { fromResult, getErrorMessage } from '@/lib/errorhandling'
+import { fromResult } from '@/lib/errorhandling'
 import Onboarding from '@/components/onboarding'
 import { ErrorProvider, useError } from '@/providers/error'
 import { Provider as BackupProvider } from '@/providers/backup'
@@ -175,7 +175,7 @@ const BackupProviderContainer = ({ children }: PropsWithChildren) => {
           })
         )
       } catch (err) {
-        setError(getErrorMessage(err), { title: 'Error logging in!' })
+        setError(err, { title: 'Error logging in!' })
         return
       }
 
