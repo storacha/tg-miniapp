@@ -17,8 +17,8 @@ Sentry.init({
   // Configure tracing
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-  replaysOnErrorSampleRate: 1.0, // Capture replays when an error occurs
-  replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0, // Capture sessions for replays
+  replaysSessionSampleRate: 0.0, // Disable all session replays
+  replaysOnErrorSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0, // Capture replays only when an error occurs
 
   integrations: [
     Sentry.replayIntegration({

@@ -10,6 +10,7 @@ import { getNormalizedEntityId } from '@/lib/backup/utils'
 import { EntityType } from '@/api'
 import { logAndAddContext } from '@/lib/sentry'
 import { useSentryContext } from '@/hooks/useSentryContext'
+import * as Sentry from '@sentry/nextjs'
 
 export default function BackupSelectionPage() {
   const { captureError } = useSentryContext()
@@ -36,10 +37,22 @@ export default function BackupSelectionPage() {
   )
 
   const handleBackupClick = (e: React.MouseEvent, backupCid: string) => {
-    e.preventDefault()
-    const normalizedId = getNormalizedEntityId(id, type as EntityType)
-    restoreBackup(backupCid, normalizedId, 20)
-    router.push(`/dialog/${id}/backup/${backupCid}?type=${type}`)
+    Sentry.startSpan(
+      { op: 'ui.click.backup_select', name: 'Select Backup to View' },
+      (span) => {
+        e.preventDefault()
+        const normalizedId = getNormalizedEntityId(id, type as EntityType)
+
+        span.setAttributes({
+          backupCid,
+          dialogId: normalizedId,
+          entityType: type as EntityType,
+        })
+
+        restoreBackup(backupCid, normalizedId, 20)
+        router.push(`/dialog/${id}/backup/${backupCid}?type=${type}`)
+      }
+    )
   }
 
   const triggerDelete = (
@@ -56,39 +69,49 @@ export default function BackupSelectionPage() {
   const handleDeleteConfirm = async () => {
     if (!selectedBackup) return
     setIsDeleting(true)
-    try {
-      logAndAddContext('Backup deletion requested', {
-        category: 'ui.dialog',
-        level: 'info',
-        data: {
-          id,
-          backupId: selectedBackup.id,
-          backupCid: selectedBackup.cid,
-        },
-      })
-      const onlyOne = dialogBackups.length === 1
-      await deleteBackup(selectedBackup.id, id)
-      console.log(`deletion completed`)
-      if (onlyOne) {
-        router.push('/')
+    await Sentry.startSpan(
+      { op: 'ui.action.backup_delete', name: 'Delete Backup' },
+      async (span) => {
+        try {
+          logAndAddContext('Backup deletion requested', {
+            category: 'ui.dialog',
+            level: 'info',
+            data: {
+              id,
+              backupId: selectedBackup.id,
+              backupCid: selectedBackup.cid,
+            },
+          })
+          span.setAttributes({
+            backupId: selectedBackup.id,
+            backupCid: selectedBackup.cid,
+            dialogId: id,
+          })
+          const onlyOne = dialogBackups.length === 1
+          await deleteBackup(selectedBackup.id, id)
+          console.log(`deletion completed`)
+          if (onlyOne) {
+            router.push('/')
+          }
+        } catch (error) {
+          captureError(error, {
+            tags: {
+              page: 'dialog',
+              action: 'delete',
+            },
+            extra: {
+              id,
+              backupId: selectedBackup.id,
+              backupCid: selectedBackup.cid,
+            },
+          })
+        } finally {
+          setIsDeleting(false)
+          setConfirmDelete(false)
+          setSelectedBackup(null)
+        }
       }
-    } catch (error) {
-      captureError(error, {
-        tags: {
-          page: 'dialog',
-          action: 'delete',
-        },
-        extra: {
-          id,
-          backupId: selectedBackup.id,
-          backupCid: selectedBackup.cid,
-        },
-      })
-    } finally {
-      setIsDeleting(false)
-      setConfirmDelete(false)
-      setSelectedBackup(null)
-    }
+    )
   }
 
   return (

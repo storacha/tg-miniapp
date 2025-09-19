@@ -22,9 +22,6 @@ export function useSentryContext() {
           telegramId: user?.id?.toString(),
           accountDID: user?.accountDID,
         },
-        tags: {
-          ...additionalContext?.tags,
-        },
       }
 
       logAndCaptureError(error, context)

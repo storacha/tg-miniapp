@@ -6,6 +6,7 @@ import { useBackups } from '@/providers/backup'
 import { useGlobal } from '@/zustand/global'
 import { formatBytes } from '@/lib/utils'
 import { useState, useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { getStorachaUsage } from '@/lib/storacha'
 import { useSentryContext } from '@/hooks/useSentryContext'
 
@@ -39,22 +40,28 @@ export const Summary = ({
     const fetchStorageUsage = async () => {
       if (!space || !client) return
 
-      try {
-        const usage = await getStorachaUsage(client, space)
-        setStorageUsed(usage)
-      } catch (err) {
-        captureError(err, {
-          tags: {
-            operation: 'fetch-storage-usage',
-            component: 'backup-summary',
-          },
-          extra: {
-            space: space.toString(),
-            hasClient: !!client,
-            message: 'Failed to fetch storage usage',
-          },
-        })
-      }
+      await Sentry.startSpan(
+        { op: 'storage.usage.fetch', name: 'Fetch Storage Usage' },
+        async (span) => {
+          try {
+            const usage = await getStorachaUsage(client, space)
+            setStorageUsed(usage)
+            span.setAttributes({ space, usage })
+          } catch (err) {
+            captureError(err, {
+              tags: {
+                operation: 'fetch-storage-usage',
+                component: 'backup-summary',
+              },
+              extra: {
+                space,
+                hasClient: !!client,
+                message: 'Failed to fetch storage usage',
+              },
+            })
+          }
+        }
+      )
     }
 
     fetchStorageUsage()

@@ -107,21 +107,27 @@ export class Logger {
     const logEntry = this.formatLog('error', message, context)
     this.adapter.write(logEntry)
 
-    let errorObj: Error
-    let tags: BaseLogContext = {}
+    let errorObj = new Error('Unknown error')
+    let tags: Record<string, string> | undefined
+    let user: { accountDID?: string; telegramId?: string } | undefined
+    let extra: Record<string, unknown> = { message }
 
-    if (context && context.error) {
-      const { error, ...rest } = context
-      errorObj =
-        error instanceof Error ? error : new Error(getErrorMessage(error))
-      tags = rest
-    } else {
-      errorObj = new Error('Unknown error')
+    if (context) {
+      const { error, tags: ctxTags, user: ctxUser, ...rest } = context
+
+      if (error)
+        errorObj =
+          error instanceof Error ? error : new Error(getErrorMessage(error))
+      if (ctxTags) tags = ctxTags
+      if (ctxUser) user = ctxUser
+
+      extra = { ...extra, ...rest }
     }
 
     logAndCaptureError(errorObj, {
-      extra: { message },
       tags,
+      user,
+      extra,
     })
   }
 
