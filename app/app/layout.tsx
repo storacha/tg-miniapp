@@ -22,9 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <PlausibleProvider
-      domain={
-        process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'dev.telegram.storacha.network'
-      }
+      domain={process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'telegram.storacha.network'}
       trackLocalhost={true}
       trackOutboundLinks={true}
       taggedEvents={true}
