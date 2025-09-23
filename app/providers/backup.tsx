@@ -28,10 +28,9 @@ import {
 } from '@/lib/backup/recoverer'
 import { create as createCipher } from '@/lib/aes-cbc-cipher'
 import { useError } from './error'
-import { getErrorMessage } from '@/lib/errorhandling'
 import { LRUCache } from 'lru-cache'
-import { MAX_FREE_BYTES } from '@/lib/server/constants'
-import { formatBytes } from '@/lib/utils'
+import { useSentryContext } from '@/hooks/useSentryContext'
+import { logAndAddContext } from '@/lib/sentry'
 
 export interface Result<T> {
   items: T[]
@@ -117,6 +116,7 @@ export const Provider = ({
   children,
 }: ProviderProps): ReactNode => {
   const { setError } = useError()
+  const { captureError } = useSentryContext()
   const [jobs, setJobs] = useState<PendingJob[]>([])
   const [jobsLoading, setJobsLoading] = useState(false)
   const [jobsError, setJobsError] = useState<Error>()
@@ -361,14 +361,21 @@ export const Provider = ({
 
       try {
         setJobsError(undefined)
-        console.debug('listing pending jobs...')
+        logAndAddContext('Listing pending jobs...', {
+          category: 'backup.jobs',
+          level: 'debug',
+        })
         const jobs = await jobStore.listPending()
-        console.debug(`found ${jobs.items.length} pending jobs`)
+        logAndAddContext(`found ${jobs.items.length} pending jobs`, {
+          category: 'backup.jobs',
+          level: 'debug',
+          data: { count: jobs.items.length },
+        })
         setJobs(jobs.items)
       } catch (err: any) {
         const msg = `Failed to list pending backups in job change handler`
         console.error(msg, err)
-        setError(err, { title: msg })
+        captureError(err, { extra: { msg } })
         setJobsError(err)
       }
 

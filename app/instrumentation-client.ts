@@ -29,6 +29,15 @@ Sentry.init({
       filterKeys: ['tg-miniapp'],
       behaviour: 'apply-tag-if-contains-third-party-frames',
     }),
+    Sentry.browserTracingIntegration({
+      shouldCreateSpanForRequest: (url) => {
+        // Do not create spans for /api/entity/[id]/image or /plausible
+        return (
+          !url.match(/\/api\/entity\/[^/]+\/image\/?$/) &&
+          !url.match(/\/plausible\/?$/)
+        )
+      },
+    }),
   ],
 
   // Add default tags for the Telegram miniapp
@@ -56,6 +65,17 @@ Sentry.init({
       return null
     }
 
+    return event
+  },
+
+  beforeSendTransaction(event) {
+    // ignore spans from /api/entity/[id]/image
+    if (
+      event.transaction?.includes('/api/entity/') &&
+      event.transaction?.endsWith('/image')
+    ) {
+      return null
+    }
     return event
   },
 })
