@@ -5,8 +5,9 @@ import Coin from '../svgs/coin'
 import { useRouter } from 'next/navigation'
 import { useTelegram } from '@/providers/telegram'
 import { useEffect, useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { Ranking } from '@/api'
-import { fromResult, getErrorMessage } from '@/lib/errorhandling'
+import { fromResult } from '@/lib/errorhandling'
 import { useGlobal } from '@/zustand/global'
 import { getRanking } from '../server'
 import { useError } from '@/providers/error'
@@ -25,13 +26,18 @@ export default function Head() {
   const fetchRanking = async () => {
     if (!space) return
 
-    try {
-      const ranking = fromResult(await getRanking(tgSessionString, space))
-      setRanking(ranking)
-    } catch (error) {
-      setError(getErrorMessage(error), { title: 'Error fetching ranking!' })
-      setRanking(undefined)
-    }
+    await Sentry.startSpan(
+      { op: 'ranking.fetch', name: 'Fetch Ranking' },
+      async () => {
+        try {
+          const ranking = fromResult(await getRanking(tgSessionString, space))
+          setRanking(ranking)
+        } catch (error) {
+          setError(error, { title: 'Error fetching ranking!' })
+          setRanking(undefined)
+        }
+      }
+    )
   }
 
   // Initial fetch

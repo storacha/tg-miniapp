@@ -50,6 +50,7 @@ jobs:
       next-public-humanode-client-id: ${{ secrets.HUMANODE_CLIENT_ID }} 
       cloudflare-zone-id: ${{ secrets.STAGING_CLOUDFLARE_ZONE_ID }}
       cloudflare-api-token: ${{ secrets.STAGING_CLOUDFLARE_API_TOKEN }}
+      sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
   # apply prod on successful release, plan otherwise
   production:
@@ -76,3 +77,4 @@ jobs:
       next-public-humanode-client-id: ${{ secrets.HUMANODE_CLIENT_ID }}
       cloudflare-zone-id: ${{ secrets.PROD_CLOUDFLARE_ZONE_ID }}
       cloudflare-api-token: ${{ secrets.PROD_CLOUDFLARE_API_TOKEN }}
+      sentry-auth-token: ${{ secrets.SENTRY_AUTH_TOKEN }}

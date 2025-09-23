@@ -97,6 +97,8 @@ export const findJob = async (request: FindJobRequest) => {
 }
 
 export const listJobs = async () => {
+  const logger = createLogger()
+  logger.info('Preparing to list jobs...')
   const session = await getSession()
   const telegramId = getTelegramId(session.telegramAuth)
   const db = getDB()
@@ -105,6 +107,7 @@ export const listJobs = async () => {
     storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
   })
+  logger.info('Listing jobs...', { userId: dbUser.id, telegramId })
   return await db.getJobsByUserID(dbUser.id)
 }
 

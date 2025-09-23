@@ -4,6 +4,7 @@ import {
   type GetDerivedStateFromError,
   type PropsWithChildren,
 } from 'react'
+import * as Sentry from '@sentry/nextjs'
 
 export interface ErrorBoundaryProps extends PropsWithChildren {
   fallback: ComponentType<{ error: Error }>
@@ -26,7 +27,19 @@ export class ErrorBoundary extends Component<
     error,
   })
 
-  componentDidCatch(error: Error) {
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    // Capture error in Sentry with additional context
+    Sentry.withScope((scope) => {
+      // Add React error boundary context
+      scope.setTag('errorBoundary', 'main-app')
+      scope.setContext('errorInfo', {
+        componentStack: errorInfo.componentStack,
+      })
+
+      // Capture the error
+      Sentry.captureException(error)
+    })
+
     this.setState({ error })
   }
 

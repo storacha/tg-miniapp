@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { useTelegram } from '@/providers/telegram'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
@@ -313,7 +314,7 @@ function BackupDialog({
 
               const isOutgoing = msg.from === userId
               const sender = msg.from
-                ? (participants[msg.from]?.name ?? 'Unknown')
+                ? participants[msg.from]?.name ?? 'Unknown'
                 : 'Anonymous'
 
               const showSenderHeader = !isOutgoing && lastSenderId !== msg.from
@@ -385,18 +386,31 @@ export default function Page() {
     return relevantBackup?.params.dialogs[normalizedDialogId] || null
   }, [dialog, backups.items, backupCid])
 
-  let lqThumbSrc = ''
-  if (restoredBackup.item?.dialogData.photo?.strippedThumb) {
-    lqThumbSrc = toJPGDataURL(
-      decodeStrippedThumb(restoredBackup.item.dialogData.photo?.strippedThumb)
-    )
-  }
-
   const hqThumbSrc = useProfilePhoto(
     dialogInfo?.dialogId,
     dialogInfo?.accessHash
   )
-  const dialogThumbSrc = hqThumbSrc || lqThumbSrc
+
+  const headerDialog = useMemo(() => {
+    if (restoredBackup.loading || !restoredBackup.item) {
+      return {
+        name: 'Loading...',
+        type: 'unknown',
+        thumbSrc: '',
+      }
+    }
+
+    let lqThumbSrc = ''
+    if (dialog?.photo?.strippedThumb) {
+      lqThumbSrc = toJPGDataURL(decodeStrippedThumb(dialog.photo.strippedThumb))
+    }
+
+    return {
+      name: dialog?.name || 'Unknown',
+      type: dialog?.type || 'unknown',
+      thumbSrc: hqThumbSrc || lqThumbSrc,
+    }
+  }, [restoredBackup.loading, restoredBackup.item, hqThumbSrc, dialog])
 
   const normalizedId = useMemo(
     () => getNormalizedEntityId(id, type),
@@ -409,7 +423,7 @@ export default function Page() {
     if (restoredBackup.item && restoredBackup.item.backupCid !== backupCid) {
       resetBackup()
     }
-  }, [id, backupCid, restoredBackup])
+  }, [id, backupCid, restoredBackup, resetBackup])
 
   useEffect(() => {
     const fetchBackup = async () => {
@@ -419,7 +433,18 @@ export default function Page() {
         (restoredBackup.item && restoredBackup.item.backupCid === backupCid)
       )
         return
-      await restoreBackup(backupCid!, normalizedId, INITIAL_MESSAGE_BATCH_SIZE)
+
+      await Sentry.startSpan(
+        { op: 'backup.restore', name: 'Restore Backup' },
+        async (span) => {
+          span.setAttributes({ backupCid, dialogId: normalizedId })
+          await restoreBackup(
+            backupCid!,
+            normalizedId,
+            INITIAL_MESSAGE_BATCH_SIZE
+          )
+        }
+      )
     }
 
     fetchBackup()
@@ -454,14 +479,14 @@ export default function Page() {
           mediaMap={restoredBackup.item.mediaMap}
           participants={restoredBackup.item.participants}
           onScrollBottom={handleFetchMoreMessages}
-          dialogThumbSrc={dialogThumbSrc}
+          dialogThumbSrc={headerDialog.thumbSrc}
         />
       ) : (
         <>
           <ChatHeader
-            image={dialogThumbSrc}
-            name={dialog?.name || 'Loading...'}
-            type={dialog?.type || 'user'}
+            image={headerDialog.thumbSrc}
+            name={headerDialog.name}
+            type={headerDialog.type}
           />
           <div className="flex flex-col items-center justify-center flex-1">
             <Loading text="Loading messages..." />

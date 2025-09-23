@@ -80,6 +80,7 @@ module "app" {
     "NEXT_PUBLIC_HUMANODE_AUTH_URL" = var.next_public_humanode_auth_url
     "NEXT_PUBLIC_HUMANODE_OAUTH_CALLBACK_URL" = var.next_public_humanode_oauth_callback_url
     "NEXT_PUBLIC_HUMANODE_CLIENT_ID" = var.next_public_humanode_client_id
+    "SENTRY_AUTH_TOKEN" = var.sentry_auth_token
   }
   # enter any sqs queues you want to create here
   queues = [
