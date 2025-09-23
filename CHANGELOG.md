@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.13.1](https://github.com/storacha/tg-miniapp/compare/v2.13.0...v2.13.1) (2025-09-23)
+
+
+### Bug Fixes
+
+* build issue ([4b501f5](https://github.com/storacha/tg-miniapp/commit/4b501f552e5a173f6118935c5694940b72131c12))
+* chat stale image ([98e183b](https://github.com/storacha/tg-miniapp/commit/98e183be063f83863adde62394629b8a6c0723c4))
+* detect and handle non-Telegram environment error ([5f242cf](https://github.com/storacha/tg-miniapp/commit/5f242cf4ef87b2672c0f441a54ac4342e47e40a8))
+* env-setup action ([1464037](https://github.com/storacha/tg-miniapp/commit/146403700255e0b012e171bd470a96274f901e6b))
+* improve UI alignment, error display formatting & entity image fetching ([eae4b66](https://github.com/storacha/tg-miniapp/commit/eae4b66b5ea87b24da62a0c716e664799dbdbf88))
+* improve UI alignment, error display formatting, and entity image fetching ([ba09609](https://github.com/storacha/tg-miniapp/commit/ba09609c4b9c32008c19f102ebf97dc103bdf77f))
+* plausible domain ([29293f3](https://github.com/storacha/tg-miniapp/commit/29293f3ddb61441f869790d228a0a92c711e3041))
+* plausible integration ([3d44360](https://github.com/storacha/tg-miniapp/commit/3d4436087bb49cedd2506f8000632d6fa6ccd863))
+
 ## [2.13.0](https://github.com/storacha/tg-miniapp/compare/v2.12.5...v2.13.0) (2025-09-09)
 
 
