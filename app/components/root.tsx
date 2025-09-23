@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type PropsWithChildren } from 'react'
+import { useEffect, useState, PropsWithChildren } from 'react'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import {
   Provider as StorachaProvider,
@@ -48,21 +48,22 @@ const connection = uploadServiceConnection({ id: serviceID })
 // Add the miniapp identifier to the client header
 defaultHeaders['X-Client'] += ` tg-miniapp/${version.split('.')[0]}`
 
-// Initialize telegram react SDK
-if (typeof window !== 'undefined') {
-  try {
-    init()
-    restoreInitData()
-  } catch (e) {
-    console.error('could not initialized TG SDK, the miniapp will not work')
-    console.error(e)
-  }
-}
-
 export function Root(props: PropsWithChildren) {
   const didMount = useDidMount()
+  const [initError, setInitError] = useState<Error | null>(null)
   const [{ isTgAuthorized }] = useTelegram()
   const { isOnboarded, tgSessionString, setTgSessionString, user } = useGlobal()
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        init()
+        restoreInitData()
+      } catch (e) {
+        setInitError(new Error('Could not initialized TG SDK', { cause: e }))
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (isTgAuthorized && !tgSessionString && user) {
@@ -82,6 +83,10 @@ export function Root(props: PropsWithChildren) {
         <LogoSplash />
       </div>
     )
+  }
+
+  if (initError) {
+    return <ErrorPage error={initError} />
   }
 
   if (!isOnboarded) {
