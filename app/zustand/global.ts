@@ -116,11 +116,8 @@ export const useGlobal = () => {
   // on the client we should be reliably able to call this
   const user = useSignal(initData.user)
 
-  // but if the user isn't defined for some reason, that's an error
   if (!user) {
-    throw new Error(
-      'No Telegram user available - useGlobal must be used within a Telegram Mini App context'
-    )
+    return getUserGlobalStore(-1)() // Return default state for missing user
   }
 
   return getUserGlobalStore(user.id)()

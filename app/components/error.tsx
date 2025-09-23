@@ -16,6 +16,11 @@ export function ErrorPage({
     })
   }, [error])
 
+  // Detect Telegram Mini App environment
+  const isOutsideTelegram = error?.message?.includes(
+    'Could not initialized TG SDK'
+  )
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4 text-center bg-white">
       <img
@@ -26,20 +31,28 @@ export function ErrorPage({
       />
 
       <h2 className="text-xl font-semibold text-red-600 mb-4">
-        An unexpected error occurred
+        {isOutsideTelegram
+          ? 'This app can only be used inside Telegram.'
+          : 'An unexpected error occurred'}
       </h2>
 
       <blockquote className="bg-red-100 text-red-800 text-sm p-4 rounded w-full max-w-md break-words mb-6">
-        <code>{error.message}</code>
+        <code>
+          {isOutsideTelegram
+            ? 'Please open this link from the Telegram app using the official Mini App integration.'
+            : error.message}
+        </code>
       </blockquote>
 
-      <button
-        type="button"
-        className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded w-full max-w-xs"
-        onClick={() => (reset ? reset() : window.location.reload())}
-      >
-        {reset ? 'Try Again' : 'Reload Page'}
-      </button>
+      {!isOutsideTelegram && (
+        <button
+          type="button"
+          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded w-full max-w-xs"
+          onClick={() => (reset ? reset() : window.location.reload())}
+        >
+          {reset ? 'Try Again' : 'Reload Page'}
+        </button>
+      )}
     </div>
   )
 }
