@@ -37,6 +37,7 @@ const utms = [
   'utm_content',
   'utm_term',
   'utm_content',
+  'utm_campaign',
 ]
 
 /**
@@ -67,16 +68,13 @@ export const useAnalytics = () => {
     Record<string, string>
   >('utms', { defaultValue: {} })
   useEffect(() => {
-    const utmps = utms.reduce(
-      (m, utm) => {
-        const value = searchParams.get(utm)
-        if (value) {
-          m[utm] = value
-        }
-        return m
-      },
-      {} as Record<string, string>
-    )
+    const utmps = utms.reduce((m, utm) => {
+      const value = searchParams.get(utm)
+      if (value) {
+        m[utm] = value
+      }
+      return m
+    }, {} as Record<string, string>)
     if (Object.keys(utmps).length > 0) {
       setUtmParams(utmps)
     }

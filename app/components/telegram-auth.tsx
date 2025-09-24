@@ -343,6 +343,7 @@ export default function TelegramAuth() {
       }
       setTgSessionString(client.session)
       setIsTgAuthorized(true)
+      logTelegramLoginSuccess()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       console.error('checking password:', err)
