@@ -68,20 +68,39 @@ export const createJob = async (
     space: session.spaceDID,
     dialogs: request.dialogs,
   })
-  await queueFn({
-    ...request,
-    spaceDID: session.spaceDID,
-    telegramAuth: session.telegramAuth,
-    accountDID: session.accountDID,
-    jobID: job.id,
-  })
-  logger.info('Job created and queued', {
+
+  const context = {
     jobId: job.id,
     userId: dbUser.id,
     step: 'createJob',
     phase: 'init',
     status: job.status,
-  })
+  }
+
+  logger.info('Job added to DB', context)
+
+  try {
+    await queueFn({
+      ...request,
+      spaceDID: session.spaceDID,
+      telegramAuth: session.telegramAuth,
+      accountDID: session.accountDID,
+      jobID: job.id,
+    })
+  } catch (error) {
+    logger.error('Error queuing job', { error, context })
+    await db.updateJob(job.id, {
+      ...job,
+      status: 'failed',
+      progress: 0,
+      cause: (error as Error).message,
+      finished: Date.now(),
+      updated: Date.now(),
+    })
+    throw new Error('Failed to queue job. Please try again.')
+  }
+
+  logger.info('Job created and queued', context)
   return job
 }
 
