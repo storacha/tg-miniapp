@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.13.2](https://github.com/storacha/tg-miniapp/compare/v2.13.1...v2.13.2) (2025-09-26)
+
+
+### Bug Fixes
+
+* handle job queue errors and add missing UTM param to Plausible ([2b37fde](https://github.com/storacha/tg-miniapp/commit/2b37fde28bccc34beae8795f5b47e1fcc9c998f5))
+
 ## [2.13.1](https://github.com/storacha/tg-miniapp/compare/v2.13.0...v2.13.1) (2025-09-23)
 
 
