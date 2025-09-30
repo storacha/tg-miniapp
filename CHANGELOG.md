@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.3](https://github.com/storacha/tg-miniapp/compare/v2.13.2...v2.13.3) (2025-09-30)
+
+
+### Bug Fixes
+
+* remove error popup since it's already reported and shouldn't affect users ([84b7a97](https://github.com/storacha/tg-miniapp/commit/84b7a974c2a3dc5f872d70292ea52d5c8fc6eda7))
+* update error handler on backup ([9329375](https://github.com/storacha/tg-miniapp/commit/9329375c52e547e276bdb7eb8e51fa371711afd5))
+
 ## [2.13.2](https://github.com/storacha/tg-miniapp/compare/v2.13.1...v2.13.2) (2025-09-26)
 
 
