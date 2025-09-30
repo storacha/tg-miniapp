@@ -388,7 +388,7 @@ export const Provider = ({
       } catch (err: any) {
         const msg = `Failed to list completed backups in job change handler`
         console.error(msg, err)
-        setError(err, { title: msg })
+        captureError(err, { extra: { msg } })
         setBackupsError(err)
       }
     }
