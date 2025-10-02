@@ -61,7 +61,7 @@ export interface User {
 type Input<
   T,
   NoInput extends keyof T,
-  OptionalInput extends keyof T = never,
+  OptionalInput extends keyof T = never
 > = Omit<Omit<T, NoInput>, OptionalInput> &
   Partial<Omit<Pick<T, OptionalInput>, NoInput>>
 
@@ -236,8 +236,8 @@ export function getDB(): TGDatabase {
 
       const points = await sql<{ points: number }[]>`
         select points from users where users.telegram_id = ${input.telegramId.toString()} and users.storacha_space=${
-          input.storachaSpace
-        }
+        input.storachaSpace
+      }
       `
 
       if (!points[0]) {
@@ -267,9 +267,12 @@ export function getDB(): TGDatabase {
         throw new Error('error inserting job')
       }
       const job = fromDbJob(results[0])
+      // Remove job.params from job for notification
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { params, ...notifyJob } = job
       await sql.notify(
         results[0].userId,
-        stringifyWithUIntArrays({ action: 'add', job })
+        stringifyWithUIntArrays({ action: 'add', job: notifyJob })
       )
       return job
     },
@@ -317,16 +320,21 @@ export function getDB(): TGDatabase {
           // @ts-expect-error Uint8Array is automatically converted to object
           toDbJobParams(input)
         )}
-        where id = ${id} and (status != 'canceled' or ${input.status} = 'canceled')
+        where id = ${id} and (status != 'canceled' or ${
+        input.status
+      } = 'canceled')
         returning *
       `
       if (!results[0]) {
         throw new Error('error updating job')
       }
       const job = fromDbJob(results[0])
+      // Remove job.params from job for notification
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { params, ...notifyJob } = job
       await sql.notify(
         results[0].userId,
-        stringifyWithUIntArrays({ action: 'replace', job })
+        stringifyWithUIntArrays({ action: 'replace', job: notifyJob })
       )
       return job
     },
@@ -337,11 +345,15 @@ export function getDB(): TGDatabase {
       if (!results[0]) {
         throw new Error('error removing job')
       }
+      const job = fromDbJob(results[0])
+      // Remove job.params from job for notification
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { params, ...notifyJob } = job
       await sql.notify(
         results[0].userId,
         stringifyWithUIntArrays({
           action: 'remove',
-          job: fromDbJob(results[0]),
+          job: notifyJob,
         })
       )
     },
