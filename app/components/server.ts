@@ -95,7 +95,7 @@ export const listDialogs = toResultFn(
         offsetPeer?: string
       }
     ) => {
-      console.log('list dialogs with current params: ', paginationParams)
+      // console.log('list dialogs with current params: ', paginationParams)
 
       const chats: DialogInfo[] = []
       let lastChat
@@ -140,10 +140,10 @@ export const listDialogs = toResultFn(
         offsetPeer: offsetPeerUsername ?? peer,
       }
 
-      console.log('total dialogs: ', chats.length)
-      console.log('first dialog: ', chats[0])
-      console.log('last dialog: ', chats[chats.length - 1])
-      console.log('next params: ', offsetParams)
+      // console.log('total dialogs: ', chats.length)
+      // console.log('first dialog: ', chats[0])
+      // console.log('last dialog: ', chats[chats.length - 1])
+      // console.log('next params: ', offsetParams)
 
       return {
         chats,

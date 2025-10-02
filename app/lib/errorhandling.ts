@@ -120,7 +120,10 @@ export const toUserFriendlyError = (err: unknown): string => {
 This happens when Telegram asks you to wait before downloading files from their servers. Don’t worry, it’s not a problem with the app, it’s just how the Telegram API works for your account.
 Please wait about 1 hour before starting a new backup.`
   }
-  if (text.includes('AUTH_KEY_UNREGISTERED')) {
+  if (
+    text.includes('AUTH_KEY_UNREGISTERED') ||
+    text.includes('AUTH_KEY_DUPLICATED')
+  ) {
     return 'Your Telegram session has expired. Please log out and log in again.'
   }
   if (text.includes('NETWORK_MIGRATE')) {

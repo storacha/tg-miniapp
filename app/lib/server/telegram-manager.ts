@@ -25,7 +25,7 @@ if (!(globalThis as any).__telegram_console_error_overridden) {
       typeof err.stack === 'string' &&
       err.stack.includes('telegram')
     if (isTelegramTimeout) {
-      console.debug(String(err))
+      // console.debug(String(err)) // Commented out to reduce log noise
       return
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
