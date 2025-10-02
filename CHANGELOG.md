@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.4](https://github.com/storacha/tg-miniapp/compare/v2.13.3...v2.13.4) (2025-10-02)
+
+
+### Bug Fixes
+
+* handle sql notify payload issue ([94e2dff](https://github.com/storacha/tg-miniapp/commit/94e2dff10ce730243b80b91a62bc3f36298ae0b0))
+* handle sql notify payload issue and comment out logs to reduce noise ([866545a](https://github.com/storacha/tg-miniapp/commit/866545ade0a4ec0d1e586f90d9e4131b1e6d78df))
+
 ## [2.13.3](https://github.com/storacha/tg-miniapp/compare/v2.13.2...v2.13.3) (2025-09-30)
 
 
