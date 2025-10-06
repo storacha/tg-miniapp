@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.5](https://github.com/storacha/tg-miniapp/compare/v2.13.4...v2.13.5) (2025-10-06)
+
+
+### Bug Fixes
+
+* missing getServerSnapshot ([e49e65b](https://github.com/storacha/tg-miniapp/commit/e49e65b33f2ed9ef389b10e0c4a2ccbbfdf828ec))
+* Missing getServerSnapshot, which is required for server-rendered content ([1cb1c25](https://github.com/storacha/tg-miniapp/commit/1cb1c25f6eeda64f6bf69167cad710ac18bcc189))
+
 ## [2.13.4](https://github.com/storacha/tg-miniapp/compare/v2.13.3...v2.13.4) (2025-10-02)
 
 
