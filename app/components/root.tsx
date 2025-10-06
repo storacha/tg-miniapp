@@ -36,7 +36,6 @@ import { ErrorPage } from './error'
 import TelegramAuth from './telegram-auth'
 import LogoSplash from './svgs/logo-splash'
 import { ErrorBoundary } from './error-boundary'
-import { useDidMount } from '../hooks/useDidMount'
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -49,7 +48,6 @@ const connection = uploadServiceConnection({ id: serviceID })
 defaultHeaders['X-Client'] += ` tg-miniapp/${version.split('.')[0]}`
 
 export function Root(props: PropsWithChildren) {
-  const didMount = useDidMount()
   const [initError, setInitError] = useState<Error | null>(null)
   const [{ isTgAuthorized }] = useTelegram()
   const { isOnboarded, tgSessionString, setTgSessionString, user } = useGlobal()
@@ -76,14 +74,6 @@ export function Root(props: PropsWithChildren) {
       setTgSessionString(session)
     }
   }, [isTgAuthorized, tgSessionString, user, setTgSessionString])
-
-  if (!didMount) {
-    return (
-      <div className="h-screen flex justify-center items-center bg-primary">
-        <LogoSplash />
-      </div>
-    )
-  }
 
   if (initError) {
     return <ErrorPage error={initError} />
