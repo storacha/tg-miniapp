@@ -2,8 +2,7 @@ import type { Metadata } from 'next'
 import { Epilogue } from 'next/font/google'
 import PlausibleProvider from 'next-plausible'
 import './globals.css'
-import { Root } from '../components/root'
-import { AppOpenedTracker } from '../components/AppOpenedTracker'
+import { RootLoader } from '../components/root-loader'
 
 const epilogue = Epilogue({
   subsets: ['latin'],
@@ -30,10 +29,7 @@ export default function RootLayout({
     >
       <html lang="en">
         <body className={epilogue.className}>
-          <Root>
-            {children}
-            <AppOpenedTracker />
-          </Root>
+          <RootLoader>{children}</RootLoader>
         </body>
       </html>
     </PlausibleProvider>
