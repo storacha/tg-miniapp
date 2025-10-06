@@ -1787,6 +1787,14 @@ const toPeerData = withCleanUndef((peer: Api.TypePeer): Type.PeerData => {
         id: String(peer.channelId),
       }
     }
+    default: {
+      // Handle unknown peer types gracefully
+      console.warn(`Unknown peer type: ${(peer as { className: string }).className}`, peer)
+      return {
+        type: 'unknown',
+        id: '0',
+      }
+    }
   }
 })
 
@@ -1912,7 +1920,7 @@ const toMediaData = withCleanUndef(
   (media: Api.TypeMessageMedia): MediaData | undefined => {
     switch (media.className) {
       case 'MessageMediaEmpty':
-        return
+        return undefined
       case 'MessageMediaPhoto': {
         return {
           type: 'photo',
