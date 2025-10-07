@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.6](https://github.com/storacha/tg-miniapp/compare/v2.13.5...v2.13.6) (2025-10-07)
+
+
+### Bug Fixes
+
+* remove job ([c9995f8](https://github.com/storacha/tg-miniapp/commit/c9995f819797df429cff67050554cd6f709695bf))
+* remove job ([8702b49](https://github.com/storacha/tg-miniapp/commit/8702b49480b6521d409082da35acfd35e035bbb7))
+
 ## [2.13.5](https://github.com/storacha/tg-miniapp/compare/v2.13.4...v2.13.5) (2025-10-06)
 
 
