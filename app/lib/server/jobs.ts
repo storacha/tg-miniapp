@@ -134,13 +134,34 @@ export const removeJob = async (request: RemoveJobRequest) => {
   const session = await getSession()
   const telegramId = getTelegramId(session.telegramAuth)
   const db = getDB()
-  const dbUser = await db.findOrCreateUser({
+
+  const findOrCreateUserParams = {
     storachaSpace: session.spaceDID,
     storachaAccount: session.accountDID,
     telegramId: telegramId.toString(),
+  }
+
+  const logger = createLogger(findOrCreateUserParams)
+  logger.info('Remove job requested, looking up user...')
+
+  const dbUser = await db.findOrCreateUser(findOrCreateUserParams)
+
+  logger.info('Remove job requested. User found, looking up job...', {
+    userId: dbUser.id,
   })
-  const job = await db.getJobByID(request.jobID, dbUser.id)
-  const logger = createLogger({ jobId: job.id, userId: dbUser.id })
+  let job
+  try {
+    job = await db.getJobByID(request.jobID, dbUser.id)
+  } catch (error) {
+    logger.error('Job not found, treating as already removed', {
+      step: 'removeJob',
+      phase: 'lookup',
+      userId: dbUser.id,
+      jobId: request.jobID,
+      error,
+    })
+    throw new Error('job not found or already removed', { cause: error })
+  }
 
   if (job.status == 'running') {
     logger.warn('Attempted to remove running job', {

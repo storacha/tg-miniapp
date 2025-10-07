@@ -288,7 +288,9 @@ export function getDB(): TGDatabase {
         select * from jobs where id = ${id} and user_id = ${userId}
       `
       if (!results[0]) {
-        throw new Error('error inserting or locating user')
+        throw new Error(
+          `error locating job by id '${id}' and userId '${userId}'`
+        )
       }
       return fromDbJob(results[0])
     },
