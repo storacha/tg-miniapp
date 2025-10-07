@@ -276,32 +276,37 @@ const backupDialog = async (
     },
   })
 
-  const dialogRoot = await ctx.storacha.uploadCAR(
-    {
-      stream: () => blockStream.pipeThrough(new CARWriterStream()),
-    },
-    {
-      pieceHasher: {
-        code: PieceHasher.code,
-        name: 'fr32-sha2-256-trunc254-padded-binary-tree-multihash',
-        async digest(input): Promise<MultihashDigest<typeof pieceHashCode>> {
-          const hasher = PieceHasher.create()
-          hasher.write(input)
+  try {
+    const dialogRoot = await ctx.storacha.uploadCAR(
+      {
+        stream: () => blockStream.pipeThrough(new CARWriterStream()),
+      },
+      {
+        pieceHasher: {
+          code: PieceHasher.code,
+          name: 'fr32-sha2-256-trunc254-padded-binary-tree-multihash',
+          async digest(input): Promise<MultihashDigest<typeof pieceHashCode>> {
+            const hasher = PieceHasher.create()
+            hasher.write(input)
 
-          const bytes = new Uint8Array(hasher.multihashByteLength())
-          hasher.digestInto(bytes, 0, true)
-          hasher.free()
+            const bytes = new Uint8Array(hasher.multihashByteLength())
+            hasher.digestInto(bytes, 0, true)
+            hasher.free()
 
-          return Digest.decode(bytes) as MultihashDigest<typeof pieceHashCode>
+            return Digest.decode(bytes) as MultihashDigest<typeof pieceHashCode>
+          },
         },
-      },
-      onShardStored: (meta: CARMetadata) => {
-        options?.onShardStored?.(meta, dialogEntity.id)
-      },
-    }
-  )
+        onShardStored: (meta: CARMetadata) => {
+          options?.onShardStored?.(meta, dialogEntity.id)
+        },
+      }
+    )
 
-  return dialogRoot as Link<EncryptedTaggedByteView<DialogData>>
+    return dialogRoot as Link<EncryptedTaggedByteView<DialogData>>
+  } catch (error) {
+    console.error('Failed to upload dialog:', error)
+    throw error
+  }
 }
 
 const uploadRoot = async (
@@ -321,14 +326,19 @@ const uploadRoot = async (
     },
   })
 
-  const root = await ctx.storacha.uploadCAR(
-    {
-      stream: () => blockStream.pipeThrough(new CARWriterStream()),
-    },
-    { onShardStored: options?.onShardStored }
-  )
+  try {
+    const root = await ctx.storacha.uploadCAR(
+      {
+        stream: () => blockStream.pipeThrough(new CARWriterStream()),
+      },
+      { onShardStored: options?.onShardStored }
+    )
 
-  return root
+    return root
+  } catch (error) {
+    console.error('Failed to upload root:', error)
+    throw error
+  }
 }
 
 const gatewayURL =
