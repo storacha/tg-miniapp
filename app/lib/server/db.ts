@@ -42,7 +42,7 @@ export const sql = postgres({
       }
     : PGPASSWORD,
   ssl: validSSLValue(PGSSLMODE),
-  idle_timeout: 1,
+  idle_timeout: 60,
   transform: {
     ...postgres.camel,
     undefined: null,

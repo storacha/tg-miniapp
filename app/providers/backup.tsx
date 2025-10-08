@@ -156,6 +156,9 @@ export const Provider = ({
     })
   )
 
+  // Single-flight guard to prevent overlapping calls to handleJobChange
+  const isRefreshingRef = useRef(false)
+
   const handleMediaLoaded = useCallback(
     (mediaCid: string, data: Uint8Array) => {
       setRestoredBackup((prev) => {
@@ -359,6 +362,12 @@ export const Provider = ({
     const handleJobChange = async () => {
       console.debug('handling job change event...')
 
+      // Drop if a refresh is already running
+      if (isRefreshingRef.current) {
+        return
+      }
+      isRefreshingRef.current = true
+
       try {
         setJobsError(undefined)
         logAndAddContext('Listing pending jobs...', {
@@ -390,6 +399,8 @@ export const Provider = ({
         console.error(msg, err)
         captureError(err, { extra: { msg } })
         setBackupsError(err)
+      } finally {
+        isRefreshingRef.current = false
       }
     }
 

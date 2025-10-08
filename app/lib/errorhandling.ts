@@ -76,7 +76,9 @@ export const toResultFn =
   }
 
 export const fromResult = <T>(result: Result<T, SerializedError>): T => {
-  if (result.error) {
+  if (!result) throw new Error('Unexpected empty result from server action')
+
+  if (result?.error) {
     const err = result.error
     switch (err.kind) {
       case 'telegram':
@@ -87,7 +89,13 @@ export const fromResult = <T>(result: Result<T, SerializedError>): T => {
         throw deserializeErrorObject(err)
     }
   }
-  return result.ok
+
+  if (result?.ok) {
+    return result.ok
+  }
+
+  console.warn('Unexpected result format, returning as is', result)
+  return result as T
 }
 
 export const getErrorMessage = (err: unknown) => {
