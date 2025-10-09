@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.13.7](https://github.com/storacha/tg-miniapp/compare/v2.13.6...v2.13.7) (2025-10-09)
+
+
+### Bug Fixes
+
+* add single-flight guard for job refreshes and update DB idle timeout ([f1d4c40](https://github.com/storacha/tg-miniapp/commit/f1d4c40d1cef4ad872c73e7a87cd6a4146a141ef))
+* add single-flight guard for job refreshes and update DB idle timeout ([c3af4a6](https://github.com/storacha/tg-miniapp/commit/c3af4a6ed16266bd215925d3d4ce66160ee28d0c))
+
 ## [2.13.6](https://github.com/storacha/tg-miniapp/compare/v2.13.5...v2.13.6) (2025-10-07)
 
 
