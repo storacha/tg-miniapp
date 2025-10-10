@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.14.0](https://github.com/storacha/tg-miniapp/compare/v2.13.7...v2.14.0) (2025-10-10)
+
+
+### Features
+
+* update to latest humanode ([22a13c9](https://github.com/storacha/tg-miniapp/commit/22a13c9507694870bd6a6f88ac81647fdbef1dc2))
+* update to latest humanode ([327ea93](https://github.com/storacha/tg-miniapp/commit/327ea9355186391109fbe71ce9ba6b1875b6067b))
+
 ## [2.13.7](https://github.com/storacha/tg-miniapp/compare/v2.13.6...v2.13.7) (2025-10-09)
 
 
