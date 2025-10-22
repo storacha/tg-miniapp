@@ -67,22 +67,18 @@ class Store extends EventTarget implements JobStorage {
     })
   }
 
-  async listPending() {
+  async listAll() {
     const allJobs = await this.#jobClient.listJobs({})
     return {
-      items: allJobs.filter(
+      pending: allJobs.filter(
         (j) =>
           j.status === 'waiting' ||
           j.status === 'queued' ||
           j.status === 'running' ||
           j.status === 'failed'
       ),
+      completed: allJobs.filter((j) => j.status === 'completed'),
     }
-  }
-
-  async listCompleted() {
-    const allJobs = await this.#jobClient.listJobs({})
-    return { items: allJobs.filter((j) => j.status === 'completed') }
   }
 
   async add(dialogs: DialogsById, period: Period) {

@@ -138,10 +138,10 @@ export interface Page<T> {
 
 export interface JobStorage extends EventTarget {
   find: (id: JobID) => Promise<Job | null>
-  listPending: () => Promise<
-    Page<WaitingJob | QueuedJob | RunningJob | FailedJob>
-  >
-  listCompleted: () => Promise<Page<CompletedJob>>
+  listAll: () => Promise<{
+    pending: Array<WaitingJob | QueuedJob | RunningJob | FailedJob>
+    completed: Array<CompletedJob>
+  }>
   add: (dialogs: DialogsById, period: Period) => Promise<Job>
   remove: (id: JobID) => Promise<void>
   cancel: (id: JobID) => Promise<void>

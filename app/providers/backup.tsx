@@ -156,9 +156,6 @@ export const Provider = ({
     })
   )
 
-  // Single-flight guard to prevent overlapping calls to handleJobChange
-  const isRefreshingRef = useRef(false)
-
   const handleMediaLoaded = useCallback(
     (mediaCid: string, data: Uint8Array) => {
       setRestoredBackup((prev) => {
@@ -313,7 +310,9 @@ export const Provider = ({
       } catch (error: any) {
         const msg = 'Error removing backup job!'
         console.error(msg, error)
-        setError(error, { title: msg })
+        if (!error?.message?.includes('job not found or already removed')) {
+          setError(error, { title: msg })
+        }
       }
     },
     [jobStore]
@@ -345,8 +344,8 @@ export const Provider = ({
 
       try {
         await jobStore.deleteDialog(id, dialogID)
-        const backups = await jobStore.listCompleted()
-        setBackups(backups.items)
+        const backups = await jobStore.listAll()
+        setBackups(backups.completed)
       } catch (error: any) {
         const msg = 'Error deleting backup!'
         console.error(msg, error)
@@ -362,45 +361,32 @@ export const Provider = ({
     const handleJobChange = async () => {
       console.debug('handling job change event...')
 
-      // Drop if a refresh is already running
-      if (isRefreshingRef.current) {
-        return
-      }
-      isRefreshingRef.current = true
-
       try {
         setJobsError(undefined)
-        logAndAddContext('Listing pending jobs...', {
+        logAndAddContext('Listing jobs...', {
           category: 'backup.jobs',
           level: 'debug',
         })
-        const jobs = await jobStore.listPending()
-        logAndAddContext(`found ${jobs.items.length} pending jobs`, {
+
+        const { pending, completed } = await jobStore.listAll()
+        setJobs(pending)
+        setBackups(completed)
+
+        logAndAddContext(`found ${pending.length} pending jobs`, {
           category: 'backup.jobs',
           level: 'debug',
-          data: { count: jobs.items.length },
+          data: { count: pending.length },
         })
-        setJobs(jobs.items)
+        logAndAddContext(`found ${completed.length} completed jobs`, {
+          category: 'backup.jobs',
+          level: 'debug',
+          data: { count: completed.length },
+        })
       } catch (err: any) {
-        const msg = `Failed to list pending backups in job change handler`
+        const msg = `Failed to list backups in job change handler`
         console.error(msg, err)
         captureError(err, { extra: { msg } })
         setJobsError(err)
-      }
-
-      try {
-        setBackupsError(undefined)
-        console.debug('listing completed jobs...')
-        const backups = await jobStore.listCompleted()
-        console.debug(`found ${backups.items.length} completed jobs`)
-        setBackups(backups.items)
-      } catch (err: any) {
-        const msg = `Failed to list completed backups in job change handler`
-        console.error(msg, err)
-        captureError(err, { extra: { msg } })
-        setBackupsError(err)
-      } finally {
-        isRefreshingRef.current = false
       }
     }
 
