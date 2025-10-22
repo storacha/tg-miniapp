@@ -62,12 +62,14 @@ export default function BackupSelectionPage() {
   ) => {
     e.preventDefault()
     e.stopPropagation()
+    if (isDeleting) return
     setSelectedBackup({ id: backupId, cid: backupCid })
     setConfirmDelete(true)
   }
 
   const handleDeleteConfirm = async () => {
-    if (!selectedBackup) return
+    if (!selectedBackup || isDeleting) return
+
     setIsDeleting(true)
     await Sentry.startSpan(
       { op: 'ui.action.backup_delete', name: 'Delete Backup' },
@@ -142,7 +144,11 @@ export default function BackupSelectionPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Trash2
-                    className="text-red-500 hover:text-red-700"
+                    className={`${
+                      isDeleting
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-red-500 hover:text-red-700 cursor-pointer'
+                    }`}
                     onClick={(e) => triggerDelete(e, backup.id, backup.data)}
                   />
                   <ChevronRight className="text-muted-foreground" />
