@@ -4,51 +4,68 @@ import { Button } from '../ui/button'
 import Coin from '../svgs/coin'
 import { useRouter } from 'next/navigation'
 import { useTelegram } from '@/providers/telegram'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import * as Sentry from '@sentry/nextjs'
 import { Ranking } from '@/api'
 import { fromResult } from '@/lib/errorhandling'
 import { useGlobal } from '@/zustand/global'
 import { getRanking } from '../server'
-import { useError } from '@/providers/error'
 import { useBackups } from '@/providers/backup'
 import { useUserLocale } from '@/hooks/useUserLocale'
+import { useSentryContext } from '@/hooks/useSentryContext'
+import { logAndAddContext } from '@/lib/sentry'
 
 export default function Head() {
   const router = useRouter()
   const [{ user }] = useTelegram()
   const { tgSessionString, space } = useGlobal()
   const [ranking, setRanking] = useState<Ranking | undefined>()
-  const { setError } = useError()
+  const { captureError } = useSentryContext()
   const [{ backups }] = useBackups()
   const { formatNumber } = useUserLocale()
+  const isLoadingRef = useRef(false)
 
   const fetchRanking = async () => {
-    if (!space) return
+    if (!space || !tgSessionString) return
+    if (isLoadingRef.current) {
+      console.debug('Ranking fetch already in progress, skipping')
+      return // Prevent concurrent calls
+    }
+
+    isLoadingRef.current = true
 
     await Sentry.startSpan(
       { op: 'ranking.fetch', name: 'Fetch Ranking' },
       async () => {
         try {
+          logAndAddContext('Fetching ranking...', {
+            category: 'ui.head',
+            level: 'info',
+            data: { space, hasSession: !!tgSessionString },
+          })
           const ranking = fromResult(await getRanking(tgSessionString, space))
           setRanking(ranking)
         } catch (error) {
-          setError(error, { title: 'Error fetching ranking!' })
+          captureError(error, { extra: { title: 'Error fetching ranking!' } })
           setRanking(undefined)
+        } finally {
+          isLoadingRef.current = false
         }
       }
     )
   }
 
-  // Initial fetch
   useEffect(() => {
     fetchRanking()
-  }, [tgSessionString, space])
+    // NOTE: listen to backup.items to sync after backup changes
+  }, [tgSessionString, space, backups.items])
 
-  // Listen for backup changes
+  // Cleanup loading state on unmount
   useEffect(() => {
-    fetchRanking()
-  }, [backups.items]) // Refetch when backups change
+    return () => {
+      isLoadingRef.current = false
+    }
+  }, [])
 
   const formatPoints = (points?: number) => {
     if (!points) return '00'

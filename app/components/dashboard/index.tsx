@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { JobID, PendingJob } from '@/api'
 import { useGlobal } from '@/zustand/global'
@@ -52,6 +53,9 @@ const JobItem = ({
   onRemove: (id: JobID) => unknown
   onCancel: (id: JobID) => unknown
 }) => {
+  const [isRemoving, setIsRemoving] = useState(false)
+  const removeInFlightRef = useRef(false) // handles "operation still in progress"
+  const lastClickTimeRef = useRef(0) // handles the "rapid clicking"
   const progress =
     job.status === 'running' || job.status === 'failed' ? job.progress : 0
 
@@ -79,7 +83,26 @@ const JobItem = ({
             Backup <span className="capitalize">{job.status}</span>
           </p>
           {job.status === 'failed' && (
-            <button onClick={() => onRemove(job.id)}>
+            <button
+              onClick={async () => {
+                const now = Date.now()
+                // Debounce: ignore clicks within 500ms of previous click
+                if (now - lastClickTimeRef.current < 500) return
+
+                if (isRemoving || removeInFlightRef.current) return
+
+                lastClickTimeRef.current = now
+                removeInFlightRef.current = true
+                setIsRemoving(true)
+                try {
+                  await onRemove(job.id)
+                } finally {
+                  setIsRemoving(false)
+                  removeInFlightRef.current = false
+                }
+              }}
+              disabled={isRemoving}
+            >
               <X />
             </button>
           )}
