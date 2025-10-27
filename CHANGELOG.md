@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.14.1](https://github.com/storacha/tg-miniapp/compare/v2.14.0...v2.14.1) (2025-10-27)
+
+
+### Bug Fixes
+
+* multiple bugs ([284465b](https://github.com/storacha/tg-miniapp/commit/284465bcf0a8720714d022fd57a0e699fcea609b))
+* prevent 'Error fetching ranking!' bug ([d4f4dcd](https://github.com/storacha/tg-miniapp/commit/d4f4dcd6c3c186840ff4d814aba51468a319d8c1))
+* prevent 'job not found or already removed' error caused by double clicks ([69b9c47](https://github.com/storacha/tg-miniapp/commit/69b9c472d64991deec78cf8f99a4bfe6b6df467a))
+
 ## [2.14.0](https://github.com/storacha/tg-miniapp/compare/v2.13.7...v2.14.0) (2025-10-10)
 
 
