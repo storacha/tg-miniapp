@@ -153,10 +153,7 @@ export async function GET() {
       error,
       tags: { operation: 'stream_setup' },
     })
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    return Response.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
 

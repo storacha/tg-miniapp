@@ -1,48 +1,50 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { logAndAddContext } from '@/lib/sentry'
-import { useError } from '@/providers/error'
 import { useGlobal } from '@/zustand/global'
-import { LeaderboardUser, Ranking } from '@/api'
 import { Layouts } from '@/components/layouts'
 import Users from '@/components/leaderboard/users'
 import { Banner } from '@/components/leaderboard/banner'
 import { Podium } from '@/components/leaderboard/podium'
-import { getLeaderboardWithRanking } from '@/components/server'
-import { fromResult } from '@/lib/errorhandling'
-import { useSentryContext } from '@/hooks/useSentryContext'
+import { useLeaderboard } from '@/hooks/useLeaderboard'
 
 export default function Page() {
-  const { tgSessionString, space } = useGlobal()
-  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([])
-  const [ranking, setRanking] = useState<Ranking | undefined>()
-  const { setError } = useError()
-  const { captureError } = useSentryContext()
+  const { space, user } = useGlobal()
+  const { data, isLoading, error } = useLeaderboard()
 
   useEffect(() => {
     logAndAddContext('Leaderboard page load', {
       category: 'ui.leaderboard',
       level: 'info',
-      data: { space },
+      data: { space, userId: user?.id, accountDID: user?.accountDID },
     })
-    const fetchData = async () => {
-      try {
-        const data = fromResult(
-          await getLeaderboardWithRanking(tgSessionString, space ?? undefined)
-        )
-        setLeaderboard(data.leaderboard)
-        setRanking(data.ranking)
-      } catch (error) {
-        const title = 'Error fetching leaderboard!'
-        captureError(error, { tags: { page: 'leaderboard' }, extra: { title } })
-        setError(error, { title })
-        setLeaderboard([])
-        setRanking(undefined)
-      }
-    }
-    fetchData()
-  }, [tgSessionString, space])
+  }, [space, user])
+
+  if (error) {
+    return (
+      <Layouts isSinglePage isBackgroundBlue>
+        <div className="text-center p-4">
+          <p className="text-red-500">
+            Error loading leaderboard: {error.message}
+          </p>
+        </div>
+      </Layouts>
+    )
+  }
+
+  if (isLoading) {
+    return (
+      <Layouts isSinglePage isBackgroundBlue>
+        <div className="text-center p-4">
+          <p>Loading leaderboard...</p>
+        </div>
+      </Layouts>
+    )
+  }
+
+  const leaderboard = data?.leaderboard || []
+  const ranking = data?.ranking
 
   return (
     <Layouts isSinglePage isBackgroundBlue>

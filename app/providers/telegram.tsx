@@ -14,29 +14,22 @@ import {
   User,
   useSignal,
 } from '@telegram-apps/sdk-react'
-import {
-  listDialogs as listDialogsRequest,
-  getMe as getMeRequest,
-  logout as logoutTelegram,
-} from '../components/server'
+import { useQueryClient } from '@tanstack/react-query'
+import { logout as logoutTelegram } from '../components/server'
 import { useGlobal } from '@/zustand/global'
-import { DialogInfo } from '@/api'
-import { fromResult, getErrorMessage } from '@/lib/errorhandling'
+import { getErrorMessage } from '@/lib/errorhandling'
 import { useError } from './error'
 import { useRouter } from 'next/navigation'
+import { useSessionValidation } from '@/hooks/useSessionValidation'
 
 export interface ContextState {
   launchParams: LaunchParams
   user?: User
-  dialogs: DialogInfo[]
-  loadingDialogs: boolean
   isTgAuthorized: boolean
   isValidating: boolean
 }
 
 export interface ContextActions {
-  getMe: () => Promise<string | undefined>
-  loadMoreDialogs: () => Promise<void>
   logout: () => Promise<void>
   setIsTgAuthorized: (isTgAuthorized: boolean) => void
 }
@@ -47,14 +40,10 @@ export const ContextDefaultValue: ContextValue = [
   {
     launchParams: { platform: '', themeParams: {}, version: '' },
     user: undefined,
-    dialogs: [],
-    loadingDialogs: false,
     isTgAuthorized: false,
     isValidating: true,
   },
   {
-    getMe: () => Promise.reject(new Error('provider not setup')),
-    loadMoreDialogs: () => Promise.reject(new Error('provider not setup')),
     logout: () => Promise.reject(new Error('provider not setup')),
     setIsTgAuthorized: () => {
       throw new Error('provider not setup')
@@ -65,75 +54,57 @@ export const ContextDefaultValue: ContextValue = [
 export const Context = createContext<ContextValue>(ContextDefaultValue)
 
 /**
- * Provider that adds launch params, init data and and exposes dialogs to
- * the context.
+ * Provider that adds launch params, init data and handles Telegram authentication.
  */
 export const Provider = ({ children }: PropsWithChildren): ReactNode => {
   const { tgSessionString, setTgSessionString } = useGlobal()
   const [isTgAuthorized, setIsTgAuthorized] = useState(false)
-  const [isValidating, setIsValidating] = useState(true)
   const { setError } = useError()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   const user = useSignal(initData.user)
   const launchParams = useLaunchParams()
 
-  const [dialogs, setDialogs] = useState<DialogInfo[]>([])
-  const [offsetParams, setOffsetParams] = useState<{
-    limit: number
-    offsetId?: number
-    offsetDate?: number
-    offsetPeer?: string
-  }>({ limit: 20 })
-  const [hasMore, setHasMore] = useState(true)
-  const [loadingDialogs, setLoadingDialogs] = useState(false)
+  const {
+    data: sessionData,
+    isLoading: isValidating,
+    error: sessionError,
+    isSuccess: isSessionValid,
+  } = useSessionValidation()
 
+  // Handle session validation results
   useEffect(() => {
-    const validateSession = async () => {
-      if (!tgSessionString) {
-        setIsValidating(false)
-        return
-      }
-      try {
-        setIsValidating(true)
-        fromResult(await getMeRequest(tgSessionString))
-        console.log('Session is valid, user is authorized')
-        setIsTgAuthorized(true)
-      } catch (err) {
-        console.log('Failed session token validation: ', err)
+    if (isSessionValid && sessionData) {
+      console.log('Session is valid, user is authorized')
+      setIsTgAuthorized(true)
+    } else if (sessionError) {
+      console.log('Failed session token validation:', sessionError)
+      const errorMsg = getErrorMessage(sessionError)
 
-        const errorMsg = getErrorMessage(err)
-        if (
-          errorMsg.includes('client authorization failed') ||
-          errorMsg.includes('AUTH_KEY_DUPLICATED')
-        ) {
-          console.log('Session validation failed, clearing session')
-          setTgSessionString('')
-          setIsTgAuthorized(false)
-        }
-      } finally {
-        setIsValidating(false)
+      if (errorMsg.includes('Unauthorized')) {
+        console.log('Session validation failed, clearing session')
+        setTgSessionString('')
+        setIsTgAuthorized(false)
       }
+    } else if (!tgSessionString) {
+      // No session string, user is not authorized
+      setIsTgAuthorized(false)
     }
-
-    validateSession()
-  }, [])
-
-  useEffect(() => {
-    if (!isTgAuthorized || !tgSessionString) return
-    setDialogs([])
-    setOffsetParams({ limit: 20 })
-    setHasMore(true)
-    loadMoreDialogs()
-  }, [tgSessionString])
+  }, [
+    isSessionValid,
+    sessionData,
+    sessionError,
+    tgSessionString,
+    setTgSessionString,
+  ])
 
   const logout = useCallback(async () => {
     try {
       setIsTgAuthorized(false)
-      // reset dialogs
-      setOffsetParams({ limit: 20 })
-      setDialogs([])
-      setHasMore(true)
+
+      // Clear all React Query cache
+      queryClient.clear()
 
       if (!tgSessionString) return
       await logoutTelegram(tgSessionString)
@@ -146,75 +117,7 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
       console.error(title, err)
       setError(err, { title })
     }
-  }, [tgSessionString, setError])
-
-  const listDialogs = useCallback(
-    async (paginationParams = { limit: 10 }) => {
-      if (!tgSessionString) return { chats: [], offsetParams: {} }
-
-      const fetchDialogs = async (params: typeof paginationParams) => {
-        const { chats, offsetParams } = fromResult(
-          await listDialogsRequest(tgSessionString, params)
-        )
-        return { chats, offsetParams }
-      }
-
-      try {
-        return await fetchDialogs(paginationParams)
-      } catch (err) {
-        const errorMessage = getErrorMessage(err)
-
-        // Handle entity lookup errors that occur after re-login
-        if (errorMessage.includes('Could not find the input entity')) {
-          console.log(
-            'Entity lookup failed after re-login, resetting pagination...'
-          )
-
-          try {
-            return await fetchDialogs({ limit: paginationParams.limit })
-          } catch (retryErr) {
-            setError(retryErr, {
-              title: 'Error fetching dialogs',
-            })
-          }
-        } else {
-          setError(err, { title: 'Error fetching dialogs' })
-        }
-        return { chats: [], offsetParams: {} }
-      }
-    },
-    [tgSessionString]
-  )
-
-  const loadMoreDialogs = useCallback(async () => {
-    if (!tgSessionString || !hasMore || loadingDialogs) return
-
-    setError(null)
-    setLoadingDialogs(true)
-    try {
-      const { chats, offsetParams: newOffsetParams } =
-        await listDialogs(offsetParams)
-      setDialogs([...dialogs, ...chats])
-      setOffsetParams({ ...newOffsetParams, limit: 100 })
-      setHasMore(chats.length > 0)
-    } catch (err: any) {
-      console.error('Failed to fetch dialogs:', err)
-      setError(err, { title: 'Failed to load dialogs!' })
-    } finally {
-      setLoadingDialogs(false)
-    }
-  }, [tgSessionString, hasMore, loadingDialogs, offsetParams, listDialogs])
-
-  const getMe = useCallback(async () => {
-    if (!tgSessionString) return undefined
-    try {
-      const me = fromResult(await getMeRequest(tgSessionString))
-      return me
-    } catch (err) {
-      setError(err, { title: 'Error fetching user info' })
-      return undefined
-    }
-  }, [tgSessionString])
+  }, [tgSessionString, setError, queryClient])
 
   return (
     <Context.Provider
@@ -222,12 +125,10 @@ export const Provider = ({ children }: PropsWithChildren): ReactNode => {
         {
           user,
           launchParams,
-          dialogs,
-          loadingDialogs,
           isTgAuthorized,
           isValidating,
         },
-        { getMe, loadMoreDialogs, logout, setIsTgAuthorized },
+        { logout, setIsTgAuthorized },
       ]}
     >
       {children}

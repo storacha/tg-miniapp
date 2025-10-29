@@ -25,7 +25,7 @@ import {
   parse as parseInitData,
 } from '@telegram-apps/init-data-node'
 import { extract } from '@ucanto/core/delegation'
-import { getTelegramClient } from './telegram-manager'
+import { getTelegramClient } from './telegram'
 import { getDB } from './db'
 import { getSession, getAuthSession, getInitSession } from './session'
 import { createLogger } from './logger'

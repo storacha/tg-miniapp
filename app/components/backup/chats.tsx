@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { DialogInfo, DialogsById } from '@/api'
 import { useBackups } from '@/providers/backup'
-import { useTelegram } from '@/providers/telegram'
+import { useDialogs } from '@/hooks/useDialogs'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Loading } from '@/components/ui/loading'
@@ -45,11 +45,20 @@ export default function Chats({
 }: ChatsProps) {
   const [{ backups }] = useBackups()
   const [searchTerm, setSearchTerm] = useState('')
-  const [{ dialogs, loadingDialogs }, { loadMoreDialogs }] = useTelegram()
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+  } = useDialogs()
 
   const [typeFilter, setTypeFilter] = useState<Filter>(() => noFilter)
   const [searchFilter, setSearchFilter] = useState<Filter>(() => noFilter)
 
+  // Flatten the infinite query data into a single dialogs array
+  const dialogs = data?.pages?.flatMap((page) => page?.chats || []) ?? []
   const items = dialogs.filter(and(typeFilter, searchFilter))
 
   const sortedBackups = backups.items.sort(
@@ -62,8 +71,13 @@ export default function Chats({
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loadingDialogs) {
-          loadMoreDialogs()
+        if (
+          entries[0].isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !isLoading
+        ) {
+          fetchNextPage()
         }
       },
       {
@@ -73,7 +87,7 @@ export default function Chats({
 
     observer.observe(observerRef.current)
     return () => observer.disconnect()
-  }, [loadMoreDialogs, loadingDialogs])
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   const handleSearchChange: ChangeEventHandler<HTMLInputElement> = (e) => {
     setSearchTerm(e.target.value)
@@ -90,7 +104,7 @@ export default function Chats({
   const handleDialogItemClick: MouseEventHandler = (e) => {
     const id = e.currentTarget.getAttribute('data-id')
     if (!id) return
-    const dialog = items.find((d) => d.id === id)
+    const dialog = items.find((d: DialogInfo) => d.id === id)
     if (!dialog) return
 
     const nextSelections = { ...selections }
@@ -150,13 +164,24 @@ export default function Chats({
           </Button>
         </div>
         <div className="flex flex-col min-h-screen">
-          {items.map((d: DialogInfo) => {
+          {error && (
+            <div className="text-center p-4">
+              <p className="text-red-500">
+                Error loading chats: {error.message}
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Please try refreshing the page
+              </p>
+            </div>
+          )}
+          {items.map((d: DialogInfo, index) => {
             const latestBackup = sortedBackups.find(
               (b) => d.id && b.params.dialogs[d.id]
             )
+
             return (
               <div
-                key={d.id}
+                key={`${d.id}-${index}`}
                 className="flex justify-start gap-10 items-center active:bg-accent px-5 py-3"
                 data-id={d.id}
                 onClick={handleDialogItemClick}
@@ -169,13 +194,13 @@ export default function Chats({
               </div>
             )
           })}
-          {loadingDialogs && (
+          {(isLoading || isFetchingNextPage) && (
             <div className="text-center">
               <Loading text={'Loading chats...'} />
             </div>
           )}
           <div ref={observerRef} className="h-10" />
-          {!loadingDialogs && !items.length && (
+          {!isLoading && !items.length && (
             <p className="text-center">No chats found!</p>
           )}
         </div>

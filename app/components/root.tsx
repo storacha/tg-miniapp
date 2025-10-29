@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, PropsWithChildren } from 'react'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { cloudStorage, init, restoreInitData } from '@telegram-apps/sdk-react'
 import {
   Provider as StorachaProvider,
@@ -36,6 +37,7 @@ import { ErrorPage } from './error'
 import TelegramAuth from './telegram-auth'
 import LogoSplash from './svgs/logo-splash'
 import { ErrorBoundary } from './error-boundary'
+import { getQueryClient } from '@/lib/get-query-client'
 
 const version = process.env.NEXT_PUBLIC_VERSION ?? '0.0.0'
 const serverDID = parseDID(process.env.NEXT_PUBLIC_SERVER_DID ?? '')
@@ -51,6 +53,7 @@ export function Root(props: PropsWithChildren) {
   const [initError, setInitError] = useState<Error | null>(null)
   const [{ isTgAuthorized }] = useTelegram()
   const { isOnboarded, tgSessionString, setTgSessionString, user } = useGlobal()
+  const queryClient = getQueryClient()
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -86,9 +89,11 @@ export function Root(props: PropsWithChildren) {
   return (
     <ErrorBoundary fallback={ErrorPage}>
       <ErrorProvider>
-        <TelegramProvider>
-          <AppContent {...props} />
-        </TelegramProvider>
+        <QueryClientProvider client={queryClient}>
+          <TelegramProvider>
+            <AppContent {...props} />
+          </TelegramProvider>
+        </QueryClientProvider>
       </ErrorProvider>
     </ErrorBoundary>
   )

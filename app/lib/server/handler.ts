@@ -515,7 +515,7 @@ class Handler {
           this.#dbUser.id,
           -pointsToSubtract
         )
-        logger.info('Subtracted points from user', {
+        logger.info('Subtracted points from user. Finished Deleting Backup!', {
           pointsBefore: userPointsBefore,
           pointsAfter: this.#dbUser.points,
         })
