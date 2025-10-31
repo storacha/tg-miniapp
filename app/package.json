@@ -18,7 +18,7 @@
     "pages:deploy": "pnpm run pages:build && wrangler pages deploy"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.817.0",
+    "@aws-sdk/client-sqs": "^3.876.0",
     "@aws-sdk/rds-signer": "^3.816.0",
     "@dotenvx/dotenvx": "^1.44.1",
     "@ipld/dag-cbor": "^9.2.2",
@@ -77,6 +77,7 @@
     "react-day-picker": "^9.8.0",
     "react-dom": "^19.0.0",
     "react-pdf": "^9.2.1",
+    "sqs-consumer": "^14.0.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "telegram": "2.26.8",

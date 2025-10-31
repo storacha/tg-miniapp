@@ -1,87 +1,13 @@
-import { ExecuteJobRequest } from '@/api'
 import { getDB } from '@/lib/server/db'
-import { getTelegramId, handleJob } from '@/lib/server/jobs'
+import { getTelegramId } from '@/lib/server/jobs'
 import { getSession } from '@/lib/server/session'
-import { parseWithUIntArrays, stringifyWithUIntArrays } from '@/lib/utils'
-import { gracefulShutdown } from '@/lib/server/graceful-shutdown'
+import { stringifyWithUIntArrays } from '@/lib/utils'
 import { createLogger } from '@/lib/server/logger'
-import { addBreadcrumb } from '@sentry/nextjs'
 
 export const dynamic = 'force-dynamic'
 
 // Create logger for jobs API route
 const logger = createLogger({ route: 'api/jobs' })
-
-function isJobAuthed(request: Request) {
-  if (process.env.BACKUP_PASSWORD) {
-    const header = request.headers.get('authorization')
-    if (!header) return false
-
-    const encodedCreds = header.split(' ')[1]
-    if (!encodedCreds) return false
-    const [username, ...passwordparts] = Buffer.from(encodedCreds, 'base64')
-      .toString()
-      .split(':')
-    const password = passwordparts.join(':')
-
-    addBreadcrumb({
-      message: 'Job authentication attempt',
-      level: 'info',
-      data: { username },
-    })
-
-    return username === 'user' && password === process.env.BACKUP_PASSWORD
-  } else {
-    logger.warn(
-      'No auth password set for handling jobs, assuming authentication'
-    )
-    return true
-  }
-}
-
-export async function POST(request: Request) {
-  addBreadcrumb({
-    message: 'Job POST request received',
-    level: 'info',
-  })
-
-  if (gracefulShutdown.isShutdownInitiated()) {
-    addBreadcrumb({
-      message: 'Service unavailable - graceful shutdown in progress',
-      level: 'warning',
-    })
-    return new Response('Service temporarily unavailable', {
-      status: 503,
-      headers: {
-        'Retry-After': '30', // Tell clients to retry after 30 seconds (By default, there is a 30 second delay between the delivery of SIGTERM and SIGKILL signals)
-      },
-    })
-  }
-
-  logger.info('Handling job batch...')
-  if (!isJobAuthed(request)) {
-    logger.error('Job authentication failed', {
-      error: 'Unauthorized access attempt',
-      tags: { operation: 'job_auth' },
-    })
-    return new Response('Unauthorized', { status: 401 })
-  }
-
-  addBreadcrumb({
-    message: 'Job authentication successful',
-    level: 'info',
-  })
-
-  const message = await request.json()
-
-  addBreadcrumb({
-    message: 'Job message parsed, starting execution',
-    level: 'info',
-  })
-
-  handleJob(parseWithUIntArrays(message.body) as ExecuteJobRequest)
-  return Response.json({}, { status: 202 })
-}
 
 export async function GET() {
   logger.info('Setting up notification stream for job updates')
