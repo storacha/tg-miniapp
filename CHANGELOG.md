@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.15.0](https://github.com/storacha/tg-miniapp/compare/v2.14.1...v2.15.0) (2025-10-31)
+
+
+### Features
+
+* **deploy:** use running queue consumer, bump capacity ([17fbf04](https://github.com/storacha/tg-miniapp/commit/17fbf04b80f27ef376269407a48f2a65c9425cad))
+
 ## [2.14.1](https://github.com/storacha/tg-miniapp/compare/v2.14.0...v2.14.1) (2025-10-27)
 
 
