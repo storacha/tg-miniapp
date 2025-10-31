@@ -100,8 +100,8 @@ module "app" {
   }
   deployment_config = local.is_production ? {
     cpu = 1024
-    memory = 4096
-    service_min = 1
+    memory = 8192
+    service_min = 4
     service_max = 10
     httpport = 3000
     readonly = false
