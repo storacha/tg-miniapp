@@ -19,7 +19,7 @@ function PickPlanButton({
 }: PickPlanButtonProps) {
   return (
     <button
-      className="bg-hot-red flex-shrink rounded-full text-white px-4 py-2"
+      className="bg-red-600 flex-shrink rounded-full text-white px-4 py-2"
       onClick={() => pick(planID, freeTrial)}
     >
       {children}
