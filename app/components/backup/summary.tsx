@@ -15,7 +15,7 @@ export interface SummaryProps {
   space: SpaceDID
   period: Period
   starting: boolean
-  onSubmit: () => unknown
+  onSubmit: (storageUsed?: number) => unknown
 }
 
 export const Summary = ({
@@ -29,7 +29,7 @@ export const Summary = ({
 
   const handleSubmit: FormEventHandler = (e) => {
     e.preventDefault()
-    onSubmit()
+    onSubmit(storageUsed)
   }
   const [{ jobsReady }, {}] = useBackups()
   const [{ client }] = useStoracha()

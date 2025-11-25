@@ -9,13 +9,7 @@ import {
   EntityID,
 } from '@/api'
 import { Principal } from '@ipld/dag-ucan'
-import { formatBytes } from '../utils'
-import { MAX_FREE_BYTES } from '../server/constants'
-import {
-  createServerDelegations,
-  getStorachaUsage,
-  isStorageLimitExceeded,
-} from '../storacha'
+import { createServerDelegations } from '../storacha'
 
 export interface Context {
   storacha: StorachaClient
@@ -87,27 +81,6 @@ class Store extends EventTarget implements JobStorage {
     const space = this.#storacha.currentSpace()
     if (!space) {
       throw new Error('No space was found!')
-    }
-
-    try {
-      // check if the user has enough storage space
-      const amountOfStorageUsed = await getStorachaUsage(
-        this.#storacha,
-        space.did()
-      )
-
-      if (await isStorageLimitExceeded(this.#storacha, amountOfStorageUsed)) {
-        throw new Error(
-          `You have reached your ${formatBytes(
-            MAX_FREE_BYTES
-          )} free storage limit. Upgrade your account`
-        )
-      }
-    } catch (err) {
-      if ((err as Error)?.message?.includes('free storage limit')) {
-        throw err
-      }
-      console.warn('Could not check storage usage before job creation:', err)
     }
 
     const job = await this.#jobClient.createJob({

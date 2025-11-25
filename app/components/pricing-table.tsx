@@ -48,8 +48,8 @@ function PlanPicker({
   return (
     <div className="border-2 border-hot-red rounded-xl bg-white">
       <div className="flex flex-col justify-between px-4 py-2 border-b-2 border-hot-red">
-        <h1 className="text-hot-red uppercase">{name}</h1>
-        <span>{'🌶️'.repeat(peppers)}</span>
+        <h1 className="text-hot-red uppercase text-center">{name}</h1>
+        <span className="text-center">{'🌶️'.repeat(peppers)}</span>
       </div>
       <div className="p-4 text-left text-hot-red flex flex-col">
         <h2 className="text-4xl font-bold">${price}/mo</h2>
