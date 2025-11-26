@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.16.0](https://github.com/storacha/tg-miniapp/compare/v2.15.0...v2.16.0) (2025-11-26)
+
+
+### Features
+
+* new pricing table ([46ff81e](https://github.com/storacha/tg-miniapp/commit/46ff81e95cb30dfa3750cb0f632ae663bc8d43bb))
+
+
+### Bug Fixes
+
+* add pricing table to client-side create-backup flow ([edb18d4](https://github.com/storacha/tg-miniapp/commit/edb18d45a5a3cdfc7296d37ccf10c9a0d63275a9))
+* pricing table button color ([f5be0f9](https://github.com/storacha/tg-miniapp/commit/f5be0f99cffb7a8a4e5534ddef5be3d3c1c1a331))
+
 ## [2.15.0](https://github.com/storacha/tg-miniapp/compare/v2.14.1...v2.15.0) (2025-10-31)
 
 
