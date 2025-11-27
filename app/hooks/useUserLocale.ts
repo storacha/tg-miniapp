@@ -48,10 +48,18 @@ export const useUserLocale = () => {
     })
   }
 
+  const formatCurrency = (amount: number, currency: string) =>
+    new Intl.NumberFormat(userLocale, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount)
+
   return {
     formatDate,
     formatTime,
     formatDateTime,
     formatNumber,
+    formatCurrency,
   }
 }
