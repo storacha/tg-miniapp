@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.16.1](https://github.com/storacha/tg-miniapp/compare/v2.16.0...v2.16.1) (2025-12-09)
+
+
+### Bug Fixes
+
+* remove next middleware config ([cc7afb7](https://github.com/storacha/tg-miniapp/commit/cc7afb7dae632a80dd068b7d5a9e9b94785acdd8))
+* upgrade to latest next 15.3.x for CVE ([758ad45](https://github.com/storacha/tg-miniapp/commit/758ad45556b3432c4e6c54259bf2e051e5ca30a5))
+* upgrade to latest next 15.3.x for CVE ([34e6552](https://github.com/storacha/tg-miniapp/commit/34e655248ea78f6364308b5327a9365e7d318e87))
+
 ## [2.16.0](https://github.com/storacha/tg-miniapp/compare/v2.15.0...v2.16.0) (2025-11-26)
 
 
