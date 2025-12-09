@@ -63,7 +63,7 @@
     "lucide-react": "^0.469.0",
     "mongoose": "^8.10.1",
     "multiformats": "^13.3.2",
-    "next": "15.3.0-canary.33",
+    "next": "~15.3.6",
     "next-plausible": "^3.12.4",
     "node-cache": "^5.1.2",
     "node-telegram-bot-api": "^0.66.0",
