@@ -7,9 +7,6 @@ const nextConfig: NextConfig = {
     version: pkg.version,
   },
   output: 'standalone',
-  experimental: {
-    nodeMiddleware: true, // TODO: remove this
-  },
   serverExternalPackages: ['telegram'],
 }
 
