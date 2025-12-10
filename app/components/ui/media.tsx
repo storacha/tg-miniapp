@@ -22,6 +22,7 @@ import {
   WebPageMediaData,
   DefaultWebPageData,
   DocumentData,
+  ContactMediaData,
 } from '@/api'
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -78,6 +79,10 @@ export const Media: React.FC<MediaProps> = ({
   let mediaContent
 
   switch (metadata.type) {
+    case 'contact': {
+      mediaContent = <ContactMedia metadata={metadata} />
+      break
+    }
     case 'photo': {
       mediaContent = <ImageMedia mediaUrl={mediaUrl} loading={loading} />
       break
@@ -199,6 +204,42 @@ const ImageMedia: React.FC<{ mediaUrl?: string; loading: boolean }> = ({
         className="max-w-[10rem] max-h-60 object-cover rounded-lg"
       />
     </div>
+  )
+}
+
+const ContactMedia: React.FC<{ metadata: ContactMediaData }> = ({
+  metadata,
+}) => {
+  const { firstName, lastName, phoneNumber } = metadata
+  const fullName = lastName ? `${firstName} ${lastName}` : firstName
+
+  return (
+    <Bubble>
+      <div className="flex items-center gap-3 min-w-[240px]">
+        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-600 shrink-0">
+          <svg
+            className="w-6 h-6 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+            />
+          </svg>
+        </div>
+
+        <div className="flex flex-col flex-1 min-w-0">
+          <div className="font-medium text-gray-800 text-sm truncate">
+            {fullName}
+          </div>
+          <div className="text-blue-600 text-sm">+{phoneNumber}</div>
+        </div>
+      </div>
+    </Bubble>
   )
 }
 
