@@ -469,7 +469,7 @@ const fromDbJob = (dbJob: DbJob): Job => {
       return {
         ...baseJob,
         status: 'canceled',
-        finished: dbJob.finishedAt.getDate(),
+        finished: dbJob.finishedAt.getTime(),
         ...(dbJob.progress != null ? { progress: dbJob.progress } : {}),
         ...(dbJob.startedAt != null
           ? { started: dbJob.startedAt.getTime() }
@@ -503,8 +503,8 @@ const fromDbJob = (dbJob: DbJob): Job => {
         status: 'failed',
         progress: dbJob.progress,
         cause: dbJob.cause,
-        started: dbJob.startedAt?.getDate(),
-        finished: dbJob.finishedAt.getDate(),
+        started: dbJob.startedAt?.getTime(),
+        finished: dbJob.finishedAt.getTime(),
       }
     case 'completed':
       if (dbJob.startedAt == null) {
@@ -520,7 +520,7 @@ const fromDbJob = (dbJob: DbJob): Job => {
         ...baseJob,
         status: 'completed',
         started: dbJob.startedAt.getTime(),
-        finished: dbJob.finishedAt.getDate(),
+        finished: dbJob.finishedAt.getTime(),
         data: dbJob.dataCid,
         points: dbJob.points,
         size: dbJob.size,
